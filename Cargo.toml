@@ -4,6 +4,19 @@ version = "0.0.0"
 authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
+description = "A Cargo subcommand for competitive programming."
 publish = false
 
 [dependencies]
+anyhow = "1.0.32"
+atty = "0.2.14"
+fwdansi = "1.1.0"
+indicatif = "0.15.0"
+reqwest = { version = "0.10.7", default-features = false, features = ["blocking"] }
+snowchains_core = { version = "0.0.0", git = "https://github.com/qryxip/snowchains", rev = "8c5020be7b66d2a47093501396a85be484112db4" }
+structopt = "0.3.15"
+termcolor = "1.1.0"
+strum = { version = "0.18.0", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+term_size = "1.0.0-beta.2"
