@@ -2,45 +2,58 @@ use indicatif::ProgressDrawTarget;
 use snowchains_core::{color_spec, web::StatusCodeColor};
 use std::{
     fmt,
-    io::{self, BufRead, Stdin, StdinLock, Write},
+    io::{self, BufRead, Write},
 };
 use strum::{EnumString, EnumVariantNames};
-use termcolor::{Color, WriteColor};
+use termcolor::{BufferedStandardStream, Color, NoColor, WriteColor};
 
-pub struct Shell<R, W1, W2> {
-    stdin: Input<R>,
-    stdout: W1,
-    stderr: W2,
-    stderr_tty: bool,
+pub struct Shell {
+    input: ShellIn,
+    output: ShellOut,
     needs_clear: bool,
 }
 
-impl<R: BufRead, W1: WriteColor, W2: WriteColor> Shell<R, W1, W2> {
-    pub fn new(stdin: Input<R>, stdout: W1, stderr: W2, stderr_tty: bool) -> Self {
+impl Shell {
+    pub fn new() -> Self {
         Self {
-            stdin,
-            stdout,
-            stderr,
-            stderr_tty,
+            input: ShellIn::stdin(),
+            output: ShellOut::stream(),
+            needs_clear: false,
+        }
+    }
+
+    pub fn from_read_write(rdr: Box<dyn BufRead>, wtr: Box<dyn Write>) -> Self {
+        Self {
+            input: ShellIn::Reader(rdr),
+            output: ShellOut::Write(NoColor::new(wtr)),
             needs_clear: false,
         }
     }
 }
 
-impl<R, W1, W2: WriteColor> Shell<R, W1, W2> {
+impl Shell {
+    pub fn err(&mut self) -> &mut dyn WriteColor {
+        self.output.stderr()
+    }
+
+    pub(crate) fn set_color_choice(&mut self, color: ColorChoice) {
+        self.output.set_color_choice(color);
+    }
+
     pub(crate) fn warn(&mut self, message: impl fmt::Display) -> io::Result<()> {
         if self.needs_clear {
             self.err_erase_line();
         }
 
-        self.stderr
-            .set_color(color_spec!(Bold, Fg(Color::Yellow)))?;
-        write!(self.stderr, "warning:")?;
-        self.stderr.reset()?;
+        let stderr = self.err();
 
-        writeln!(self.stderr, " {}", message)?;
+        stderr.set_color(color_spec!(Bold, Fg(Color::Yellow)))?;
+        write!(stderr, "warning:")?;
+        stderr.reset()?;
 
-        self.stderr.flush()
+        writeln!(stderr, " {}", message)?;
+
+        stderr.flush()
     }
 
     pub(crate) fn status(
@@ -60,17 +73,17 @@ impl<R, W1, W2: WriteColor> Shell<R, W1, W2> {
         if self.needs_clear {
             self.err_erase_line();
         }
-
-        self.stderr.set_color(color_spec!(Bold, Fg(color)))?;
-        write!(self.stderr, "{:>12}", status)?;
-        self.stderr.reset()?;
-
-        writeln!(self.stderr, " {}", message)
+        self.output.message_stderr(status, message, color)
     }
 
     fn err_erase_line(&mut self) {
-        if self.stderr_tty && self.stderr.supports_color() {
-            err_erase_line(&mut self.stderr);
+        if let ShellOut::Stream {
+            stderr,
+            stderr_tty: true,
+            ..
+        } = &mut self.output
+        {
+            err_erase_line(stderr);
             self.needs_clear = false;
         }
 
@@ -86,11 +99,35 @@ impl<R, W1, W2: WriteColor> Shell<R, W1, W2> {
             }
         }
     }
+
+    pub(crate) fn read_reply(&mut self, prompt: &str) -> io::Result<String> {
+        if self.needs_clear {
+            self.err_erase_line();
+        }
+
+        let stderr = self.err();
+
+        write!(stderr, "{}", prompt)?;
+        stderr.flush()?;
+        self.input.read_reply()
+    }
+
+    pub(crate) fn read_password(&mut self, prompt: &str) -> io::Result<String> {
+        if self.needs_clear {
+            self.err_erase_line();
+        }
+
+        let stderr = self.err();
+
+        write!(stderr, "{}", prompt)?;
+        stderr.flush()?;
+        self.input.read_password()
+    }
 }
 
-impl<R, W1, W2: WriteColor> snowchains_core::web::Shell for Shell<R, W1, W2> {
+impl snowchains_core::web::Shell for Shell {
     fn progress_draw_target(&self) -> ProgressDrawTarget {
-        if self.stderr_tty {
+        if self.output.stderr_tty() {
             ProgressDrawTarget::stderr()
         } else {
             ProgressDrawTarget::hidden()
@@ -98,7 +135,7 @@ impl<R, W1, W2: WriteColor> snowchains_core::web::Shell for Shell<R, W1, W2> {
     }
 
     fn print_ansi(&mut self, message: &[u8]) -> io::Result<()> {
-        fwdansi::write_ansi(&mut self.stderr, message)
+        fwdansi::write_ansi(self.err(), message)
     }
 
     fn warn<T: fmt::Display>(&mut self, message: T) -> io::Result<()> {
@@ -106,8 +143,20 @@ impl<R, W1, W2: WriteColor> snowchains_core::web::Shell for Shell<R, W1, W2> {
     }
 
     fn on_request(&mut self, req: &reqwest::blocking::Request) -> io::Result<()> {
-        self.status_with_color(req.method(), format!("{} ...", req.url()), Color::Cyan)?;
-        self.needs_clear = true;
+        if let ShellOut::Stream {
+            stderr,
+            stderr_tty: true,
+            ..
+        } = &mut self.output
+        {
+            stderr.set_color(color_spec!(Bold, Fg(Color::Cyan)))?;
+            write!(stderr, "{:>12}", req.method())?;
+            stderr.reset()?;
+            write!(stderr, " {} ...\r", req.url())?;
+            stderr.flush()?;
+
+            self.needs_clear = true;
+        }
         Ok(())
     }
 
@@ -123,18 +172,108 @@ impl<R, W1, W2: WriteColor> snowchains_core::web::Shell for Shell<R, W1, W2> {
     }
 }
 
-pub enum Input<R> {
+enum ShellIn {
     Tty,
-    Piped(R),
+    PipedStdin,
+    Reader(Box<dyn BufRead>),
 }
 
-impl<'a> Input<StdinLock<'a>> {
-    pub fn from_stdin(stdin: &'a Stdin) -> Self {
+impl ShellIn {
+    fn stdin() -> Self {
         if atty::is(atty::Stream::Stdin) {
             Self::Tty
         } else {
-            Self::Piped(stdin.lock())
+            Self::PipedStdin
         }
+    }
+}
+
+impl ShellIn {
+    fn read_reply(&mut self) -> io::Result<String> {
+        match self {
+            Self::Tty | Self::PipedStdin => rprompt::read_reply(),
+            Self::Reader(r) => rpassword::read_password_with_reader(Some(r)),
+        }
+    }
+
+    fn read_password(&mut self) -> io::Result<String> {
+        match self {
+            Self::Tty => rpassword::read_password_from_tty(None),
+            Self::PipedStdin => rprompt::read_reply(),
+            Self::Reader(r) => rpassword::read_password_with_reader(Some(r)),
+        }
+    }
+}
+
+enum ShellOut {
+    Write(NoColor<Box<dyn Write>>),
+    Stream {
+        stdout: BufferedStandardStream,
+        stderr: BufferedStandardStream,
+        stderr_tty: bool,
+    },
+}
+
+impl ShellOut {
+    fn stream() -> Self {
+        Self::Stream {
+            stdout: BufferedStandardStream::stdout(if atty::is(atty::Stream::Stdout) {
+                termcolor::ColorChoice::Auto
+            } else {
+                termcolor::ColorChoice::Never
+            }),
+            stderr: BufferedStandardStream::stderr(if atty::is(atty::Stream::Stderr) {
+                termcolor::ColorChoice::Auto
+            } else {
+                termcolor::ColorChoice::Never
+            }),
+            stderr_tty: atty::is(atty::Stream::Stderr),
+        }
+    }
+
+    fn stderr(&mut self) -> &mut dyn WriteColor {
+        match self {
+            Self::Write(wtr) => wtr,
+            Self::Stream { stderr, .. } => stderr,
+        }
+    }
+
+    fn stderr_tty(&self) -> bool {
+        match *self {
+            Self::Write(_) => false,
+            Self::Stream { stderr_tty, .. } => stderr_tty,
+        }
+    }
+
+    fn set_color_choice(&mut self, color: ColorChoice) {
+        if let Self::Stream { stdout, stderr, .. } = self {
+            let _ = stdout.flush();
+            let _ = stderr.flush();
+
+            *stdout = BufferedStandardStream::stdout(
+                color.to_termcolor_color_choice(atty::Stream::Stdout),
+            );
+
+            *stderr = BufferedStandardStream::stderr(
+                color.to_termcolor_color_choice(atty::Stream::Stderr),
+            );
+        }
+    }
+
+    fn message_stderr(
+        &mut self,
+        status: impl fmt::Display,
+        message: impl fmt::Display,
+        color: Color,
+    ) -> io::Result<()> {
+        let stderr = self.stderr();
+
+        stderr.set_color(color_spec!(Bold, Fg(color)))?;
+        write!(stderr, "{:>12}", status)?;
+        stderr.reset()?;
+
+        writeln!(stderr, " {}", message)?;
+        stderr.flush()
     }
 }
 
@@ -147,7 +286,7 @@ pub enum ColorChoice {
 }
 
 impl ColorChoice {
-    pub fn to_termcolor_color_choice(self, stream: atty::Stream) -> termcolor::ColorChoice {
+    fn to_termcolor_color_choice(self, stream: atty::Stream) -> termcolor::ColorChoice {
         match (self, atty::is(stream)) {
             (Self::Auto, true) => termcolor::ColorChoice::Auto,
             (Self::Always, _) => termcolor::ColorChoice::Always,

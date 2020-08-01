@@ -1,37 +1,26 @@
 use anyhow::Context as _;
-use cargo_compete::{
-    shell::{Input, Shell},
-    Context, Opt,
-};
-use std::{env, io};
+use cargo_compete::{shell::Shell, Context, Opt};
+use std::env;
 use structopt::clap;
 use structopt::StructOpt as _;
-use termcolor::{BufferedStandardStream, Color, ColorSpec, WriteColor};
+use termcolor::{Color, ColorSpec, WriteColor};
 
 fn main() {
     let Opt::Compete(opt) = Opt::from_args();
-
-    let color = opt.color();
-
-    let stdin = io::stdin();
-    let stdin = Input::from_stdin(&stdin);
-    let stdout =
-        BufferedStandardStream::stdout(color.to_termcolor_color_choice(atty::Stream::Stdout));
-    let mut stderr =
-        BufferedStandardStream::stderr(color.to_termcolor_color_choice(atty::Stream::Stderr));
+    let mut shell = Shell::new();
 
     let result = env::current_dir()
         .with_context(|| "could not get the current directory")
         .and_then(|cwd| {
             let ctx = Context {
                 cwd,
-                shell: Shell::new(stdin, stdout, &mut stderr, atty::is(atty::Stream::Stderr)),
+                shell: &mut shell,
             };
             cargo_compete::run(opt, ctx)
         });
 
     if let Err(err) = result {
-        exit_with_error(err, stderr);
+        exit_with_error(err, shell.err());
     }
 }
 
