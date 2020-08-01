@@ -205,9 +205,10 @@ publish = false
             crate::fs::read_to_string(self.workspace_root.join(workspace_metadata.template.code))?;
 
         for problem_index in problem_indexes {
-            let src_path = src_bin.join(problem_index.to_kebab_case());
-            crate::fs::write(&src_path, &template_code)?;
-            shell.status("Wrote", src_path.display())?;
+            let src_path = src_bin
+                .join(problem_index.to_kebab_case())
+                .with_extension("rs");
+            crate::fs::write(src_path, &template_code)?;
         }
 
         shell.status(
