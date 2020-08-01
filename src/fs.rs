@@ -1,5 +1,5 @@
 use anyhow::Context as _;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use std::path::Path;
 
 pub(crate) fn read_to_string(path: impl AsRef<Path>) -> anyhow::Result<String> {
@@ -51,6 +51,10 @@ pub(crate) fn read_toml_preserving<T: DeserializeOwned, P: AsRef<Path>>(
 pub(crate) fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> anyhow::Result<()> {
     let path = path.as_ref();
     std::fs::write(path, content).with_context(|| format!("could not write `{}`", path.display()))
+}
+
+pub(crate) fn write_json(path: impl AsRef<Path>, content: impl Serialize) -> anyhow::Result<()> {
+    write(path, serde_json::to_string(&content)?)
 }
 
 pub(crate) fn remove_file(path: impl AsRef<Path>) -> anyhow::Result<()> {

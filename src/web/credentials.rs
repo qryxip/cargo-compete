@@ -37,6 +37,18 @@ pub(crate) fn dropbox_access_token() -> anyhow::Result<String> {
     }
 }
 
+pub(crate) fn yukicoder_api_key(shell: &mut Shell) -> anyhow::Result<String> {
+    let path = token_path("yukicoder.json")?;
+    if path.exists() {
+        crate::fs::read_json(path)
+    } else {
+        let api_key = shell.read_password("yukicoder API key: ")?;
+        crate::fs::create_dir_all(path.parent().unwrap())?;
+        crate::fs::write_json(path, &api_key)?;
+        Ok(api_key)
+    }
+}
+
 fn token_path(file_name: &str) -> anyhow::Result<PathBuf> {
     let data_local_dir =
         dirs::data_local_dir().with_context(|| "could not find the local data directory")?;

@@ -3,6 +3,7 @@ use anyhow::{bail, Context as _};
 use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve};
 use easy_ext::ext;
 use heck::KebabCase as _;
+use indexmap::IndexMap;
 use serde::Deserialize;
 use std::{
     collections::BTreeSet,
@@ -59,6 +60,27 @@ pub(crate) struct WorkspaceMetadataCargoCompetePlatformViaBinary {
     use_cross: bool,
     strip_exe: Option<PathBuf>,
     upx_exe: Option<PathBuf>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct PackageMetadataCargoCompete {
+    pub(crate) problems: IndexMap<String, PackageMetadataCargoCompeteProblem>,
+}
+
+#[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case", tag = "platform")]
+pub(crate) enum PackageMetadataCargoCompeteProblem {
+    Atcoder { contest: String, index: String },
+    Codeforces { contest: String, index: String },
+    Yukicoder(PackageMetadataCargoCompeteProblemYukicoder),
+}
+
+#[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case", tag = "kind")]
+pub(crate) enum PackageMetadataCargoCompeteProblemYukicoder {
+    Problem { no: u64 },
+    Contest { contest: String, index: String },
 }
 
 #[ext(MetadataExt)]
@@ -255,6 +277,37 @@ impl Metadata {
         let path = self.workspace_root.join("workspace-metadata.toml");
         let (WorkspaceMetadata { cargo_compete }, edit) = crate::fs::read_toml_preserving(path)?;
         Ok((cargo_compete, edit["cargo-compete"].clone()))
+    }
+}
+
+#[ext(PackageExt)]
+impl Package {
+    pub(crate) fn read_package_metadata(&self) -> anyhow::Result<PackageMetadataCargoCompete> {
+        let CargoToml {
+            package:
+                CargoTomlPackage {
+                    metadata: CargoTomlPackageMetadata { cargo_compete },
+                },
+        } = crate::fs::read_toml(&self.manifest_path)?;
+        return Ok(cargo_compete);
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct CargoToml {
+            package: CargoTomlPackage,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct CargoTomlPackage {
+            metadata: CargoTomlPackageMetadata,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct CargoTomlPackageMetadata {
+            cargo_compete: PackageMetadataCargoCompete,
+        }
     }
 }
 

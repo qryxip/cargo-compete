@@ -1,25 +1,30 @@
 use crate::{
-    project::{MetadataExt as _, WorkspaceMetadataCargoCompetePlatform},
+    project::{
+        MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteProblem,
+        PackageMetadataCargoCompeteProblemYukicoder, WorkspaceMetadataCargoCompetePlatform,
+    },
     shell::{ColorChoice, Shell},
     web::credentials,
 };
-use anyhow::{anyhow, bail, Context as _};
-use cargo_metadata::MetadataCommand;
+use anyhow::Context as _;
 use heck::KebabCase as _;
+use maplit::{btreemap, btreeset};
 use snowchains_core::{
     testsuite::{Additional, BatchTestSuite, TestSuite},
     web::{
         Atcoder, AtcoderRetrieveFullTestCasesCredentials,
-        AtcoderRetrieveSampleTestCasesCredentials, AtcoderRetrieveTestCasesTargets, CookieStorage,
-        PlatformKind, RetrieveFullTestCases, RetrieveTestCases, RetrieveTestCasesOutcome,
+        AtcoderRetrieveSampleTestCasesCredentials, AtcoderRetrieveTestCasesTargets, Codeforces,
+        CodeforcesRetrieveSampleTestCasesCredentials, CodeforcesRetrieveTestCasesTargets,
+        CookieStorage, RetrieveFullTestCases, RetrieveTestCases, RetrieveTestCasesOutcome,
         RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
-        RetrieveTestCasesOutcomeProblemTextFiles,
+        RetrieveTestCasesOutcomeProblemTextFiles, Yukicoder,
+        YukicoderRetrieveFullTestCasesCredentials, YukicoderRetrieveTestCasesTargets,
     },
 };
 use std::{
     borrow::BorrowMut as _,
     cell::RefCell,
-    collections::HashSet,
+    collections::BTreeSet,
     path::{Path, PathBuf},
 };
 use structopt::StructOpt;
@@ -52,7 +57,7 @@ pub struct OptCompeteRetrieveTestcases {
     )]
     pub color: ColorChoice,
 
-    /// Contest ID
+    /// Creates pacakge afresh & retrieve test cases for the contest ID
     pub contest: Option<String>,
 }
 
@@ -87,13 +92,77 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     };
 
     if let Some(member) = member {
-        todo!();
+        let mut atcoder_targets = btreemap!();
+        let mut codeforces_targets = btreemap!();
+        let mut yukicoder_problem_targets = btreeset!();
+        let mut yukicoder_contest_targets = btreemap!();
+
+        for (_, target) in member.read_package_metadata()?.problems {
+            match target {
+                PackageMetadataCargoCompeteProblem::Atcoder { contest, index } => atcoder_targets
+                    .entry(contest)
+                    .or_insert_with(BTreeSet::new)
+                    .insert(index),
+                PackageMetadataCargoCompeteProblem::Codeforces { contest, index } => {
+                    codeforces_targets
+                        .entry(contest)
+                        .or_insert_with(BTreeSet::new)
+                        .insert(index)
+                }
+                PackageMetadataCargoCompeteProblem::Yukicoder(target) => match target {
+                    PackageMetadataCargoCompeteProblemYukicoder::Problem { no } => {
+                        yukicoder_problem_targets.insert(no)
+                    }
+                    PackageMetadataCargoCompeteProblemYukicoder::Contest { contest, index } => {
+                        yukicoder_contest_targets
+                            .entry(contest)
+                            .or_insert_with(BTreeSet::new)
+                            .insert(index)
+                    }
+                },
+            };
+        }
+
+        let mut outcomes = vec![];
+
+        for (contest, problems) in atcoder_targets {
+            outcomes.push(dl_from_atcoder(&contest, Some(problems), full, shell)?);
+        }
+        for (contest, problems) in codeforces_targets {
+            outcomes.push(dl_from_codeforces(&contest, Some(problems), shell)?);
+        }
+        if !yukicoder_problem_targets.is_empty() {
+            outcomes.push(dl_from_yukicoder(
+                None,
+                Some(
+                    yukicoder_problem_targets
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect(),
+                ),
+                full,
+                shell,
+            )?);
+        }
+        for (contest, problems) in yukicoder_contest_targets {
+            outcomes.push(dl_from_yukicoder(
+                Some(&contest),
+                Some(problems),
+                full,
+                shell,
+            )?);
+        }
+
+        for outcome in outcomes {
+            save_test_cases(&metadata.workspace_root, outcome, shell)?;
+        }
     } else {
         match workspace_metadata.platform {
             WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
                 let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
+                let problems = problems.map(|ps| ps.into_iter().collect());
 
-                let outcome = dl_from_atcoder(&contest, problems.as_deref(), full, shell)?;
+                let outcome = dl_from_atcoder(&contest, problems, full, shell)?;
 
                 let package_name = outcome
                     .contest
@@ -111,23 +180,72 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 metadata.add_member(package_name, &problem_indexes, false, shell)?;
 
-                save_test_cases(&workspace_root, outcome, shell)
+                save_test_cases(&workspace_root, outcome, shell)?;
             }
-            WorkspaceMetadataCargoCompetePlatform::Codeforces => todo!(),
-            WorkspaceMetadataCargoCompetePlatform::Yukicoder => todo!(),
+            WorkspaceMetadataCargoCompetePlatform::Codeforces => {
+                let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
+                let problems = problems.map(|ps| ps.into_iter().collect());
+
+                let outcome = dl_from_codeforces(&contest, problems, shell)?;
+
+                let package_name = outcome
+                    .contest
+                    .as_ref()
+                    .map(|RetrieveTestCasesOutcomeContest { id, .. }| id)
+                    .unwrap_or(&contest);
+
+                let problem_indexes = outcome
+                    .problems
+                    .iter()
+                    .map(|RetrieveTestCasesOutcomeProblem { index, .. }| index.clone())
+                    .collect();
+
+                let workspace_root = metadata.workspace_root.clone();
+
+                metadata.add_member(package_name, &problem_indexes, false, shell)?;
+
+                save_test_cases(&workspace_root, outcome, shell)?;
+            }
+            WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
+                let contest = contest.as_deref();
+                let problems = problems.map(|ps| ps.into_iter().collect());
+
+                let outcome = dl_from_yukicoder(contest, problems, full, shell)?;
+
+                let package_name = outcome
+                    .contest
+                    .as_ref()
+                    .map(|RetrieveTestCasesOutcomeContest { id, .. }| &**id)
+                    .or(contest);
+                let is_no = package_name.is_none();
+                let package_name = package_name.unwrap_or("problems");
+
+                let problem_indexes = outcome
+                    .problems
+                    .iter()
+                    .map(|RetrieveTestCasesOutcomeProblem { index, .. }| index.clone())
+                    .collect();
+
+                let workspace_root = metadata.workspace_root.clone();
+
+                metadata.add_member(package_name, &problem_indexes, is_no, shell)?;
+
+                save_test_cases(&workspace_root, outcome, shell)?;
+            }
         }
     }
+    Ok(())
 }
 
 fn dl_from_atcoder(
     contest: &str,
-    problems: Option<&[String]>,
+    problems: Option<BTreeSet<String>>,
     full: bool,
     shell: &mut Shell,
 ) -> anyhow::Result<RetrieveTestCasesOutcome> {
     let targets = AtcoderRetrieveTestCasesTargets {
         contest: contest.to_owned(),
-        problems: problems.map(|ps| ps.iter().cloned().collect()),
+        problems,
     };
 
     let shell = RefCell::new(shell.borrow_mut());
@@ -151,14 +269,79 @@ fn dl_from_atcoder(
     };
 
     let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
-    let timeout = crate::web::TIMEOUT;
 
     Atcoder::exec(RetrieveTestCases {
         targets,
         credentials,
         full,
         cookie_storage,
-        timeout,
+        timeout: crate::web::TIMEOUT,
+        shell: &shell,
+    })
+}
+
+fn dl_from_codeforces(
+    contest: &str,
+    problems: Option<BTreeSet<String>>,
+    shell: &mut Shell,
+) -> anyhow::Result<RetrieveTestCasesOutcome> {
+    let targets = CodeforcesRetrieveTestCasesTargets {
+        contest: contest.to_owned(),
+        problems,
+    };
+
+    let shell = RefCell::new(shell.borrow_mut());
+
+    let credentials = CodeforcesRetrieveSampleTestCasesCredentials {
+        username_and_password: &mut credentials::username_and_password(
+            &shell,
+            "Username: ",
+            "Password: ",
+        ),
+    };
+
+    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+
+    Codeforces::exec(RetrieveTestCases {
+        targets,
+        credentials,
+        full: None,
+        cookie_storage,
+        timeout: crate::web::TIMEOUT,
+        shell: &shell,
+    })
+}
+
+fn dl_from_yukicoder(
+    contest: Option<&str>,
+    problems: Option<BTreeSet<String>>,
+    full: bool,
+    shell: &mut Shell,
+) -> anyhow::Result<RetrieveTestCasesOutcome> {
+    let targets = if let Some(contest) = contest {
+        YukicoderRetrieveTestCasesTargets::Contest(contest.to_owned(), problems)
+    } else {
+        YukicoderRetrieveTestCasesTargets::ProblemNos(problems.unwrap_or_default())
+    };
+
+    let full = if full {
+        Some(RetrieveFullTestCases {
+            credentials: YukicoderRetrieveFullTestCasesCredentials {
+                api_key: credentials::yukicoder_api_key(shell)?,
+            },
+        })
+    } else {
+        None
+    };
+
+    let shell = RefCell::new(shell.borrow_mut());
+
+    Yukicoder::exec(RetrieveTestCases {
+        targets,
+        credentials: (),
+        full,
+        cookie_storage: (),
+        timeout: crate::web::TIMEOUT,
         shell: &shell,
     })
 }
