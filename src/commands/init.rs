@@ -220,6 +220,7 @@ fn write_workspace_metadata_toml(
     let content = format!(
         r#"[cargo-compete]
 workspace-members = "include-all" # "include-all", "exclude-all", "focus-one"
+test-suite = "./testcases/{{contest}}/{{problem | kebab-case}}.yml"
 
 [cargo-compete.template]
 code = "./cargo-compete-template/src/main.rs"

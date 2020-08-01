@@ -1,5 +1,4 @@
 mod commands;
-mod config;
 mod fs;
 mod process;
 mod project;

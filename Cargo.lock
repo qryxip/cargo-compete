@@ -147,6 +147,7 @@ dependencies = [
  "atty",
  "cargo-member",
  "cargo_metadata",
+ "combine 4.2.1",
  "dirs 3.0.1",
  "easy-ext",
  "fwdansi",
@@ -260,6 +261,16 @@ dependencies = [
  "either",
  "memchr",
  "unreachable",
+]
+
+[[package]]
+name = "combine"
+version = "4.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8e5ef862b2df927249f4e2bdc29c1bd13a33105f900884b0c32acdf32aff584"
+dependencies = [
+ "bytes",
+ "memchr",
 ]
 
 [[package]]
@@ -2352,7 +2363,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09391a441b373597cf0888d2b052dcf82c5be4fee05da3636ae30fb57aad8484"
 dependencies = [
  "chrono",
- "combine",
+ "combine 3.8.1",
  "linked-hash-map",
 ]
 

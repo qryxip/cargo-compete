@@ -4,9 +4,9 @@ use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve};
 use easy_ext::ext;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
-use serde::Deserialize;
+use serde::{de::Error as _, Deserialize, Deserializer};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     env,
     path::{Path, PathBuf},
     str,
@@ -23,8 +23,92 @@ struct WorkspaceMetadata {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct WorkspaceMetadataCargoCompete {
     pub(crate) workspace_members: WorkspaceMembers,
+    pub(crate) test_suite: TemplateString,
     pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
     pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
+}
+
+#[derive(Debug)]
+pub(crate) struct TemplateString(Vec<TemplateWord>);
+
+impl TemplateString {
+    pub(crate) fn eval(&self, vars: &BTreeMap<&'static str, &str>) -> anyhow::Result<String> {
+        let mut acc = "".to_owned();
+        for token in &self.0 {
+            match token {
+                TemplateWord::Plain(s) => acc += s,
+                TemplateWord::Var(name) => {
+                    acc += vars.get(&**name).with_context(|| {
+                        format!(
+                            "unrecognized variable {:?} (expected {:?})",
+                            name,
+                            vars.keys().collect::<Vec<_>>(),
+                        )
+                    })?;
+                }
+                TemplateWord::App(f, name) => {
+                    let arg = vars.get(&**name).with_context(|| {
+                        format!(
+                            "unrecognized variable {:?} (expected one of {:?})",
+                            name,
+                            vars.keys().collect::<Vec<_>>(),
+                        )
+                    })?;
+                    acc += &*match &**f {
+                        "kebab-case" => arg.to_kebab_case(),
+                        _ => bail!(r#"expected one of ["kebab-case"]"#),
+                    };
+                }
+            }
+        }
+        Ok(acc)
+    }
+}
+
+impl<'de> Deserialize<'de> for TemplateString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use combine::parser::char::{alpha_num, char, spaces};
+        use combine::parser::choice::or;
+        use combine::stream::position;
+        use combine::{choice, eof, many, many1, optional, satisfy, EasyParser as _, Parser};
+
+        let input = String::deserialize(deserializer)?;
+
+        let (words, _) = many(or(
+            many1(satisfy(|c| !matches!(c, '{' | '}'))).map(TemplateWord::Plain),
+            char('{').with(or(
+                char('{').map(|_| TemplateWord::Plain("{{".to_owned())),
+                spaces()
+                    .with(many1(choice((alpha_num(), char('-'), char('_')))))
+                    .skip(spaces())
+                    .and(optional(char('|').skip(spaces()).with(many1(choice((
+                        alpha_num(),
+                        char('-'),
+                        char('_'),
+                    ))))))
+                    .skip(char('}'))
+                    .map(|(x, f)| match f {
+                        Some(f) => TemplateWord::App(f, x),
+                        None => TemplateWord::Var(x),
+                    }),
+            )),
+        ))
+        .skip(eof())
+        .easy_parse(position::Stream::new(&*input))
+        .map_err(D::Error::custom)?;
+
+        Ok(Self(words))
+    }
+}
+
+#[derive(Debug)]
+pub(crate) enum TemplateWord {
+    Plain(String),
+    Var(String),
+    App(String, String),
 }
 
 #[derive(Deserialize, Clone, Copy, Debug)]

@@ -1,7 +1,8 @@
 use crate::{
     project::{
         MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteProblem,
-        PackageMetadataCargoCompeteProblemYukicoder, WorkspaceMetadataCargoCompetePlatform,
+        PackageMetadataCargoCompeteProblemYukicoder, TemplateString,
+        WorkspaceMetadataCargoCompetePlatform,
     },
     shell::{ColorChoice, Shell},
     web::credentials,
@@ -154,7 +155,12 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         }
 
         for outcome in outcomes {
-            save_test_cases(&metadata.workspace_root, outcome, shell)?;
+            save_test_cases(
+                &metadata.workspace_root,
+                &workspace_metadata.test_suite,
+                outcome,
+                shell,
+            )?;
         }
     } else {
         match workspace_metadata.platform {
@@ -180,7 +186,12 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 metadata.add_member(package_name, &problem_indexes, false, shell)?;
 
-                save_test_cases(&workspace_root, outcome, shell)?;
+                save_test_cases(
+                    &workspace_root,
+                    &workspace_metadata.test_suite,
+                    outcome,
+                    shell,
+                )?;
             }
             WorkspaceMetadataCargoCompetePlatform::Codeforces => {
                 let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
@@ -204,7 +215,12 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 metadata.add_member(package_name, &problem_indexes, false, shell)?;
 
-                save_test_cases(&workspace_root, outcome, shell)?;
+                save_test_cases(
+                    &workspace_root,
+                    &workspace_metadata.test_suite,
+                    outcome,
+                    shell,
+                )?;
             }
             WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
                 let contest = contest.as_deref();
@@ -230,7 +246,12 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 metadata.add_member(package_name, &problem_indexes, is_no, shell)?;
 
-                save_test_cases(&workspace_root, outcome, shell)?;
+                save_test_cases(
+                    &workspace_root,
+                    &workspace_metadata.test_suite,
+                    outcome,
+                    shell,
+                )?;
             }
         }
     }
@@ -348,6 +369,7 @@ fn dl_from_yukicoder(
 
 fn save_test_cases(
     workspace_root: &Path,
+    path: &TemplateString,
     outcome: RetrieveTestCasesOutcome,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
@@ -364,11 +386,9 @@ fn save_test_cases(
         ..
     } in outcome.problems
     {
-        let path = workspace_root
-            .join("testcases")
-            .join(contest)
-            .join(index.to_kebab_case())
-            .with_extension("yml");
+        let path = path.eval(&btreemap!("contest" => contest, "problem" => &index))?;
+        let path = Path::new(&path);
+        let path = workspace_root.join(path.strip_prefix(".").unwrap_or(&path));
 
         let txt_path = |dir_file_name: &str, txt_file_name: &str| -> _ {
             path.with_file_name(index.to_kebab_case())
