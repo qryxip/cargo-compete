@@ -1,8 +1,7 @@
 use crate::{
     project::{
-        MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteProblem,
-        PackageMetadataCargoCompeteProblemYukicoder, TemplateString,
-        WorkspaceMetadataCargoCompetePlatform,
+        MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem,
+        TargetProblemYukicoder, TemplateString, WorkspaceMetadataCargoCompetePlatform,
     },
     shell::{ColorChoice, Shell},
     web::credentials,
@@ -98,28 +97,24 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         let mut yukicoder_problem_targets = btreeset!();
         let mut yukicoder_contest_targets = btreemap!();
 
-        for (_, target) in member.read_package_metadata()?.problems {
-            match target {
-                PackageMetadataCargoCompeteProblem::Atcoder { contest, index } => atcoder_targets
+        for (_, PackageMetadataCargoCompeteBin { problem, .. }) in
+            member.read_package_metadata()?.bin
+        {
+            match problem {
+                TargetProblem::Atcoder { contest, index } => atcoder_targets
                     .entry(contest)
                     .or_insert_with(BTreeSet::new)
                     .insert(index),
-                PackageMetadataCargoCompeteProblem::Codeforces { contest, index } => {
-                    codeforces_targets
+                TargetProblem::Codeforces { contest, index } => codeforces_targets
+                    .entry(contest)
+                    .or_insert_with(BTreeSet::new)
+                    .insert(index),
+                TargetProblem::Yukicoder(target) => match target {
+                    TargetProblemYukicoder::Problem { no } => yukicoder_problem_targets.insert(no),
+                    TargetProblemYukicoder::Contest { contest, index } => yukicoder_contest_targets
                         .entry(contest)
                         .or_insert_with(BTreeSet::new)
-                        .insert(index)
-                }
-                PackageMetadataCargoCompeteProblem::Yukicoder(target) => match target {
-                    PackageMetadataCargoCompeteProblemYukicoder::Problem { no } => {
-                        yukicoder_problem_targets.insert(no)
-                    }
-                    PackageMetadataCargoCompeteProblemYukicoder::Contest { contest, index } => {
-                        yukicoder_contest_targets
-                            .entry(contest)
-                            .or_insert_with(BTreeSet::new)
-                            .insert(index)
-                    }
+                        .insert(index),
                 },
             };
         }

@@ -29,9 +29,15 @@ impl Shell {
             needs_clear: false,
         }
     }
-}
 
-impl Shell {
+    pub(crate) fn progress_draw_target(&self) -> ProgressDrawTarget {
+        if self.output.stderr_tty() {
+            ProgressDrawTarget::stderr()
+        } else {
+            ProgressDrawTarget::hidden()
+        }
+    }
+
     pub fn err(&mut self) -> &mut dyn WriteColor {
         self.output.stderr()
     }
@@ -125,13 +131,15 @@ impl Shell {
     }
 }
 
+impl Default for Shell {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl snowchains_core::web::Shell for Shell {
     fn progress_draw_target(&self) -> ProgressDrawTarget {
-        if self.output.stderr_tty() {
-            ProgressDrawTarget::stderr()
-        } else {
-            ProgressDrawTarget::hidden()
-        }
+        self.progress_draw_target()
     }
 
     fn print_ansi(&mut self, message: &[u8]) -> io::Result<()> {

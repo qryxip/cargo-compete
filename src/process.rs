@@ -47,12 +47,13 @@ impl fmt::Display for ProcessBuilder {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmt,
-            "`{}{}`",
+            "`{}{}` in {}",
             shell_escape::escape(self.program.to_string_lossy()),
             self.args.iter().format_with("", |arg, f| f(&format_args!(
                 " {}",
                 shell_escape::escape(arg.to_string_lossy()),
             ))),
+            self.cwd.display(),
         )
     }
 }

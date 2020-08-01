@@ -1,9 +1,10 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
-use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve};
+use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve, Target};
 use easy_ext::ext;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
+use itertools::Itertools as _;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -140,29 +141,36 @@ pub(crate) enum WorkspaceMetadataCargoCompetePlatform {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct WorkspaceMetadataCargoCompetePlatformViaBinary {
-    target: String,
-    use_cross: bool,
-    strip_exe: Option<PathBuf>,
-    upx_exe: Option<PathBuf>,
+    pub(crate) target: String,
+    pub(crate) use_cross: bool,
+    pub(crate) strip_exe: Option<PathBuf>,
+    pub(crate) upx_exe: Option<PathBuf>,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompete {
-    pub(crate) problems: IndexMap<String, PackageMetadataCargoCompeteProblem>,
+    pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct PackageMetadataCargoCompeteBin {
+    pub(crate) name: String,
+    pub(crate) problem: TargetProblem,
 }
 
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "platform")]
-pub(crate) enum PackageMetadataCargoCompeteProblem {
+pub(crate) enum TargetProblem {
     Atcoder { contest: String, index: String },
     Codeforces { contest: String, index: String },
-    Yukicoder(PackageMetadataCargoCompeteProblemYukicoder),
+    Yukicoder(TargetProblemYukicoder),
 }
 
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
-pub(crate) enum PackageMetadataCargoCompeteProblemYukicoder {
+pub(crate) enum TargetProblemYukicoder {
     Problem { no: u64 },
     Contest { contest: String, index: String },
 }
@@ -231,48 +239,80 @@ impl Metadata {
         let (workspace_metadata, workspace_metadata_edit) =
             self.read_workspace_metadata_preserving()?;
 
-        let mut manifest = r#"[package]
+        let mut manifest = format!(
+            r#"[package]
 name = ""
 version = "0.1.0"
 edition = "2018"
 publish = false
 
-[package.metadata.cargo-compete.problems]
-"#
-        .parse::<toml_edit::Document>()
-        .unwrap();
+[package.metadata.cargo-compete.bin]
+{}"#,
+            problem_indexes
+                .iter()
+                .map(|problem_index| format!(
+                    r#"{} = {{ name = "", problem = {{ {} }} }}
+"#,
+                    escape_key(&problem_index.to_kebab_case()),
+                    match (&workspace_metadata.platform, problems_are_yukicoder_no) {
+                        (WorkspaceMetadataCargoCompetePlatform::Atcoder { .. }, _)
+                        | (WorkspaceMetadataCargoCompetePlatform::Codeforces, _) => {
+                            r#"platform = "", contest = "", index = """#
+                        }
+                        (WorkspaceMetadataCargoCompetePlatform::Yukicoder, true) => {
+                            r#"platform = "", kind = "no", no = """#
+                        }
+                        (WorkspaceMetadataCargoCompetePlatform::Yukicoder, false) => {
+                            r#"platform = "", kind = "contest", contest = "", index = """#
+                        }
+                    }
+                ))
+                .join("")
+        )
+        .parse::<toml_edit::Document>()?;
 
         manifest["package"]["name"] = toml_edit::value(package_name);
 
-        manifest["package"]["metadata"]["cargo-compete"]["problems"] = toml_edit::Item::Table({
-            let mut tbl = toml_edit::Table::new();
-            for problem_index in problem_indexes {
-                let bin_name = format!("{}-{}", package_name, problem_index.to_kebab_case());
+        let tbl = &mut manifest["package"]["metadata"]["cargo-compete"]["bin"];
+        for problem_index in problem_indexes {
+            tbl[problem_index.to_kebab_case()]["name"] = toml_edit::value(format!(
+                "{}-{}",
+                package_name,
+                problem_index.to_kebab_case(),
+            ));
 
-                match workspace_metadata.platform {
-                    WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
-                        tbl[&*bin_name]["platform"] = toml_edit::value("atcoder");
-                        tbl[&*bin_name]["contest"] = toml_edit::value(package_name);
-                        tbl[&*bin_name]["index"] = toml_edit::value(&**problem_index);
-                    }
-                    WorkspaceMetadataCargoCompetePlatform::Codeforces => {
-                        tbl[&*bin_name]["platform"] = toml_edit::value("codeforces");
-                        tbl[&*bin_name]["contest"] = toml_edit::value(package_name);
-                        tbl[&*bin_name]["index"] = toml_edit::value(&**problem_index);
-                    }
-                    WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
-                        tbl[&*bin_name]["platform"] = toml_edit::value("yukicoder");
-                        if problems_are_yukicoder_no {
-                            tbl[&*bin_name]["no"] = toml_edit::value(&**problem_index);
-                        } else {
-                            tbl[&*bin_name]["contest"] = toml_edit::value(package_name);
-                            tbl[&*bin_name]["index"] = toml_edit::value(&**problem_index);
-                        }
+            let tbl = &mut tbl[problem_index.to_kebab_case()]["problem"];
+
+            match workspace_metadata.platform {
+                WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
+                    tbl["platform"] = toml_edit::value("atcoder");
+                    tbl["contest"] = toml_edit::value(package_name);
+                    tbl["index"] = toml_edit::value(&**problem_index);
+                }
+                WorkspaceMetadataCargoCompetePlatform::Codeforces => {
+                    tbl["platform"] = toml_edit::value("codeforces");
+                    tbl["contest"] = toml_edit::value(package_name);
+                    tbl["index"] = toml_edit::value(&**problem_index);
+                }
+                WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
+                    tbl["platform"] = toml_edit::value("yukicoder");
+                    if problems_are_yukicoder_no {
+                        tbl["no"] = toml_edit::value(&**problem_index);
+                    } else {
+                        tbl["contest"] = toml_edit::value(package_name);
+                        tbl["index"] = toml_edit::value(&**problem_index);
                     }
                 }
             }
-            tbl
-        });
+        }
+
+        if let Ok(new_manifest) = manifest
+            .to_string()
+            .replace("\"} }", "\" } }")
+            .parse::<toml_edit::Document>()
+        {
+            manifest = new_manifest;
+        }
 
         manifest["bin"] = toml_edit::Item::ArrayOfTables({
             let mut arr = toml_edit::ArrayOfTables::new();
@@ -333,7 +373,7 @@ publish = false
             .map(|e| e.path())
             .filter(|p| p.join("Cargo.toml").exists());
 
-        match workspace_metadata.workspace_members {
+        return match workspace_metadata.workspace_members {
             WorkspaceMembers::IncludeAll => {
                 cargo_member::Include::new(&self.workspace_root, all_pkg_manifest_dirs)
                     .stderr(shell.err())
@@ -349,6 +389,22 @@ publish = false
                     .stderr(shell.err())
                     .exec()
             }
+        };
+
+        fn escape_key(s: &str) -> String {
+            if s.chars().any(|c| c.is_whitespace() || c.is_control()) {
+                return toml::Value::String(s.to_owned()).to_string();
+            }
+
+            let mut doc = toml_edit::Document::new();
+            doc[s] = toml_edit::value(0);
+            doc.to_string()
+                .trim_end()
+                .trim_end_matches('0')
+                .trim_end()
+                .trim_end_matches('=')
+                .trim_end()
+                .to_owned()
         }
     }
 }
@@ -392,6 +448,13 @@ impl Package {
         struct CargoTomlPackageMetadata {
             cargo_compete: PackageMetadataCargoCompete,
         }
+    }
+
+    pub(crate) fn bin_target<'a>(&'a self, name: &str) -> anyhow::Result<&'a Target> {
+        self.targets
+            .iter()
+            .find(|t| t.name == name && t.kind == ["bin".to_owned()])
+            .with_context(|| format!("no bin target named `{}` in `{}`", name, self.name))
     }
 }
 

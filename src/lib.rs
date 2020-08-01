@@ -3,10 +3,13 @@ mod fs;
 mod process;
 mod project;
 pub mod shell;
+mod testing;
 mod web;
 
 use crate::{
-    commands::{init::OptCompeteInit, retrieve_testcases::OptCompeteRetrieveTestcases},
+    commands::{
+        init::OptCompeteInit, retrieve_testcases::OptCompeteRetrieveTestcases, test::OptCompeteTest,
+    },
     shell::Shell,
 };
 use semver::Version;
@@ -52,6 +55,10 @@ pub enum OptCompete {
     /// Alias for `retrieve testcases`
     #[structopt(author, visible_alias("d"))]
     Download(OptCompeteRetrieveTestcases),
+
+    /// Tests your code
+    #[structopt(author, visible_alias("t"))]
+    Test(OptCompeteTest),
 }
 
 #[derive(StructOpt, Debug)]
@@ -72,5 +79,6 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
         }
+        OptCompete::Test(opt) => commands::test::run(opt, ctx),
     }
 }

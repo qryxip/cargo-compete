@@ -28,6 +28,12 @@ pub(crate) fn read_toml<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow:
     })
 }
 
+pub(crate) fn read_yaml<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow::Result<T> {
+    let path = path.as_ref();
+    serde_yaml::from_str(&read_to_string(path)?)
+        .with_context(|| format!("could not parse the YAML file at `{}`", path.display()))
+}
+
 pub(crate) fn read_toml_preserving<T: DeserializeOwned, P: AsRef<Path>>(
     path: P,
 ) -> anyhow::Result<(T, toml_edit::Document)> {
@@ -55,11 +61,6 @@ pub(crate) fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> anyhow
 
 pub(crate) fn write_json(path: impl AsRef<Path>, content: impl Serialize) -> anyhow::Result<()> {
     write(path, serde_json::to_string(&content)?)
-}
-
-pub(crate) fn remove_file(path: impl AsRef<Path>) -> anyhow::Result<()> {
-    let path = path.as_ref();
-    std::fs::remove_file(path).with_context(|| format!("could not remove `{}`", path.display()))
 }
 
 pub(crate) fn create_dir_all(path: impl AsRef<Path>) -> anyhow::Result<()> {
