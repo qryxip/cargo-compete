@@ -76,6 +76,10 @@ AtCoderを選択に入れる場合、
 
     ![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
 
+`--open`で問題のページを開きます。また`workspace-metadata.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをVSCodeまたはEmacsで開くことができます。
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/89118593-b05f7f00-d4e1-11ea-9644-32c3560bda29.png)
+
 ### `cargo compete test`
 
 テストを行ないます。 ただし`submit`時にも提出するコードをテストします。
@@ -103,6 +107,7 @@ AtCoderを選択に入れる場合、
 [cargo-compete]
 new-workspace-member = "include" # "include", "focus"
 test-suite = "./testcases/{contest}/{problem | kebab-case}.yml"
+#open = "vscode" # "vscode", "emacsclient"
 
 [cargo-compete.template]
 code = "./cargo-compete-template/src/main.rs"

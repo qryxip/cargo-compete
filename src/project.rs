@@ -25,8 +25,16 @@ struct WorkspaceMetadata {
 pub(crate) struct WorkspaceMetadataCargoCompete {
     pub(crate) new_workspace_member: NewWorkspaceMember,
     pub(crate) test_suite: TemplateString,
+    pub(crate) open: Option<Open>,
     pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
     pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
+}
+
+#[derive(Deserialize, Clone, Copy, PartialEq, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum Open {
+    Vscode,
+    Emacsclient,
 }
 
 #[derive(Debug)]

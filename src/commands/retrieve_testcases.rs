@@ -1,6 +1,6 @@
 use crate::{
     project::{
-        MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem,
+        MetadataExt as _, Open, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem,
         TargetProblemYukicoder, TemplateString, WorkspaceMetadataCargoCompetePlatform,
     },
     shell::{ColorChoice, Shell},
@@ -29,12 +29,17 @@ use std::{
 };
 use structopt::StructOpt;
 use strum::VariantNames as _;
+use url::Url;
 
 #[derive(StructOpt, Debug)]
 pub struct OptCompeteRetrieveTestcases {
     /// Retrieves system test cases
     #[structopt(long)]
     pub full: bool,
+
+    /// Open URL and files
+    #[structopt(long)]
+    pub open: bool,
 
     /// Problem Indexes
     #[structopt(long, value_name("STRING"))]
@@ -64,6 +69,7 @@ pub struct OptCompeteRetrieveTestcases {
 pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteRetrieveTestcases {
         full,
+        open,
         package,
         manifest_path,
         color,
@@ -149,13 +155,34 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
             )?);
         }
 
+        let src_paths = member
+            .targets
+            .iter()
+            .filter(|t| t.kind == ["bin".to_owned()])
+            .map(|t| t.src_path.clone())
+            .collect::<Vec<_>>();
+
         for outcome in outcomes {
-            save_test_cases(
+            let urls = urls(&outcome);
+
+            let test_suite_paths = save_test_cases(
                 &metadata.workspace_root,
                 &workspace_metadata.test_suite,
                 outcome,
                 shell,
             )?;
+
+            if open {
+                open_urls_and_files(
+                    &urls,
+                    workspace_metadata.open,
+                    &src_paths,
+                    &test_suite_paths,
+                    member.manifest_path.parent().unwrap(),
+                    &cwd,
+                    shell,
+                )?;
+            }
         }
     } else {
         match workspace_metadata.platform {
@@ -178,15 +205,30 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
+                let pkg_manifest_dir = metadata.workspace_root.join(package_name);
+                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
+                let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problem_indexes, false, shell)?;
 
-                save_test_cases(
+                let test_suite_paths = save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
                     outcome,
                     shell,
                 )?;
+
+                if open {
+                    open_urls_and_files(
+                        &urls,
+                        workspace_metadata.open,
+                        &src_paths,
+                        &test_suite_paths,
+                        &pkg_manifest_dir,
+                        &cwd,
+                        shell,
+                    )?;
+                }
             }
             WorkspaceMetadataCargoCompetePlatform::Codeforces => {
                 let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
@@ -207,15 +249,30 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
+                let pkg_manifest_dir = metadata.workspace_root.join(package_name);
+                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
+                let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problem_indexes, false, shell)?;
 
-                save_test_cases(
+                let test_suite_paths = save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
                     outcome,
                     shell,
                 )?;
+
+                if open {
+                    open_urls_and_files(
+                        &urls,
+                        workspace_metadata.open,
+                        &src_paths,
+                        &test_suite_paths,
+                        &pkg_manifest_dir,
+                        &cwd,
+                        shell,
+                    )?;
+                }
             }
             WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
                 let contest = contest.as_deref();
@@ -238,15 +295,30 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
+                let pkg_manifest_dir = metadata.workspace_root.join(package_name);
+                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
+                let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problem_indexes, is_no, shell)?;
 
-                save_test_cases(
+                let test_suite_paths = save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
                     outcome,
                     shell,
                 )?;
+
+                if open {
+                    open_urls_and_files(
+                        &urls,
+                        workspace_metadata.open,
+                        &src_paths,
+                        &test_suite_paths,
+                        &pkg_manifest_dir,
+                        &cwd,
+                        shell,
+                    )?;
+                }
             }
         }
     }
@@ -362,12 +434,70 @@ fn dl_from_yukicoder(
     })
 }
 
+fn src_paths(pkg_manifest_dir: &Path, outcome: &RetrieveTestCasesOutcome) -> Vec<PathBuf> {
+    outcome
+        .problems
+        .iter()
+        .map(|problem| {
+            pkg_manifest_dir
+                .join("src")
+                .join("bin")
+                .join(problem.index.to_kebab_case())
+                .with_extension("rs")
+        })
+        .collect()
+}
+
+fn urls(outcome: &RetrieveTestCasesOutcome) -> Vec<Url> {
+    outcome.problems.iter().map(|p| p.url.clone()).collect()
+}
+
+fn open_urls_and_files(
+    urls: &[Url],
+    open: Option<Open>,
+    src_paths: &[PathBuf],
+    test_suite_paths: &[PathBuf],
+    pkg_manifest_dir: &Path,
+    cwd: &Path,
+    shell: &mut Shell,
+) -> anyhow::Result<()> {
+    for url in urls {
+        shell.status("Opening", url)?;
+        opener::open(url.as_str())?;
+    }
+
+    if let Some(open) = open {
+        let mut cmd = match open {
+            Open::Vscode => crate::process::with_which("code", cwd)?,
+            Open::Emacsclient => {
+                let mut cmd = crate::process::with_which("emacsclient", cwd)?;
+                cmd.arg("-n");
+                cmd
+            }
+        };
+
+        for path in itertools::interleave(src_paths, test_suite_paths) {
+            cmd.arg(path);
+        }
+
+        if open == Open::Vscode {
+            cmd.arg("-a");
+            cmd.arg(pkg_manifest_dir);
+        }
+
+        cmd.exec_with_shell_status(shell)?;
+    }
+    Ok(())
+}
+
 fn save_test_cases(
     workspace_root: &Path,
     path: &TemplateString,
     outcome: RetrieveTestCasesOutcome,
     shell: &mut Shell,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Vec<PathBuf>> {
+    let mut acc = vec![];
+
     let contest = outcome
         .contest
         .as_ref()
@@ -384,6 +514,8 @@ fn save_test_cases(
         let path = path.eval(&btreemap!("contest" => contest, "problem" => &index))?;
         let path = Path::new(&path);
         let path = workspace_root.join(path.strip_prefix(".").unwrap_or(&path));
+
+        acc.push(path.clone());
 
         let txt_path = |dir_file_name: &str, txt_file_name: &str| -> _ {
             path.with_file_name(index.to_kebab_case())
@@ -451,5 +583,5 @@ fn save_test_cases(
         )?;
     }
 
-    Ok(())
+    Ok(acc)
 }

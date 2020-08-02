@@ -221,6 +221,7 @@ fn write_workspace_metadata_toml(
         r#"[cargo-compete]
 new-workspace-member = "include" # "include", "focus"
 test-suite = "./testcases/{{contest}}/{{problem | kebab-case}}.yml"
+#open = "vscode" # "vscode", "emacsclient"
 
 [cargo-compete.template]
 code = "./cargo-compete-template/src/main.rs"
