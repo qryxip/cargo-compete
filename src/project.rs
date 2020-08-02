@@ -23,7 +23,7 @@ struct WorkspaceMetadata {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct WorkspaceMetadataCargoCompete {
-    pub(crate) workspace_members: WorkspaceMembers,
+    pub(crate) new_workspace_member: NewWorkspaceMember,
     pub(crate) test_suite: TemplateString,
     pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
     pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
@@ -114,10 +114,9 @@ pub(crate) enum TemplateWord {
 
 #[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) enum WorkspaceMembers {
-    IncludeAll,
-    ExcludeAll,
-    FocusOne,
+pub(crate) enum NewWorkspaceMember {
+    Include,
+    Focus,
 }
 
 #[derive(Deserialize, Debug)]
@@ -371,25 +370,13 @@ publish = false
             ),
         )?;
 
-        let all_pkg_manifest_dirs = std::fs::read_dir(&self.workspace_root)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .map(|e| e.path())
-            .filter(|p| p.join("Cargo.toml").exists());
-
-        return match workspace_metadata.workspace_members {
-            WorkspaceMembers::IncludeAll => {
-                cargo_member::Include::new(&self.workspace_root, all_pkg_manifest_dirs)
+        return match workspace_metadata.new_workspace_member {
+            NewWorkspaceMember::Include => {
+                cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
                     .exec()
             }
-            WorkspaceMembers::ExcludeAll => {
-                cargo_member::Exclude::new(&self.workspace_root, all_pkg_manifest_dirs)
-                    .stderr(shell.err())
-                    .exec()
-            }
-            WorkspaceMembers::FocusOne => {
+            NewWorkspaceMember::Focus => {
                 cargo_member::Focus::new(&self.workspace_root, &pkg_manifest_dir)
                     .stderr(shell.err())
                     .exec()

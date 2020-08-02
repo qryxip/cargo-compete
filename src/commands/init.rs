@@ -219,7 +219,7 @@ fn write_workspace_metadata_toml(
 ) -> anyhow::Result<()> {
     let content = format!(
         r#"[cargo-compete]
-workspace-members = "include-all" # "include-all", "exclude-all", "focus-one"
+new-workspace-member = "include" # "include", "focus"
 test-suite = "./testcases/{{contest}}/{{problem | kebab-case}}.yml"
 
 [cargo-compete.template]
