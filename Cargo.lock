@@ -147,7 +147,7 @@ checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
 
 [[package]]
 name = "cargo-compete"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "atty",
@@ -1952,8 +1952,9 @@ checksum = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 
 [[package]]
 name = "snowchains_core"
-version = "0.0.0"
-source = "git+https://github.com/qryxip/snowchains?rev=b878e8aebfdb1142ff48f0b1399ce7623bab8fb3#b878e8aebfdb1142ff48f0b1399ce7623bab8fb3"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "084ee4530bf3bfc7e8437969b59873d61af000e5bae66979c92320578386c1a9"
 dependencies = [
  "anyhow",
  "chrono",
