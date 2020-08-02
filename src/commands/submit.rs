@@ -77,6 +77,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         color,
         problem,
     } = opt;
+
     let crate::Context { cwd, shell } = ctx;
 
     shell.set_color_choice(color);

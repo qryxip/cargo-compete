@@ -10,7 +10,7 @@ use crate::{
     commands::{
         init::OptCompeteInit, login::OptCompeteLogin, participate::OptCompeteParticipate,
         retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
-        test::OptCompeteTest,
+        test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
     },
     shell::Shell,
 };
@@ -66,6 +66,10 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("d"))]
     Download(OptCompeteRetrieveTestcases),
 
+    /// Watch items
+    #[structopt(author, visible_alias("w"))]
+    Watch(OptCompeteWatch),
+
     /// Test your code
     #[structopt(author, visible_alias("t"))]
     Test(OptCompeteTest),
@@ -82,6 +86,13 @@ pub enum OptCompeteRetrieve {
     Testcases(OptCompeteRetrieveTestcases),
 }
 
+#[derive(StructOpt, Debug)]
+pub enum OptCompeteWatch {
+    /// Watch submissions
+    #[structopt(author, visible_alias("s"))]
+    Submissions(OptCompeteWatchSubmissions),
+}
+
 pub struct Context<'s> {
     pub cwd: PathBuf,
     pub shell: &'s mut Shell,
@@ -94,6 +105,9 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
+        }
+        OptCompete::Watch(OptCompeteWatch::Submissions(opt)) => {
+            commands::watch_submissions::run(opt, ctx)
         }
         OptCompete::Test(opt) => commands::test::run(opt, ctx),
         OptCompete::Submit(opt) => commands::submit::run(opt, ctx),
