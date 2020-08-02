@@ -34,6 +34,8 @@ $ cargo install cargo-compete
 $ cargo install --git https://github.com/qryxip/cargo-compete
 ```
 
+[GitHub Releases](https://github.com/qryxip/cargo-compete/releases)でバイナリを提供しています。
+
 ## 使い方
 
 ### `cargo compete init`
