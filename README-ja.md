@@ -80,7 +80,7 @@ AtCoderを選択に入れる場合、
 
 テストを行ないます。 ただし`submit`時にも提出するコードをテストします。
 
-**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。**
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。`workspace-metadata.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。**
 
 ### `cargo compete submit`
 
@@ -88,7 +88,7 @@ AtCoderを選択に入れる場合、
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89117413-8786bc00-d4d8-11ea-92b3-ce71151c3d45.gif)
 
-**`test`と同様にパッケージを対象に取ります。**
+**`test`と同様にパッケージを対象に取ります。パッケージ内に`cd`して実行してください。対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。**
 
 ## 設定
 
