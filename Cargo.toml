@@ -11,6 +11,7 @@ publish = false
 anyhow = "1.0.32"
 atty = "0.2.14"
 az = "1.0.0"
+base64 = "0.12.3"
 cargo-member = "0.1.2"
 cargo_metadata = "0.11.1"
 combine = "4.2.1"
@@ -23,6 +24,7 @@ indexmap = { version = "1.5.0", features = ["serde-1"] }
 indicatif = "0.15.0"
 itertools = "0.9.0"
 maplit = "1.0.2"
+prettytable-rs = "0.8.0"
 reqwest = { version = "0.10.7", default-features = false, features = ["blocking"] }
 rpassword = "4.0.5"
 rprompt = "1.0.5"
@@ -41,8 +43,6 @@ toml = "0.5.6"
 toml_edit = "0.2.0"
 url = "2.1.1"
 which = "4.0.1"
-base64 = "0.12.3"
-prettytable-rs = "0.8.0"
 
 [target.'cfg(windows)'.dependencies]
 term_size = "1.0.0-beta.2"
