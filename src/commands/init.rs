@@ -232,9 +232,9 @@ kind = "{platform_kind}"
 
 {comment}[cargo-compete.platform.via-binary]
 {comment}target = "x86_64-unknown-linux-musl"
-{comment}use-cross = false
-{comment}#strip-exe = "strip"
-{comment}#upx-exe = "upx"
+{comment}#cross = "cross"
+{comment}strip = "strip"
+{comment}#upx = "upx"
 "#,
         template_dependencies = dependencies.unwrap_or("\n"),
         platform_kind = platform.to_kebab_case_str(),

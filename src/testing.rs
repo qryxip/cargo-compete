@@ -82,17 +82,14 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let (build_program, target_arg, build_artifact) =
         if let WorkspaceMetadataCargoCompetePlatform::Atcoder {
-            via_binary:
-                Some(WorkspaceMetadataCargoCompetePlatformViaBinary {
-                    target, use_cross, ..
-                }),
+            via_binary: Some(WorkspaceMetadataCargoCompetePlatformViaBinary { target, cross, .. }),
         } = &workspace_metadata.platform
         {
             (
-                if *use_cross {
-                    "cross".into()
+                if let Some(cross) = cross {
+                    cross
                 } else {
-                    cargo_exe
+                    &cargo_exe
                 },
                 vec!["--target", target],
                 metadata
@@ -104,7 +101,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
             )
         } else {
             (
-                cargo_exe,
+                &cargo_exe,
                 vec![],
                 metadata
                     .target_directory

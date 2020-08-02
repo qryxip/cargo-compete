@@ -141,14 +141,9 @@ pub(crate) enum WorkspaceMetadataCargoCompetePlatform {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct WorkspaceMetadataCargoCompetePlatformViaBinary {
     pub(crate) target: String,
-    pub(crate) use_cross: bool,
-    #[serde(default = "default_strip_exe")]
-    pub(crate) strip_exe: PathBuf,
-    pub(crate) upx_exe: Option<PathBuf>,
-}
-
-fn default_strip_exe() -> PathBuf {
-    "strip".into()
+    pub(crate) cross: Option<PathBuf>,
+    pub(crate) strip: Option<PathBuf>,
+    pub(crate) upx: Option<PathBuf>,
 }
 
 #[derive(Deserialize, Debug)]

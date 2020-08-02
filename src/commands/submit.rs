@@ -120,16 +120,16 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         via_binary:
             Some(WorkspaceMetadataCargoCompetePlatformViaBinary {
                 target,
-                use_cross,
-                strip_exe,
-                upx_exe,
+                cross,
+                strip,
+                upx,
             }),
     } = &workspace_metadata.platform
     {
         let original_source_code = crate::fs::read_to_string(&bin.src_path)?;
 
-        let program = if *use_cross {
-            "cross".into()
+        let program = if let Some(cross) = cross {
+            cross.clone()
         } else {
             crate::process::cargo_exe()?
         };
@@ -158,13 +158,15 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
         std::fs::copy(orig_artifact, &artifact)?;
 
-        crate::process::with_which(strip_exe, &cwd)?
-            .arg("-s")
-            .arg(&artifact)
-            .exec_with_shell_status(shell)?;
+        if let Some(strip) = strip {
+            crate::process::with_which(strip, &cwd)?
+                .arg("-s")
+                .arg(&artifact)
+                .exec_with_shell_status(shell)?;
+        }
 
-        if let Ok(upx_exe) = crate::process::which("upx", &cwd) {
-            crate::process::with_which(upx_exe, &cwd)?
+        if let Some(upx) = upx {
+            crate::process::with_which(upx, &cwd)?
                 .arg("--best")
                 .arg(&artifact)
                 .exec_with_shell_status(shell)?;
@@ -298,7 +300,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     table.add_row(row!["Language ID", language_id]);
     table.add_row(row!["Size", source_code_len]);
-    table.add_row(row!["URL (submissions)", outcome.submission_url]);
+    table.add_row(row!["URL (submissions)", outcome.submissions_url]);
     table.add_row(row!["URL (detail)", outcome.submission_url]);
 
     write!(shell.err(), "{}", table)?;
