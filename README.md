@@ -9,6 +9,8 @@
 
 A Cargo subcommand for competitive programming.
 
+Supports AtCoder, Codeforces, and yukicoder.
+
 ## License
 
 Dual-licensed under [MIT](https://opensource.org/licenses/MIT) or [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0).
