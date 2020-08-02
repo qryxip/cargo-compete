@@ -8,8 +8,9 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, retrieve_testcases::OptCompeteRetrieveTestcases,
-        submit::OptCompeteSubmit, test::OptCompeteTest,
+        init::OptCompeteInit, login::OptCompeteLogin,
+        retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
+        test::OptCompeteTest,
     },
     shell::Shell,
 };
@@ -49,6 +50,10 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("i"))]
     Init(OptCompeteInit),
 
+    /// Login to a platform
+    #[structopt(author, visible_alias("l"))]
+    Login(OptCompeteLogin),
+
     /// Retrieve data
     #[structopt(author, visible_alias("r"))]
     Retrieve(OptCompeteRetrieve),
@@ -81,6 +86,7 @@ pub struct Context<'s> {
 pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
     match opt {
         OptCompete::Init(opt) => commands::init::run(opt, ctx),
+        OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
         }
