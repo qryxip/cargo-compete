@@ -2,6 +2,11 @@ use anyhow::Context as _;
 use serde::{de::DeserializeOwned, Serialize};
 use std::path::Path;
 
+pub(crate) fn read(path: impl AsRef<Path>) -> anyhow::Result<Vec<u8>> {
+    let path = path.as_ref();
+    std::fs::read(path).with_context(|| format!("could not read `{}`", path.display()))
+}
+
 pub(crate) fn read_to_string(path: impl AsRef<Path>) -> anyhow::Result<String> {
     let path = path.as_ref();
     std::fs::read_to_string(path).with_context(|| format!("could not read `{}`", path.display()))

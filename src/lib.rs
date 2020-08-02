@@ -8,7 +8,8 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, retrieve_testcases::OptCompeteRetrieveTestcases, test::OptCompeteTest,
+        init::OptCompeteInit, retrieve_testcases::OptCompeteRetrieveTestcases,
+        submit::OptCompeteSubmit, test::OptCompeteTest,
     },
     shell::Shell,
 };
@@ -44,11 +45,11 @@ pub enum Opt {
 
 #[derive(StructOpt, Debug)]
 pub enum OptCompete {
-    /// Creates workspaces in a repository
+    /// Create workspaces in a repository
     #[structopt(author, visible_alias("i"))]
     Init(OptCompeteInit),
 
-    /// Retrieves data
+    /// Retrieve data
     #[structopt(author, visible_alias("r"))]
     Retrieve(OptCompeteRetrieve),
 
@@ -56,14 +57,18 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("d"))]
     Download(OptCompeteRetrieveTestcases),
 
-    /// Tests your code
+    /// Test your code
     #[structopt(author, visible_alias("t"))]
     Test(OptCompeteTest),
+
+    /// Submit your code
+    #[structopt(author, visible_alias("s"))]
+    Submit(OptCompeteSubmit),
 }
 
 #[derive(StructOpt, Debug)]
 pub enum OptCompeteRetrieve {
-    /// Retrieves test cases
+    /// Retrieve test cases
     #[structopt(author, visible_alias("t"))]
     Testcases(OptCompeteRetrieveTestcases),
 }
@@ -80,5 +85,6 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
             commands::retrieve_testcases::run(opt, ctx)
         }
         OptCompete::Test(opt) => commands::test::run(opt, ctx),
+        OptCompete::Submit(opt) => commands::submit::run(opt, ctx),
     }
 }

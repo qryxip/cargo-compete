@@ -6,13 +6,12 @@ use crate::{
     },
     shell::Shell,
 };
-use anyhow::Context as _;
 use az::SaturatingAs as _;
 use cargo_metadata::{Metadata, Package};
 use human_size::{Byte, Size};
 use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
-use std::{env, path::Path};
+use std::path::Path;
 
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a Metadata,
@@ -79,7 +78,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         }
     };
 
-    let cargo_exe = env::var_os("CARGO").with_context(|| "`$CARGO` should be present")?;
+    let cargo_exe = crate::process::cargo_exe()?;
 
     let (build_program, target_arg, build_artifact) =
         if let WorkspaceMetadataCargoCompetePlatform::Atcoder {
@@ -117,7 +116,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let cwd = member.manifest_path.parent().unwrap();
 
-    crate::process::process(build_program, cwd)
+    crate::process::with_which(build_program, cwd)?
         .args(&["build", "--bin"])
         .arg(&bin.name)
         .args(if release { &["--release"] } else { &[] })

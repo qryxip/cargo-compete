@@ -1,6 +1,6 @@
 use crate::shell::Shell;
 use anyhow::Context as _;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, path::PathBuf};
 
 pub(crate) fn cookies_path() -> anyhow::Result<PathBuf> {
@@ -46,6 +46,35 @@ pub(crate) fn yukicoder_api_key(shell: &mut Shell) -> anyhow::Result<String> {
         crate::fs::create_dir_all(path.parent().unwrap())?;
         crate::fs::write_json(path, &api_key)?;
         Ok(api_key)
+    }
+}
+
+pub(crate) fn codeforces_api_key_and_secret(shell: &mut Shell) -> anyhow::Result<(String, String)> {
+    let path = token_path("codeforces.json")?;
+
+    let CodeforcesJson {
+        api_key,
+        api_secret,
+    } = if path.exists() {
+        crate::fs::read_json(path)?
+    } else {
+        let api_key = shell.read_password("Codeforces API key: ")?;
+        let api_secret = shell.read_password("Codeforces API secret: ")?;
+        let content = CodeforcesJson {
+            api_key,
+            api_secret,
+        };
+        crate::fs::create_dir_all(path.parent().unwrap())?;
+        crate::fs::write_json(path, &content)?;
+        content
+    };
+
+    return Ok((api_key, api_secret));
+
+    #[derive(Deserialize, Serialize)]
+    struct CodeforcesJson {
+        api_key: String,
+        api_secret: String,
     }
 }
 

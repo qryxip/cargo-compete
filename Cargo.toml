@@ -34,12 +34,15 @@ shell-escape = "0.1.5"
 snowchains_core = { version = "0.0.0", git = "https://github.com/qryxip/snowchains", rev = "b878e8aebfdb1142ff48f0b1399ce7623bab8fb3" }
 structopt = "0.3.15"
 strum = { version = "0.18.0", features = ["derive"] }
+tempfile = "3.1.0"
 termcolor = "1.1.0"
 tokio = { version = "0.2.22", features = ["signal"] }
 toml = "0.5.6"
 toml_edit = "0.2.0"
 url = "2.1.1"
 which = "4.0.1"
+base64 = "0.12.3"
+prettytable-rs = "0.8.0"
 
 [target.'cfg(windows)'.dependencies]
 term_size = "1.0.0-beta.2"

@@ -152,6 +152,7 @@ dependencies = [
  "anyhow",
  "atty",
  "az",
+ "base64 0.12.3",
  "cargo-member",
  "cargo_metadata",
  "combine 4.2.1",
@@ -164,6 +165,7 @@ dependencies = [
  "indicatif",
  "itertools",
  "maplit",
+ "prettytable-rs",
  "reqwest",
  "rpassword",
  "rprompt",
@@ -175,6 +177,7 @@ dependencies = [
  "snowchains_core",
  "structopt",
  "strum",
+ "tempfile",
  "term_size",
  "termcolor",
  "tokio",
@@ -2153,6 +2156,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "tempfile"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "rand",
+ "redox_syscall",
+ "remove_dir_all",
+ "winapi 0.3.9",
 ]
 
 [[package]]
