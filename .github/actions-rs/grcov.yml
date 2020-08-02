@@ -1,0 +1,4 @@
+branch: true
+llvm: true
+output-type: lcov
+output-path: ./lcov.info
