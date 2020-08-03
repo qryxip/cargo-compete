@@ -66,6 +66,8 @@ AtCoderを選択に入れる場合、
 
 ### `cargo compete download`
 
+**インターフェイスがよろしくないのでv0.2.0で`new`, `open`, `download`の3つに分割する予定です。** ([#3](https://github.com/qryxip/cargo-compete/pull/3))
+
 テストケースの取得を行います。
 
 **workspace rootかworkspace memberのどちらかを対象に取ります。**
