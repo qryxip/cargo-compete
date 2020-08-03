@@ -1,6 +1,7 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
 use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve, Target};
+use derivative::Derivative;
 use easy_ext::ext;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
@@ -20,14 +21,58 @@ struct WorkspaceMetadata {
     cargo_compete: WorkspaceMetadataCargoCompete,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Derivative)]
+#[derivative(Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct WorkspaceMetadataCargoCompete {
     pub(crate) new_workspace_member: NewWorkspaceMember,
-    pub(crate) test_suite: TemplateString,
+    #[derivative(Debug = "ignore")]
+    #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
+    pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<Open>,
     pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
     pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
+}
+
+fn deserialize_liquid_template_with_custom_filter<'de, D>(
+    deserializer: D,
+) -> Result<liquid::Template, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    liquid_template_with_custom_filter(&String::deserialize(deserializer)?)
+        .map_err(D::Error::custom)
+}
+
+fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, String> {
+    use liquid::ParserBuilder;
+    use liquid_core::{Filter, Runtime, Value, ValueView};
+    use liquid_derive::{Display_filter, FilterReflection, ParseFilter};
+
+    return ParserBuilder::with_stdlib()
+        .filter(Kebabcase)
+        .build()
+        .map_err(|e| e.to_string())?
+        .parse(text)
+        .map_err(|e| e.to_string());
+
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(
+        name = "kebabcase",
+        description = "Returns the absolute value of a number.",
+        parsed(KebabcaseFilter) // A struct that implements `Filter` (must implement `Default`)
+   )]
+    struct Kebabcase;
+
+    #[derive(Default, Debug, Display_filter)]
+    #[name = "kebabcase"]
+    struct KebabcaseFilter;
+
+    impl Filter for KebabcaseFilter {
+        fn evaluate(&self, input: &dyn ValueView, _: &Runtime) -> liquid_core::Result<Value> {
+            Ok(Value::scalar(input.to_kstr().to_kebab_case()))
+        }
+    }
 }
 
 #[derive(Deserialize, Clone, Copy, PartialEq, Debug)]
@@ -35,98 +80,6 @@ pub(crate) struct WorkspaceMetadataCargoCompete {
 pub(crate) enum Open {
     Vscode,
     Emacsclient,
-}
-
-#[derive(Debug)]
-pub(crate) struct TemplateString(Vec<TemplateWord>);
-
-impl TemplateString {
-    pub(crate) fn eval(
-        &self,
-        vars: &BTreeMap<&'static str, impl AsRef<str>>,
-    ) -> anyhow::Result<String> {
-        let mut acc = "".to_owned();
-        for token in &self.0 {
-            match token {
-                TemplateWord::Plain(s) => acc += s,
-                TemplateWord::Var(name) => {
-                    acc += vars
-                        .get(&**name)
-                        .with_context(|| {
-                            format!(
-                                "unrecognized variable {:?} (expected {:?})",
-                                name,
-                                vars.keys().collect::<Vec<_>>(),
-                            )
-                        })?
-                        .as_ref();
-                }
-                TemplateWord::App(f, name) => {
-                    let arg = vars
-                        .get(&**name)
-                        .with_context(|| {
-                            format!(
-                                "unrecognized variable {:?} (expected one of {:?})",
-                                name,
-                                vars.keys().collect::<Vec<_>>(),
-                            )
-                        })?
-                        .as_ref();
-                    acc += &*match &**f {
-                        "kebab-case" => arg.to_kebab_case(),
-                        _ => bail!(r#"expected one of ["kebab-case"]"#),
-                    };
-                }
-            }
-        }
-        Ok(acc)
-    }
-}
-
-impl<'de> Deserialize<'de> for TemplateString {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use combine::parser::char::{alpha_num, char, spaces};
-        use combine::parser::choice::or;
-        use combine::stream::position;
-        use combine::{choice, eof, many, many1, optional, satisfy, EasyParser as _, Parser};
-
-        let input = String::deserialize(deserializer)?;
-
-        let (words, _) = many(or(
-            many1(satisfy(|c| !matches!(c, '{' | '}'))).map(TemplateWord::Plain),
-            char('{').with(or(
-                char('{').map(|_| TemplateWord::Plain("{{".to_owned())),
-                spaces()
-                    .with(many1(choice((alpha_num(), char('-'), char('_')))))
-                    .skip(spaces())
-                    .and(optional(char('|').skip(spaces()).with(many1(choice((
-                        alpha_num(),
-                        char('-'),
-                        char('_'),
-                    ))))))
-                    .skip(char('}'))
-                    .map(|(x, f)| match f {
-                        Some(f) => TemplateWord::App(f, x),
-                        None => TemplateWord::Var(x),
-                    }),
-            )),
-        ))
-        .skip(eof())
-        .easy_parse(position::Stream::new(&*input))
-        .map_err(D::Error::custom)?;
-
-        Ok(Self(words))
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum TemplateWord {
-    Plain(String),
-    Var(String),
-    App(String, String),
 }
 
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -518,4 +471,19 @@ pub(crate) fn cargo_metadata(manifest_path: impl AsRef<Path>) -> cargo_metadata:
     MetadataCommand::new()
         .manifest_path(manifest_path.as_ref())
         .exec()
+}
+
+#[cfg(test)]
+mod tests {
+    use liquid::object;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn liquid_template_with_custom_filter() -> anyhow::Result<()> {
+        let output = super::liquid_template_with_custom_filter("{{ s | kebabcase }}")
+            .map_err(anyhow::Error::msg)?
+            .render(&object!({ "s": "FooBarBaz" }))?;
+        assert_eq!("foo-bar-baz", output);
+        Ok(())
+    }
 }

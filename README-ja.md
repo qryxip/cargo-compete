@@ -100,12 +100,10 @@ AtCoderを選択に入れる場合、
 
 ## 設定
 
-設定は
+**v0.2.0で`workspace-metadata.toml`のフォーマットを変更する予定です。** ([#4](https://github.com/qryxip/cargo-compete/pull/4))
 
-- 各ワークスペース下にある`workspace-metadata.toml`
-- 各パッケージの`Cargo.toml`に書かれた`[package.metadata.cargo-compete.bin]`
-
-にあります。 バイナリ提出関連の設定もこちらです。
+設定は各ワークスペース下にある`workspace-metadata.toml`にあります。
+バイナリ提出関連の設定もこちらです。
 
 ```toml
 [cargo-compete]
@@ -128,6 +126,8 @@ target = "x86_64-unknown-linux-musl"
 strip = "strip"
 #upx = "upx"
 ```
+
+各`bin` targetに紐付くサイト上の問題は、パッケージの`Cargo.toml`の`[package.metadata]`に記述されます。
 
 ```toml
 [package]

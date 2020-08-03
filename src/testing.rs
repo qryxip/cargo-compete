@@ -9,6 +9,7 @@ use crate::{
 use az::SaturatingAs as _;
 use cargo_metadata::{Metadata, Package};
 use human_size::{Byte, Size};
+use liquid::object;
 use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
 use std::path::{Path, PathBuf};
@@ -121,21 +122,21 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
 pub(crate) fn test_suite_path(
     workspace_root: &Path,
-    workspace_metadata_test_suite: &crate::project::TemplateString,
+    workspace_metadata_test_suite: &liquid::Template,
     target_problem: &TargetProblem,
 ) -> anyhow::Result<PathBuf> {
     let vars = match target_problem {
         TargetProblem::Atcoder { contest, index, .. }
         | TargetProblem::Codeforces { contest, index, .. }
         | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index, .. }) => {
-            btreemap!("contest" => contest.clone(), "problem" => index.clone())
+            object!({ "contest": contest, "problem": index })
         }
         TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no, .. }) => {
-            btreemap!("contest" => "problems".to_owned(), "problem" => no.to_string())
+            object!({ "contest": "problems", "problem": no.to_string() })
         }
     };
 
-    let test_suite_path = workspace_metadata_test_suite.eval(&vars)?;
+    let test_suite_path = workspace_metadata_test_suite.render(&vars)?;
     let test_suite_path = Path::new(&test_suite_path);
     let test_suite_path = test_suite_path
         .strip_prefix(".")

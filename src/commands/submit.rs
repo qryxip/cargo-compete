@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::Context as _;
 use human_size::Size;
-use itertools::Itertools as _;
+use liquid::object;
 use prettytable::{
     cell,
     format::{FormatBuilder, LinePosition, LineSeparator},
@@ -19,7 +19,7 @@ use snowchains_core::web::{
     CodeforcesSubmitCredentials, CodeforcesSubmitTarget, CookieStorage, Submit, Yukicoder,
     YukicoderSubmitCredentials, YukicoderSubmitTarget,
 };
-use std::{borrow::BorrowMut as _, cell::RefCell, path::PathBuf};
+use std::{borrow::BorrowMut as _, cell::RefCell, cmp, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
@@ -152,7 +152,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             .join(&bin.name);
 
         let artifact = tempfile::Builder::new()
-            .prefix("cargo-compete-exec-base64-encoded-binary")
+            .prefix("cargo-compete-exec-base64-encoded-binary-")
             .tempfile()?
             .into_temp_path();
 
@@ -176,18 +176,37 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
         artifact.close()?;
 
-        include_str!("../../resources/exec-base64-encoded-binary.rs.txt")
-            .replace(
-                "{{source-code}}",
-                &original_source_code
-                    .lines()
-                    .map(|line| match line {
-                        "" => "//!\n".to_owned(),
-                        line => format!("//! {}\n", line),
-                    })
-                    .join(""),
-            )
-            .replace("{{base64}}", &base64::encode(artifact_binary))
+        liquid::ParserBuilder::with_stdlib()
+            .build()?
+            .parse(include_str!(
+                "../../resources/exec-base64-encoded-binary.rs.liquid"
+            ))?
+            .render(&object!({
+                "code_block": ({
+                    let max_seq_backquotes_len = {
+                        let (max, cur) = original_source_code.chars().fold((0, 0), |(max, cur), c| {
+                            if c == '`' {
+                                (max, cur + 1)
+                            } else {
+                                (cmp::max(max, cur), 0)
+                            }
+                        });
+                        cmp::max(max, cur)
+                    };
+
+                    format!(
+                        "{backquotes}ignore\n{code}{eol}{backquotes}",
+                        backquotes = "`".repeat(cmp::max(max_seq_backquotes_len + 1, 3)),
+                        code = original_source_code,
+                        eol = if original_source_code.ends_with('\n') {
+                            ""
+                        } else {
+                            "\n"
+                        },
+                    )
+                }),
+                "base64": base64::encode(artifact_binary),
+            }))?
     } else {
         crate::fs::read_to_string(&bin.src_path)?
     };

@@ -5,6 +5,7 @@ use crate::{
 };
 use heck::KebabCase as _;
 use indexmap::IndexMap;
+use liquid::object;
 use maplit::{btreemap, btreeset};
 use snowchains_core::{
     testsuite::{Additional, BatchTestSuite, TestSuite},
@@ -29,7 +30,7 @@ pub(crate) fn dl_for_existing_package(
     indexes: Option<&HashSet<String>>,
     full: bool,
     workspace_root: &Path,
-    test_suite_path: &crate::project::TemplateString,
+    test_suite_path: &liquid::Template,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     let mut atcoder_targets = btreemap!();
@@ -210,7 +211,7 @@ pub(crate) fn dl_from_yukicoder(
 
 pub(crate) fn save_test_cases(
     workspace_root: &Path,
-    path: &crate::project::TemplateString,
+    path: &liquid::Template,
     outcome: RetrieveTestCasesOutcome,
     shell: &mut Shell,
 ) -> anyhow::Result<Vec<PathBuf>> {
@@ -229,7 +230,7 @@ pub(crate) fn save_test_cases(
         ..
     } in outcome.problems
     {
-        let path = path.eval(&btreemap!("contest" => contest, "problem" => &index))?;
+        let path = path.render(&object!({ "contest": contest, "problem": &index }))?;
         let path = Path::new(&path);
         let path = workspace_root.join(path.strip_prefix(".").unwrap_or(&path));
 
