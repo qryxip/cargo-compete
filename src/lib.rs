@@ -9,7 +9,7 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, login::OptCompeteLogin, open::OptCompeteOpen,
+        init::OptCompeteInit, login::OptCompeteLogin, new::OptCompeteNew, open::OptCompeteOpen,
         participate::OptCompeteParticipate, retrieve_testcases::OptCompeteRetrieveTestcases,
         submit::OptCompeteSubmit, test::OptCompeteTest,
         watch_submissions::OptCompeteWatchSubmissions,
@@ -60,6 +60,10 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("p"))]
     Participate(OptCompeteParticipate),
 
+    /// Retrieve test cases and create a package
+    #[structopt(author, visible_alias("n"))]
+    New(OptCompeteNew),
+
     /// Retrieve data
     #[structopt(author, visible_alias("r"))]
     Retrieve(OptCompeteRetrieve),
@@ -109,6 +113,7 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Init(opt) => commands::init::run(opt, ctx),
         OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
+        OptCompete::New(opt) => commands::new::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
         }
