@@ -11,7 +11,7 @@ use cargo_metadata::{Metadata, Package};
 use human_size::{Byte, Size};
 use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a Metadata,
@@ -36,31 +36,11 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let bin = member.bin_target(&package_metadata_bin.name)?;
 
-    let test_suite_path = match &package_metadata_bin.problem {
-        TargetProblem::Atcoder { contest, index, .. }
-        | TargetProblem::Codeforces { contest, index, .. }
-        | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index, .. }) => {
-            let test_suite_path = workspace_metadata
-                .test_suite
-                .eval(&btreemap!("contest" => &**contest, "problem" => &index))?;
-            let test_suite_path = Path::new(&test_suite_path);
-            let test_suite_path = test_suite_path
-                .strip_prefix(".")
-                .unwrap_or(&test_suite_path);
-            metadata.workspace_root.join(test_suite_path)
-        }
-        TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no, .. }) => {
-            let no = no.to_string();
-            let test_suite_path = workspace_metadata
-                .test_suite
-                .eval(&btreemap!("contest" => "problems", "problem" => &no))?;
-            let test_suite_path = Path::new(&test_suite_path);
-            let test_suite_path = test_suite_path
-                .strip_prefix(".")
-                .unwrap_or(&test_suite_path);
-            metadata.workspace_root.join(test_suite_path)
-        }
-    };
+    let test_suite_path = test_suite_path(
+        &metadata.workspace_root,
+        &workspace_metadata.test_suite,
+        &package_metadata_bin.problem,
+    )?;
 
     let test_suite = crate::fs::read_yaml(&test_suite_path)?;
 
@@ -137,4 +117,28 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     writeln!(shell.err())?;
     outcome.print_pretty(shell.err(), Some(display_limit))?;
     outcome.error_on_fail()
+}
+
+pub(crate) fn test_suite_path(
+    workspace_root: &Path,
+    workspace_metadata_test_suite: &crate::project::TemplateString,
+    target_problem: &TargetProblem,
+) -> anyhow::Result<PathBuf> {
+    let vars = match target_problem {
+        TargetProblem::Atcoder { contest, index, .. }
+        | TargetProblem::Codeforces { contest, index, .. }
+        | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index, .. }) => {
+            btreemap!("contest" => contest.clone(), "problem" => index.clone())
+        }
+        TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no, .. }) => {
+            btreemap!("contest" => "problems".to_owned(), "problem" => no.to_string())
+        }
+    };
+
+    let test_suite_path = workspace_metadata_test_suite.eval(&vars)?;
+    let test_suite_path = Path::new(&test_suite_path);
+    let test_suite_path = test_suite_path
+        .strip_prefix(".")
+        .unwrap_or(&test_suite_path);
+    Ok(workspace_root.join(test_suite_path))
 }

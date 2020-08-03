@@ -1,32 +1,13 @@
 use crate::{
-    project::{
-        MetadataExt as _, Open, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem,
-        TargetProblemYukicoder, TemplateString, WorkspaceMetadataCargoCompetePlatform,
-    },
-    shell::{ColorChoice, Shell},
-    web::credentials,
+    project::{MetadataExt as _, WorkspaceMetadataCargoCompetePlatform},
+    shell::ColorChoice,
 };
 use anyhow::Context as _;
 use heck::KebabCase as _;
-use maplit::{btreemap, btreeset};
-use snowchains_core::{
-    testsuite::{Additional, BatchTestSuite, TestSuite},
-    web::{
-        Atcoder, AtcoderRetrieveFullTestCasesCredentials,
-        AtcoderRetrieveSampleTestCasesCredentials, AtcoderRetrieveTestCasesTargets, Codeforces,
-        CodeforcesRetrieveSampleTestCasesCredentials, CodeforcesRetrieveTestCasesTargets,
-        CookieStorage, RetrieveFullTestCases, RetrieveTestCases, RetrieveTestCasesOutcome,
-        RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
-        RetrieveTestCasesOutcomeProblemTextFiles, Yukicoder,
-        YukicoderRetrieveFullTestCasesCredentials, YukicoderRetrieveTestCasesTargets,
-    },
+use snowchains_core::web::{
+    RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
 };
-use std::{
-    borrow::BorrowMut as _,
-    cell::RefCell,
-    collections::BTreeSet,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use url::Url;
@@ -98,103 +79,16 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     };
 
     if let Some(member) = member {
-        let mut atcoder_targets = btreemap!();
-        let mut codeforces_targets = btreemap!();
-        let mut yukicoder_problem_targets = btreeset!();
-        let mut yukicoder_contest_targets = btreemap!();
-
-        for (_, PackageMetadataCargoCompeteBin { problem, .. }) in
-            member.read_package_metadata()?.bin
-        {
-            match problem {
-                TargetProblem::Atcoder { contest, index, .. } => atcoder_targets
-                    .entry(contest)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(index),
-                TargetProblem::Codeforces { contest, index, .. } => codeforces_targets
-                    .entry(contest)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(index),
-                TargetProblem::Yukicoder(target) => match target {
-                    TargetProblemYukicoder::Problem { no, .. } => {
-                        yukicoder_problem_targets.insert(no)
-                    }
-                    TargetProblemYukicoder::Contest { contest, index, .. } => {
-                        yukicoder_contest_targets
-                            .entry(contest)
-                            .or_insert_with(BTreeSet::new)
-                            .insert(index)
-                    }
-                },
-            };
-        }
-
-        let mut outcomes = vec![];
-
-        for (contest, problems) in atcoder_targets {
-            outcomes.push(dl_from_atcoder(&contest, Some(problems), full, shell)?);
-        }
-        for (contest, problems) in codeforces_targets {
-            outcomes.push(dl_from_codeforces(&contest, Some(problems), shell)?);
-        }
-        if !yukicoder_problem_targets.is_empty() {
-            outcomes.push(dl_from_yukicoder(
-                None,
-                Some(
-                    yukicoder_problem_targets
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect(),
-                ),
-                full,
-                shell,
-            )?);
-        }
-        for (contest, problems) in yukicoder_contest_targets {
-            outcomes.push(dl_from_yukicoder(
-                Some(&contest),
-                Some(problems),
-                full,
-                shell,
-            )?);
-        }
-
-        let src_paths = member
-            .targets
-            .iter()
-            .filter(|t| t.kind == ["bin".to_owned()])
-            .map(|t| t.src_path.clone())
-            .collect::<Vec<_>>();
-
-        for outcome in outcomes {
-            let urls = urls(&outcome);
-
-            let test_suite_paths = save_test_cases(
-                &metadata.workspace_root,
-                &workspace_metadata.test_suite,
-                outcome,
-                shell,
-            )?;
-
-            if open {
-                open_urls_and_files(
-                    &urls,
-                    workspace_metadata.open,
-                    &src_paths,
-                    &test_suite_paths,
-                    member.manifest_path.parent().unwrap(),
-                    &cwd,
-                    shell,
-                )?;
-            }
-        }
+        todo!();
     } else {
         match workspace_metadata.platform {
             WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
                 let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
                 let problems = problems.map(|ps| ps.into_iter().collect());
 
-                let outcome = dl_from_atcoder(&contest, problems, full, shell)?;
+                let outcome = crate::web::retrieve_testcases::dl_from_atcoder(
+                    &contest, problems, full, shell,
+                )?;
 
                 let package_name = outcome
                     .contest
@@ -210,24 +104,26 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 let workspace_root = metadata.workspace_root.clone();
                 let pkg_manifest_dir = metadata.workspace_root.join(package_name);
-                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problems, false, shell)?;
 
-                let test_suite_paths = save_test_cases(
-                    &workspace_root,
-                    &workspace_metadata.test_suite,
-                    outcome,
-                    shell,
-                )?;
+                let file_paths = itertools::zip_eq(
+                    src_paths(&pkg_manifest_dir, &outcome),
+                    crate::web::retrieve_testcases::save_test_cases(
+                        &workspace_root,
+                        &workspace_metadata.test_suite,
+                        outcome,
+                        shell,
+                    )?,
+                )
+                .collect::<Vec<_>>();
 
                 if open {
-                    open_urls_and_files(
+                    crate::open::open(
                         &urls,
                         workspace_metadata.open,
-                        &src_paths,
-                        &test_suite_paths,
+                        &file_paths,
                         &pkg_manifest_dir,
                         &cwd,
                         shell,
@@ -238,7 +134,8 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
                 let problems = problems.map(|ps| ps.into_iter().collect());
 
-                let outcome = dl_from_codeforces(&contest, problems, shell)?;
+                let outcome =
+                    crate::web::retrieve_testcases::dl_from_codeforces(&contest, problems, shell)?;
 
                 let package_name = outcome
                     .contest
@@ -254,24 +151,26 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 let workspace_root = metadata.workspace_root.clone();
                 let pkg_manifest_dir = metadata.workspace_root.join(package_name);
-                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problems, false, shell)?;
 
-                let test_suite_paths = save_test_cases(
-                    &workspace_root,
-                    &workspace_metadata.test_suite,
-                    outcome,
-                    shell,
-                )?;
+                let file_paths = itertools::zip_eq(
+                    src_paths(&pkg_manifest_dir, &outcome),
+                    crate::web::retrieve_testcases::save_test_cases(
+                        &workspace_root,
+                        &workspace_metadata.test_suite,
+                        outcome,
+                        shell,
+                    )?,
+                )
+                .collect::<Vec<_>>();
 
                 if open {
-                    open_urls_and_files(
+                    crate::open::open(
                         &urls,
                         workspace_metadata.open,
-                        &src_paths,
-                        &test_suite_paths,
+                        &file_paths,
                         &pkg_manifest_dir,
                         &cwd,
                         shell,
@@ -282,7 +181,9 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let contest = contest.as_deref();
                 let problems = problems.map(|ps| ps.into_iter().collect());
 
-                let outcome = dl_from_yukicoder(contest, problems, full, shell)?;
+                let outcome = crate::web::retrieve_testcases::dl_from_yukicoder(
+                    contest, problems, full, shell,
+                )?;
 
                 let package_name = outcome
                     .contest
@@ -300,24 +201,26 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
                 let workspace_root = metadata.workspace_root.clone();
                 let pkg_manifest_dir = metadata.workspace_root.join(package_name);
-                let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
                 metadata.add_member(package_name, &problems, is_no, shell)?;
 
-                let test_suite_paths = save_test_cases(
-                    &workspace_root,
-                    &workspace_metadata.test_suite,
-                    outcome,
-                    shell,
-                )?;
+                let file_paths = itertools::zip_eq(
+                    src_paths(&pkg_manifest_dir, &outcome),
+                    crate::web::retrieve_testcases::save_test_cases(
+                        &workspace_root,
+                        &workspace_metadata.test_suite,
+                        outcome,
+                        shell,
+                    )?,
+                )
+                .collect::<Vec<_>>();
 
                 if open {
-                    open_urls_and_files(
+                    crate::open::open(
                         &urls,
                         workspace_metadata.open,
-                        &src_paths,
-                        &test_suite_paths,
+                        &file_paths,
                         &pkg_manifest_dir,
                         &cwd,
                         shell,
@@ -327,115 +230,6 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         }
     }
     Ok(())
-}
-
-fn dl_from_atcoder(
-    contest: &str,
-    problems: Option<BTreeSet<String>>,
-    full: bool,
-    shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
-    let targets = AtcoderRetrieveTestCasesTargets {
-        contest: contest.to_owned(),
-        problems,
-    };
-
-    let shell = RefCell::new(shell.borrow_mut());
-
-    let credentials = AtcoderRetrieveSampleTestCasesCredentials {
-        username_and_password: &mut credentials::username_and_password(
-            &shell,
-            "Username: ",
-            "Password: ",
-        ),
-    };
-
-    let full = if full {
-        Some(RetrieveFullTestCases {
-            credentials: AtcoderRetrieveFullTestCasesCredentials {
-                dropbox_access_token: credentials::dropbox_access_token()?,
-            },
-        })
-    } else {
-        None
-    };
-
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
-
-    Atcoder::exec(RetrieveTestCases {
-        targets,
-        credentials,
-        full,
-        cookie_storage,
-        timeout: crate::web::TIMEOUT,
-        shell: &shell,
-    })
-}
-
-fn dl_from_codeforces(
-    contest: &str,
-    problems: Option<BTreeSet<String>>,
-    shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
-    let targets = CodeforcesRetrieveTestCasesTargets {
-        contest: contest.to_owned(),
-        problems,
-    };
-
-    let shell = RefCell::new(shell.borrow_mut());
-
-    let credentials = CodeforcesRetrieveSampleTestCasesCredentials {
-        username_and_password: &mut credentials::username_and_password(
-            &shell,
-            "Username: ",
-            "Password: ",
-        ),
-    };
-
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
-
-    Codeforces::exec(RetrieveTestCases {
-        targets,
-        credentials,
-        full: None,
-        cookie_storage,
-        timeout: crate::web::TIMEOUT,
-        shell: &shell,
-    })
-}
-
-fn dl_from_yukicoder(
-    contest: Option<&str>,
-    problems: Option<BTreeSet<String>>,
-    full: bool,
-    shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
-    let targets = if let Some(contest) = contest {
-        YukicoderRetrieveTestCasesTargets::Contest(contest.to_owned(), problems)
-    } else {
-        YukicoderRetrieveTestCasesTargets::ProblemNos(problems.unwrap_or_default())
-    };
-
-    let full = if full {
-        Some(RetrieveFullTestCases {
-            credentials: YukicoderRetrieveFullTestCasesCredentials {
-                api_key: credentials::yukicoder_api_key(shell)?,
-            },
-        })
-    } else {
-        None
-    };
-
-    let shell = RefCell::new(shell.borrow_mut());
-
-    Yukicoder::exec(RetrieveTestCases {
-        targets,
-        credentials: (),
-        full,
-        cookie_storage: (),
-        timeout: crate::web::TIMEOUT,
-        shell: &shell,
-    })
 }
 
 fn src_paths(pkg_manifest_dir: &Path, outcome: &RetrieveTestCasesOutcome) -> Vec<PathBuf> {
@@ -454,138 +248,4 @@ fn src_paths(pkg_manifest_dir: &Path, outcome: &RetrieveTestCasesOutcome) -> Vec
 
 fn urls(outcome: &RetrieveTestCasesOutcome) -> Vec<Url> {
     outcome.problems.iter().map(|p| p.url.clone()).collect()
-}
-
-fn open_urls_and_files(
-    urls: &[Url],
-    open: Option<Open>,
-    src_paths: &[PathBuf],
-    test_suite_paths: &[PathBuf],
-    pkg_manifest_dir: &Path,
-    cwd: &Path,
-    shell: &mut Shell,
-) -> anyhow::Result<()> {
-    for url in urls {
-        shell.status("Opening", url)?;
-        opener::open(url.as_str())?;
-    }
-
-    if let Some(open) = open {
-        let mut cmd = match open {
-            Open::Vscode => crate::process::with_which("code", cwd)?,
-            Open::Emacsclient => {
-                let mut cmd = crate::process::with_which("emacsclient", cwd)?;
-                cmd.arg("-n");
-                cmd
-            }
-        };
-
-        for path in itertools::interleave(src_paths, test_suite_paths) {
-            cmd.arg(path);
-        }
-
-        if open == Open::Vscode {
-            cmd.arg("-a");
-            cmd.arg(pkg_manifest_dir);
-        }
-
-        cmd.exec_with_shell_status(shell)?;
-    }
-    Ok(())
-}
-
-fn save_test_cases(
-    workspace_root: &Path,
-    path: &TemplateString,
-    outcome: RetrieveTestCasesOutcome,
-    shell: &mut Shell,
-) -> anyhow::Result<Vec<PathBuf>> {
-    let mut acc = vec![];
-
-    let contest = outcome
-        .contest
-        .as_ref()
-        .map(|RetrieveTestCasesOutcomeContest { id, .. }| &**id)
-        .unwrap_or("problems");
-
-    for snowchains_core::web::RetrieveTestCasesOutcomeProblem {
-        index,
-        mut test_suite,
-        text_files,
-        ..
-    } in outcome.problems
-    {
-        let path = path.eval(&btreemap!("contest" => contest, "problem" => &index))?;
-        let path = Path::new(&path);
-        let path = workspace_root.join(path.strip_prefix(".").unwrap_or(&path));
-
-        acc.push(path.clone());
-
-        let txt_path = |dir_file_name: &str, txt_file_name: &str| -> _ {
-            path.with_file_name(index.to_kebab_case())
-                .join(dir_file_name)
-                .join(txt_file_name)
-                .with_extension("txt")
-        };
-
-        for (name, RetrieveTestCasesOutcomeProblemTextFiles { r#in, out }) in &text_files {
-            let in_path = txt_path("in", name);
-            crate::fs::create_dir_all(in_path.parent().unwrap())?;
-            crate::fs::write(in_path, &r#in)?;
-            if let Some(out) = out {
-                let out_path = txt_path("out", name);
-                crate::fs::create_dir_all(out_path.parent().unwrap())?;
-                crate::fs::write(out_path, &r#out)?;
-            }
-        }
-
-        if !text_files.is_empty() {
-            if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
-                cases.clear();
-
-                extend.push(Additional::Text {
-                    path: format!("./{}", index.to_kebab_case()),
-                    r#in: "/in/*.txt".to_owned(),
-                    out: "/out/*.txt".to_owned(),
-                    timelimit: None,
-                    r#match: None,
-                })
-            }
-        }
-
-        crate::fs::create_dir_all(path.parent().unwrap())?;
-        crate::fs::write(&path, test_suite.to_yaml_pretty())?;
-
-        shell.status(
-            "Saved",
-            format!(
-                "{} to {}",
-                match &test_suite {
-                    TestSuite::Batch(BatchTestSuite { cases, .. }) => {
-                        match cases.len() + text_files.len() {
-                            0 => "no test cases".to_owned(),
-                            1 => "1 test case".to_owned(),
-                            n => format!("{} test cases", n),
-                        }
-                    }
-                    TestSuite::Interactive(_) => "no test cases (interactive problem)".to_owned(),
-                    TestSuite::Unsubmittable => "no test cases (unsubmittable problem)".to_owned(),
-                },
-                if text_files.is_empty() {
-                    format!("{}", path.display())
-                } else {
-                    format!(
-                        "{}",
-                        path.with_file_name(format!(
-                            "{{{index}.yml, {index}/}}",
-                            index = index.to_kebab_case(),
-                        ))
-                        .display(),
-                    )
-                },
-            ),
-        )?;
-    }
-
-    Ok(acc)
 }

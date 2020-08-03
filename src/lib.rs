@@ -1,5 +1,6 @@
 mod commands;
 mod fs;
+mod open;
 mod process;
 mod project;
 pub mod shell;
@@ -8,9 +9,10 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, login::OptCompeteLogin, participate::OptCompeteParticipate,
-        retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
-        test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
+        init::OptCompeteInit, login::OptCompeteLogin, open::OptCompeteOpen,
+        participate::OptCompeteParticipate, retrieve_testcases::OptCompeteRetrieveTestcases,
+        submit::OptCompeteSubmit, test::OptCompeteTest,
+        watch_submissions::OptCompeteWatchSubmissions,
     },
     shell::Shell,
 };
@@ -70,6 +72,10 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("w"))]
     Watch(OptCompeteWatch),
 
+    /// Open URLs and files
+    #[structopt(author, visible_alias("o"))]
+    Open(OptCompeteOpen),
+
     /// Test your code
     #[structopt(author, visible_alias("t"))]
     Test(OptCompeteTest),
@@ -109,6 +115,7 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Watch(OptCompeteWatch::Submissions(opt)) => {
             commands::watch_submissions::run(opt, ctx)
         }
+        OptCompete::Open(opt) => commands::open::run(opt, ctx),
         OptCompete::Test(opt) => commands::test::run(opt, ctx),
         OptCompete::Submit(opt) => commands::submit::run(opt, ctx),
     }

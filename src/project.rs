@@ -41,28 +41,37 @@ pub(crate) enum Open {
 pub(crate) struct TemplateString(Vec<TemplateWord>);
 
 impl TemplateString {
-    pub(crate) fn eval(&self, vars: &BTreeMap<&'static str, &str>) -> anyhow::Result<String> {
+    pub(crate) fn eval(
+        &self,
+        vars: &BTreeMap<&'static str, impl AsRef<str>>,
+    ) -> anyhow::Result<String> {
         let mut acc = "".to_owned();
         for token in &self.0 {
             match token {
                 TemplateWord::Plain(s) => acc += s,
                 TemplateWord::Var(name) => {
-                    acc += vars.get(&**name).with_context(|| {
-                        format!(
-                            "unrecognized variable {:?} (expected {:?})",
-                            name,
-                            vars.keys().collect::<Vec<_>>(),
-                        )
-                    })?;
+                    acc += vars
+                        .get(&**name)
+                        .with_context(|| {
+                            format!(
+                                "unrecognized variable {:?} (expected {:?})",
+                                name,
+                                vars.keys().collect::<Vec<_>>(),
+                            )
+                        })?
+                        .as_ref();
                 }
                 TemplateWord::App(f, name) => {
-                    let arg = vars.get(&**name).with_context(|| {
-                        format!(
-                            "unrecognized variable {:?} (expected one of {:?})",
-                            name,
-                            vars.keys().collect::<Vec<_>>(),
-                        )
-                    })?;
+                    let arg = vars
+                        .get(&**name)
+                        .with_context(|| {
+                            format!(
+                                "unrecognized variable {:?} (expected one of {:?})",
+                                name,
+                                vars.keys().collect::<Vec<_>>(),
+                            )
+                        })?
+                        .as_ref();
                     acc += &*match &**f {
                         "kebab-case" => arg.to_kebab_case(),
                         _ => bail!(r#"expected one of ["kebab-case"]"#),
@@ -205,10 +214,12 @@ impl Metadata {
         Ok(cargo_compete)
     }
 
-    pub(crate) fn query_for_member<'a>(
+    pub(crate) fn query_for_member<'a, S: AsRef<str>>(
         &'a self,
-        spec: Option<&str>,
+        spec: Option<S>,
     ) -> anyhow::Result<&'a Package> {
+        let spec = spec.as_ref().map(AsRef::as_ref);
+
         let cargo_exe = env::var_os("CARGO").with_context(|| "`$CARGO` should be present")?;
 
         let manifest_path = self
