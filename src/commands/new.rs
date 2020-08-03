@@ -3,11 +3,10 @@ use crate::{
     shell::ColorChoice,
 };
 use anyhow::Context as _;
-use heck::KebabCase as _;
 use snowchains_core::web::{
     RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use url::Url;
@@ -87,10 +86,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let pkg_manifest_dir = metadata.workspace_root.join(package_name);
             let urls = urls(&outcome);
 
-            metadata.add_member(package_name, &problems, false, shell)?;
-
             let file_paths = itertools::zip_eq(
-                src_paths(&pkg_manifest_dir, &outcome),
+                metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
@@ -134,10 +131,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let pkg_manifest_dir = metadata.workspace_root.join(package_name);
             let urls = urls(&outcome);
 
-            metadata.add_member(package_name, &problems, false, shell)?;
-
             let file_paths = itertools::zip_eq(
-                src_paths(&pkg_manifest_dir, &outcome),
+                metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
@@ -183,10 +178,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let pkg_manifest_dir = metadata.workspace_root.join(package_name);
             let urls = urls(&outcome);
 
-            metadata.add_member(package_name, &problems, is_no, shell)?;
-
             let file_paths = itertools::zip_eq(
-                src_paths(&pkg_manifest_dir, &outcome),
+                metadata.add_member(package_name, &problems, is_no, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
                     &workspace_metadata.test_suite,
@@ -209,20 +202,6 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
         }
     }
     Ok(())
-}
-
-fn src_paths(pkg_manifest_dir: &Path, outcome: &RetrieveTestCasesOutcome) -> Vec<PathBuf> {
-    outcome
-        .problems
-        .iter()
-        .map(|problem| {
-            pkg_manifest_dir
-                .join("src")
-                .join("bin")
-                .join(problem.index.to_kebab_case())
-                .with_extension("rs")
-        })
-        .collect()
 }
 
 fn urls(outcome: &RetrieveTestCasesOutcome) -> Vec<Url> {

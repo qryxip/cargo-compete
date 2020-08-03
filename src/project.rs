@@ -268,7 +268,7 @@ impl Metadata {
         problems: &BTreeMap<&str, &Url>,
         problems_are_yukicoder_no: bool,
         shell: &mut Shell,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<PathBuf>> {
         let (workspace_metadata, workspace_metadata_edit) =
             self.read_workspace_metadata_preserving()?;
 
@@ -386,10 +386,16 @@ publish = false
         let template_code =
             crate::fs::read_to_string(self.workspace_root.join(workspace_metadata.template.code))?;
 
-        for problem_index in problems.keys() {
-            let src_path = src_bin
-                .join(problem_index.to_kebab_case())
-                .with_extension("rs");
+        let src_paths = problems
+            .keys()
+            .map(|problem_index| {
+                src_bin
+                    .join(problem_index.to_kebab_case())
+                    .with_extension("rs")
+            })
+            .collect::<Vec<_>>();
+
+        for src_path in &src_paths {
             crate::fs::write(src_path, &template_code)?;
         }
 
@@ -402,7 +408,7 @@ publish = false
             ),
         )?;
 
-        return match workspace_metadata.new_workspace_member {
+        match workspace_metadata.new_workspace_member {
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
@@ -413,7 +419,9 @@ publish = false
                     .stderr(shell.err())
                     .exec()
             }
-        };
+        }?;
+
+        return Ok(src_paths);
 
         fn escape_key(s: &str) -> String {
             if s.chars().any(|c| c.is_whitespace() || c.is_control()) {
