@@ -45,7 +45,7 @@ termcolor = "1.1.0"
 tokio = { version = "0.2.22", features = ["signal"] }
 toml = "0.5.6"
 toml_edit = "0.2.0"
-url = "2.1.1"
+url = { version = "2.1.1", features = ["serde"] }
 which = "4.0.1"
 
 [target.'cfg(windows)'.dependencies]

@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use itertools::Itertools as _;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     env,
     path::{Path, PathBuf},
     str,
@@ -170,16 +170,31 @@ pub(crate) struct PackageMetadataCargoCompeteBin {
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "platform")]
 pub(crate) enum TargetProblem {
-    Atcoder { contest: String, index: String },
-    Codeforces { contest: String, index: String },
+    Atcoder {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
+    Codeforces {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
     Yukicoder(TargetProblemYukicoder),
 }
 
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
 pub(crate) enum TargetProblemYukicoder {
-    Problem { no: u64 },
-    Contest { contest: String, index: String },
+    Problem {
+        no: u64,
+        url: Option<Url>,
+    },
+    Contest {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
 }
 
 #[ext(MetadataExt)]
@@ -239,7 +254,7 @@ impl Metadata {
     pub(crate) fn add_member(
         self,
         package_name: &str,
-        problem_indexes: &BTreeSet<String>,
+        problems: &BTreeMap<&str, &Url>,
         problems_are_yukicoder_no: bool,
         shell: &mut Shell,
     ) -> anyhow::Result<()> {
@@ -255,8 +270,8 @@ publish = false
 
 [package.metadata.cargo-compete.bin]
 {}"#,
-            problem_indexes
-                .iter()
+            problems
+                .keys()
                 .map(|problem_index| format!(
                     r#"{} = {{ name = "", problem = {{ {} }} }}
 "#,
@@ -264,13 +279,13 @@ publish = false
                     match (&workspace_metadata.platform, problems_are_yukicoder_no) {
                         (WorkspaceMetadataCargoCompetePlatform::Atcoder { .. }, _)
                         | (WorkspaceMetadataCargoCompetePlatform::Codeforces, _) => {
-                            r#"platform = "", contest = "", index = """#
+                            r#"platform = "", contest = "", index = "", url = """#
                         }
                         (WorkspaceMetadataCargoCompetePlatform::Yukicoder, true) => {
-                            r#"platform = "", kind = "no", no = """#
+                            r#"platform = "", kind = "no", no = "", url = """#
                         }
                         (WorkspaceMetadataCargoCompetePlatform::Yukicoder, false) => {
-                            r#"platform = "", kind = "contest", contest = "", index = """#
+                            r#"platform = "", kind = "contest", contest = "", index = "", url = """#
                         }
                     }
                 ))
@@ -281,7 +296,7 @@ publish = false
         manifest["package"]["name"] = toml_edit::value(package_name);
 
         let tbl = &mut manifest["package"]["metadata"]["cargo-compete"]["bin"];
-        for problem_index in problem_indexes {
+        for (problem_index, problem_url) in problems {
             tbl[problem_index.to_kebab_case()]["name"] = toml_edit::value(format!(
                 "{}-{}",
                 package_name,
@@ -295,11 +310,13 @@ publish = false
                     tbl["platform"] = toml_edit::value("atcoder");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
                 WorkspaceMetadataCargoCompetePlatform::Codeforces => {
                     tbl["platform"] = toml_edit::value("codeforces");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
                 WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
                     tbl["platform"] = toml_edit::value("yukicoder");
@@ -309,6 +326,7 @@ publish = false
                         tbl["contest"] = toml_edit::value(package_name);
                         tbl["index"] = toml_edit::value(&**problem_index);
                     }
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
             }
         }
@@ -323,7 +341,7 @@ publish = false
 
         manifest["bin"] = toml_edit::Item::ArrayOfTables({
             let mut arr = toml_edit::ArrayOfTables::new();
-            for problem_index in problem_indexes {
+            for problem_index in problems.keys() {
                 let mut tbl = toml_edit::Table::new();
                 tbl["name"] = toml_edit::value(format!(
                     "{}-{}",
@@ -357,7 +375,7 @@ publish = false
         let template_code =
             crate::fs::read_to_string(self.workspace_root.join(workspace_metadata.template.code))?;
 
-        for problem_index in problem_indexes {
+        for problem_index in problems.keys() {
             let src_path = src_bin
                 .join(problem_index.to_kebab_case())
                 .with_extension("rs");

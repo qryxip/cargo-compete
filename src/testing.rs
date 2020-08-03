@@ -37,9 +37,9 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let bin = member.bin_target(&package_metadata_bin.name)?;
 
     let test_suite_path = match &package_metadata_bin.problem {
-        TargetProblem::Atcoder { contest, index }
-        | TargetProblem::Codeforces { contest, index }
-        | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index }) => {
+        TargetProblem::Atcoder { contest, index, .. }
+        | TargetProblem::Codeforces { contest, index, .. }
+        | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index, .. }) => {
             let test_suite_path = workspace_metadata
                 .test_suite
                 .eval(&btreemap!("contest" => &**contest, "problem" => &index))?;
@@ -49,7 +49,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
                 .unwrap_or(&test_suite_path);
             metadata.workspace_root.join(test_suite_path)
         }
-        TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no }) => {
+        TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no, .. }) => {
             let no = no.to_string();
             let test_suite_path = workspace_metadata
                 .test_suite

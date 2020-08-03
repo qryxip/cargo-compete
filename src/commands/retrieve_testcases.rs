@@ -107,20 +107,24 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
             member.read_package_metadata()?.bin
         {
             match problem {
-                TargetProblem::Atcoder { contest, index } => atcoder_targets
+                TargetProblem::Atcoder { contest, index, .. } => atcoder_targets
                     .entry(contest)
                     .or_insert_with(BTreeSet::new)
                     .insert(index),
-                TargetProblem::Codeforces { contest, index } => codeforces_targets
+                TargetProblem::Codeforces { contest, index, .. } => codeforces_targets
                     .entry(contest)
                     .or_insert_with(BTreeSet::new)
                     .insert(index),
                 TargetProblem::Yukicoder(target) => match target {
-                    TargetProblemYukicoder::Problem { no } => yukicoder_problem_targets.insert(no),
-                    TargetProblemYukicoder::Contest { contest, index } => yukicoder_contest_targets
-                        .entry(contest)
-                        .or_insert_with(BTreeSet::new)
-                        .insert(index),
+                    TargetProblemYukicoder::Problem { no, .. } => {
+                        yukicoder_problem_targets.insert(no)
+                    }
+                    TargetProblemYukicoder::Contest { contest, index, .. } => {
+                        yukicoder_contest_targets
+                            .entry(contest)
+                            .or_insert_with(BTreeSet::new)
+                            .insert(index)
+                    }
                 },
             };
         }
@@ -198,10 +202,10 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                     .map(|RetrieveTestCasesOutcomeContest { id, .. }| id)
                     .unwrap_or(&contest);
 
-                let problem_indexes = outcome
+                let problems = outcome
                     .problems
                     .iter()
-                    .map(|RetrieveTestCasesOutcomeProblem { index, .. }| index.clone())
+                    .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
@@ -209,7 +213,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
-                metadata.add_member(package_name, &problem_indexes, false, shell)?;
+                metadata.add_member(package_name, &problems, false, shell)?;
 
                 let test_suite_paths = save_test_cases(
                     &workspace_root,
@@ -242,10 +246,10 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                     .map(|RetrieveTestCasesOutcomeContest { id, .. }| id)
                     .unwrap_or(&contest);
 
-                let problem_indexes = outcome
+                let problems = outcome
                     .problems
                     .iter()
-                    .map(|RetrieveTestCasesOutcomeProblem { index, .. }| index.clone())
+                    .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
@@ -253,7 +257,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
-                metadata.add_member(package_name, &problem_indexes, false, shell)?;
+                metadata.add_member(package_name, &problems, false, shell)?;
 
                 let test_suite_paths = save_test_cases(
                     &workspace_root,
@@ -288,10 +292,10 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let is_no = package_name.is_none();
                 let package_name = package_name.unwrap_or("problems");
 
-                let problem_indexes = outcome
+                let problems = outcome
                     .problems
                     .iter()
-                    .map(|RetrieveTestCasesOutcomeProblem { index, .. }| index.clone())
+                    .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
                     .collect();
 
                 let workspace_root = metadata.workspace_root.clone();
@@ -299,7 +303,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 let src_paths = src_paths(&pkg_manifest_dir, &outcome);
                 let urls = urls(&outcome);
 
-                metadata.add_member(package_name, &problem_indexes, is_no, shell)?;
+                metadata.add_member(package_name, &problems, is_no, shell)?;
 
                 let test_suite_paths = save_test_cases(
                     &workspace_root,

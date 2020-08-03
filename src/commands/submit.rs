@@ -205,7 +205,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let timeout = crate::web::TIMEOUT;
 
     let outcome = match package_metadata_bin.problem {
-        TargetProblem::Atcoder { contest, index } => {
+        TargetProblem::Atcoder { contest, index, .. } => {
             let shell = RefCell::new(shell.borrow_mut());
 
             let credentials = AtcoderSubmitCredentials {
@@ -230,7 +230,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 shell: &shell,
             })?
         }
-        TargetProblem::Codeforces { contest, index } => {
+        TargetProblem::Codeforces { contest, index, .. } => {
             let (api_key, api_secret) = credentials::codeforces_api_key_and_secret(shell)?;
 
             let shell = RefCell::new(shell.borrow_mut());
@@ -266,10 +266,10 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
             Yukicoder::exec(Submit {
                 target: match target_problem {
-                    TargetProblemYukicoder::Contest { contest, index } => {
+                    TargetProblemYukicoder::Contest { contest, index, .. } => {
                         YukicoderSubmitTarget::Contest(contest, index)
                     }
-                    TargetProblemYukicoder::Problem { no } => {
+                    TargetProblemYukicoder::Problem { no, .. } => {
                         YukicoderSubmitTarget::ProblemNo(no.to_string())
                     }
                 },
