@@ -1,4 +1,5 @@
 pub(crate) mod credentials;
+pub(crate) mod retrieve_testcases;
 
 use std::time::Duration;
 

@@ -1,5 +1,6 @@
 mod commands;
 mod fs;
+mod open;
 mod process;
 mod project;
 pub mod shell;
@@ -8,9 +9,10 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, login::OptCompeteLogin, participate::OptCompeteParticipate,
-        retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
-        test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
+        init::OptCompeteInit, login::OptCompeteLogin, new::OptCompeteNew, open::OptCompeteOpen,
+        participate::OptCompeteParticipate, retrieve_testcases::OptCompeteRetrieveTestcases,
+        submit::OptCompeteSubmit, test::OptCompeteTest,
+        watch_submissions::OptCompeteWatchSubmissions,
     },
     shell::Shell,
 };
@@ -58,6 +60,10 @@ pub enum OptCompete {
     #[structopt(author, visible_alias("p"))]
     Participate(OptCompeteParticipate),
 
+    /// Retrieve test cases and create a package
+    #[structopt(author, visible_alias("n"))]
+    New(OptCompeteNew),
+
     /// Retrieve data
     #[structopt(author, visible_alias("r"))]
     Retrieve(OptCompeteRetrieve),
@@ -69,6 +75,10 @@ pub enum OptCompete {
     /// Watch items
     #[structopt(author, visible_alias("w"))]
     Watch(OptCompeteWatch),
+
+    /// Open URLs and files
+    #[structopt(author, visible_alias("o"))]
+    Open(OptCompeteOpen),
 
     /// Test your code
     #[structopt(author, visible_alias("t"))]
@@ -103,12 +113,14 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Init(opt) => commands::init::run(opt, ctx),
         OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
+        OptCompete::New(opt) => commands::new::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
         }
         OptCompete::Watch(OptCompeteWatch::Submissions(opt)) => {
             commands::watch_submissions::run(opt, ctx)
         }
+        OptCompete::Open(opt) => commands::open::run(opt, ctx),
         OptCompete::Test(opt) => commands::test::run(opt, ctx),
         OptCompete::Submit(opt) => commands::submit::run(opt, ctx),
     }

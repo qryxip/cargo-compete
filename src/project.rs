@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use itertools::Itertools as _;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     env,
     path::{Path, PathBuf},
     str,
@@ -41,28 +41,37 @@ pub(crate) enum Open {
 pub(crate) struct TemplateString(Vec<TemplateWord>);
 
 impl TemplateString {
-    pub(crate) fn eval(&self, vars: &BTreeMap<&'static str, &str>) -> anyhow::Result<String> {
+    pub(crate) fn eval(
+        &self,
+        vars: &BTreeMap<&'static str, impl AsRef<str>>,
+    ) -> anyhow::Result<String> {
         let mut acc = "".to_owned();
         for token in &self.0 {
             match token {
                 TemplateWord::Plain(s) => acc += s,
                 TemplateWord::Var(name) => {
-                    acc += vars.get(&**name).with_context(|| {
-                        format!(
-                            "unrecognized variable {:?} (expected {:?})",
-                            name,
-                            vars.keys().collect::<Vec<_>>(),
-                        )
-                    })?;
+                    acc += vars
+                        .get(&**name)
+                        .with_context(|| {
+                            format!(
+                                "unrecognized variable {:?} (expected {:?})",
+                                name,
+                                vars.keys().collect::<Vec<_>>(),
+                            )
+                        })?
+                        .as_ref();
                 }
                 TemplateWord::App(f, name) => {
-                    let arg = vars.get(&**name).with_context(|| {
-                        format!(
-                            "unrecognized variable {:?} (expected one of {:?})",
-                            name,
-                            vars.keys().collect::<Vec<_>>(),
-                        )
-                    })?;
+                    let arg = vars
+                        .get(&**name)
+                        .with_context(|| {
+                            format!(
+                                "unrecognized variable {:?} (expected one of {:?})",
+                                name,
+                                vars.keys().collect::<Vec<_>>(),
+                            )
+                        })?
+                        .as_ref();
                     acc += &*match &**f {
                         "kebab-case" => arg.to_kebab_case(),
                         _ => bail!(r#"expected one of ["kebab-case"]"#),
@@ -170,16 +179,42 @@ pub(crate) struct PackageMetadataCargoCompeteBin {
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "platform")]
 pub(crate) enum TargetProblem {
-    Atcoder { contest: String, index: String },
-    Codeforces { contest: String, index: String },
+    Atcoder {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
+    Codeforces {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
     Yukicoder(TargetProblemYukicoder),
+}
+
+impl TargetProblem {
+    pub(crate) fn url(&self) -> Option<&Url> {
+        match self {
+            Self::Atcoder { url, .. }
+            | Self::Codeforces { url, .. }
+            | Self::Yukicoder(TargetProblemYukicoder::Problem { url, .. })
+            | Self::Yukicoder(TargetProblemYukicoder::Contest { url, .. }) => url.as_ref(),
+        }
+    }
 }
 
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
 pub(crate) enum TargetProblemYukicoder {
-    Problem { no: u64 },
-    Contest { contest: String, index: String },
+    Problem {
+        no: u64,
+        url: Option<Url>,
+    },
+    Contest {
+        contest: String,
+        index: String,
+        url: Option<Url>,
+    },
 }
 
 #[ext(MetadataExt)]
@@ -190,10 +225,12 @@ impl Metadata {
         Ok(cargo_compete)
     }
 
-    pub(crate) fn query_for_member<'a>(
+    pub(crate) fn query_for_member<'a, S: AsRef<str>>(
         &'a self,
-        spec: Option<&str>,
+        spec: Option<S>,
     ) -> anyhow::Result<&'a Package> {
+        let spec = spec.as_ref().map(AsRef::as_ref);
+
         let cargo_exe = env::var_os("CARGO").with_context(|| "`$CARGO` should be present")?;
 
         let manifest_path = self
@@ -239,10 +276,10 @@ impl Metadata {
     pub(crate) fn add_member(
         self,
         package_name: &str,
-        problem_indexes: &BTreeSet<String>,
+        problems: &BTreeMap<&str, &Url>,
         problems_are_yukicoder_no: bool,
         shell: &mut Shell,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<PathBuf>> {
         let (workspace_metadata, workspace_metadata_edit) =
             self.read_workspace_metadata_preserving()?;
 
@@ -255,8 +292,8 @@ publish = false
 
 [package.metadata.cargo-compete.bin]
 {}"#,
-            problem_indexes
-                .iter()
+            problems
+                .keys()
                 .map(|problem_index| format!(
                     r#"{} = {{ name = "", problem = {{ {} }} }}
 "#,
@@ -264,13 +301,13 @@ publish = false
                     match (&workspace_metadata.platform, problems_are_yukicoder_no) {
                         (WorkspaceMetadataCargoCompetePlatform::Atcoder { .. }, _)
                         | (WorkspaceMetadataCargoCompetePlatform::Codeforces, _) => {
-                            r#"platform = "", contest = "", index = """#
+                            r#"platform = "", contest = "", index = "", url = """#
                         }
                         (WorkspaceMetadataCargoCompetePlatform::Yukicoder, true) => {
-                            r#"platform = "", kind = "no", no = """#
+                            r#"platform = "", kind = "no", no = "", url = """#
                         }
                         (WorkspaceMetadataCargoCompetePlatform::Yukicoder, false) => {
-                            r#"platform = "", kind = "contest", contest = "", index = """#
+                            r#"platform = "", kind = "contest", contest = "", index = "", url = """#
                         }
                     }
                 ))
@@ -281,7 +318,7 @@ publish = false
         manifest["package"]["name"] = toml_edit::value(package_name);
 
         let tbl = &mut manifest["package"]["metadata"]["cargo-compete"]["bin"];
-        for problem_index in problem_indexes {
+        for (problem_index, problem_url) in problems {
             tbl[problem_index.to_kebab_case()]["name"] = toml_edit::value(format!(
                 "{}-{}",
                 package_name,
@@ -295,11 +332,13 @@ publish = false
                     tbl["platform"] = toml_edit::value("atcoder");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
                 WorkspaceMetadataCargoCompetePlatform::Codeforces => {
                     tbl["platform"] = toml_edit::value("codeforces");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
                 WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
                     tbl["platform"] = toml_edit::value("yukicoder");
@@ -309,6 +348,7 @@ publish = false
                         tbl["contest"] = toml_edit::value(package_name);
                         tbl["index"] = toml_edit::value(&**problem_index);
                     }
+                    tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
             }
         }
@@ -323,7 +363,7 @@ publish = false
 
         manifest["bin"] = toml_edit::Item::ArrayOfTables({
             let mut arr = toml_edit::ArrayOfTables::new();
-            for problem_index in problem_indexes {
+            for problem_index in problems.keys() {
                 let mut tbl = toml_edit::Table::new();
                 tbl["name"] = toml_edit::value(format!(
                     "{}-{}",
@@ -357,10 +397,16 @@ publish = false
         let template_code =
             crate::fs::read_to_string(self.workspace_root.join(workspace_metadata.template.code))?;
 
-        for problem_index in problem_indexes {
-            let src_path = src_bin
-                .join(problem_index.to_kebab_case())
-                .with_extension("rs");
+        let src_paths = problems
+            .keys()
+            .map(|problem_index| {
+                src_bin
+                    .join(problem_index.to_kebab_case())
+                    .with_extension("rs")
+            })
+            .collect::<Vec<_>>();
+
+        for src_path in &src_paths {
             crate::fs::write(src_path, &template_code)?;
         }
 
@@ -373,7 +419,7 @@ publish = false
             ),
         )?;
 
-        return match workspace_metadata.new_workspace_member {
+        match workspace_metadata.new_workspace_member {
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
@@ -384,7 +430,9 @@ publish = false
                     .stderr(shell.err())
                     .exec()
             }
-        };
+        }?;
+
+        return Ok(src_paths);
 
         fn escape_key(s: &str) -> String {
             if s.chars().any(|c| c.is_whitespace() || c.is_control()) {

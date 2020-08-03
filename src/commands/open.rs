@@ -2,18 +2,19 @@ use crate::{
     project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
     shell::ColorChoice,
 };
+use maplit::hashset;
 use std::{collections::HashSet, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
 #[derive(StructOpt, Debug)]
-pub struct OptCompeteRetrieveTestcases {
+pub struct OptCompeteOpen {
     /// Retrieves system test cases
     #[structopt(long)]
     pub full: bool,
 
-    /// Retrieve only the problems
-    #[structopt(long, value_name("INDEX"))]
+    /// Problem indexes
+    #[structopt(long)]
     pub problems: Option<Vec<String>>,
 
     /// Package (see `cargo help pkgid`)
@@ -34,8 +35,8 @@ pub struct OptCompeteRetrieveTestcases {
     pub color: ColorChoice,
 }
 
-pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> anyhow::Result<()> {
-    let OptCompeteRetrieveTestcases {
+pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Result<()> {
+    let OptCompeteOpen {
         full,
         problems,
         package,
@@ -48,7 +49,6 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     shell.set_color_choice(color);
 
     let problems = problems.map(|ps| ps.into_iter().collect::<HashSet<_>>());
-    let problems = problems.as_ref();
 
     let manifest_path = manifest_path
         .map(Ok)
@@ -57,13 +57,15 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     let workspace_metadata = metadata.read_workspace_metadata()?;
 
     let member = metadata.query_for_member(package)?;
+
     let package_metadata_bin = member.read_package_metadata()?.bin;
 
     let mut urls = vec![];
     let mut file_paths = vec![];
+    let mut missing = hashset!();
 
     for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata_bin {
-        if problems.map_or(true, |ps| ps.contains(index)) {
+        if problems.as_ref().map_or(true, |ps| ps.contains(index)) {
             urls.extend(problem.url());
 
             let test_suite_path = crate::testing::test_suite_path(
@@ -72,18 +74,33 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
                 &problem,
             )?;
 
+            if !test_suite_path.exists() {
+                missing.insert(index.clone());
+            }
+
             file_paths.push((&member.bin_target(&name)?.src_path, test_suite_path));
         }
     }
 
-    crate::web::retrieve_testcases::dl_for_existing_package(
-        &package_metadata_bin,
-        problems,
-        full,
-        &metadata.workspace_root,
-        &workspace_metadata.test_suite,
-        shell,
-    )?;
+    if !missing.is_empty() {
+        shell.status("Retrieving", "missing test cases")?;
 
-    Ok(())
+        crate::web::retrieve_testcases::dl_for_existing_package(
+            &package_metadata_bin,
+            Some(&missing),
+            full,
+            &metadata.workspace_root,
+            &workspace_metadata.test_suite,
+            shell,
+        )?;
+    }
+
+    crate::open::open(
+        &urls,
+        workspace_metadata.open,
+        &file_paths,
+        member.manifest_path.parent().unwrap(),
+        &cwd,
+        shell,
+    )
 }
