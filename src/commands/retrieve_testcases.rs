@@ -1,5 +1,8 @@
-use crate::{project::MetadataExt as _, shell::ColorChoice};
-use std::path::PathBuf;
+use crate::{
+    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
+    shell::ColorChoice,
+};
+use std::{collections::HashSet, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
@@ -9,15 +12,11 @@ pub struct OptCompeteRetrieveTestcases {
     #[structopt(long)]
     pub full: bool,
 
-    /// Open URL and files
-    #[structopt(long)]
-    pub open: bool,
-
-    /// Problem Indexes
-    #[structopt(long, value_name("STRING"))]
+    /// Retrieve only the problems
+    #[structopt(long, value_name("INDEX"))]
     pub problems: Option<Vec<String>>,
 
-    /// Existing package to retrieving test cases for
+    /// Package (see `cargo help pkgid`)
     #[structopt(short, long, value_name("SPEC"))]
     pub package: Option<String>,
 
@@ -33,25 +32,23 @@ pub struct OptCompeteRetrieveTestcases {
         default_value("auto")
     )]
     pub color: ColorChoice,
-
-    /// Creates pacakge afresh & retrieve test cases for the contest ID
-    pub contest: Option<String>,
 }
 
 pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteRetrieveTestcases {
         full,
-        open,
+        problems,
         package,
         manifest_path,
         color,
-        problems,
-        contest,
     } = opt;
 
     let crate::Context { cwd, shell } = ctx;
 
     shell.set_color_choice(color);
+
+    let problems = problems.map(|ps| ps.into_iter().collect::<HashSet<_>>());
+    let problems = problems.as_ref();
 
     let manifest_path = manifest_path
         .map(Ok)
@@ -60,6 +57,33 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     let workspace_metadata = metadata.read_workspace_metadata()?;
 
     let member = metadata.query_for_member(package)?;
+    let package_metadata_bin = member.read_package_metadata()?.bin;
 
-    todo!();
+    let mut urls = vec![];
+    let mut file_paths = vec![];
+
+    for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata_bin {
+        if problems.map_or(true, |ps| ps.contains(index)) {
+            urls.extend(problem.url());
+
+            let test_suite_path = crate::testing::test_suite_path(
+                &metadata.workspace_root,
+                &workspace_metadata.test_suite,
+                &problem,
+            )?;
+
+            file_paths.push((&member.bin_target(&name)?.src_path, test_suite_path));
+        }
+    }
+
+    crate::web::retrieve_testcases::dl_for_existing_package(
+        &package_metadata_bin,
+        problems,
+        full,
+        &metadata.workspace_root,
+        &workspace_metadata.test_suite,
+        shell,
+    )?;
+
+    Ok(())
 }

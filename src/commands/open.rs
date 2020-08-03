@@ -1,8 +1,5 @@
 use crate::{
-    project::{
-        MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem,
-        TargetProblemYukicoder,
-    },
+    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
     shell::ColorChoice,
 };
 use maplit::hashset;
@@ -69,14 +66,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata_bin {
         if problems.as_ref().map_or(true, |ps| ps.contains(index)) {
-            urls.extend(match problem {
-                TargetProblem::Atcoder { url, .. }
-                | TargetProblem::Codeforces { url, .. }
-                | TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { url, .. })
-                | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { url, .. }) => {
-                    url.clone()
-                }
-            });
+            urls.extend(problem.url());
 
             let test_suite_path = crate::testing::test_suite_path(
                 &metadata.workspace_root,
@@ -95,7 +85,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     if !missing.is_empty() {
         shell.status("Retrieving", "missing test cases")?;
 
-        crate::web::retrieve_testcases::dl_missing(
+        crate::web::retrieve_testcases::dl_for_existing_package(
             &package_metadata_bin,
             Some(&missing),
             full,

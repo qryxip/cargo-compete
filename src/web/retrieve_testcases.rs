@@ -24,14 +24,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub(crate) fn dl_missing(
+pub(crate) fn dl_for_existing_package(
     package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBin>,
     indexes: Option<&HashSet<String>>,
     full: bool,
     workspace_root: &Path,
     test_suite_path: &crate::project::TemplateString,
     shell: &mut Shell,
-) -> anyhow::Result<Vec<PathBuf>> {
+) -> anyhow::Result<()> {
     let mut atcoder_targets = btreemap!();
     let mut codeforces_targets = btreemap!();
     let mut yukicoder_problem_targets = btreeset!();
@@ -93,16 +93,10 @@ pub(crate) fn dl_missing(
         )?);
     }
 
-    let mut test_suite_paths = vec![];
     for outcome in outcomes {
-        test_suite_paths.extend(save_test_cases(
-            workspace_root,
-            test_suite_path,
-            outcome,
-            shell,
-        )?);
+        save_test_cases(workspace_root, test_suite_path, outcome, shell)?;
     }
-    Ok(test_suite_paths)
+    Ok(())
 }
 
 pub(crate) fn dl_from_atcoder(

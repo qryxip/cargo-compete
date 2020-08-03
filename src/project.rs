@@ -192,6 +192,17 @@ pub(crate) enum TargetProblem {
     Yukicoder(TargetProblemYukicoder),
 }
 
+impl TargetProblem {
+    pub(crate) fn url(&self) -> Option<&Url> {
+        match self {
+            Self::Atcoder { url, .. }
+            | Self::Codeforces { url, .. }
+            | Self::Yukicoder(TargetProblemYukicoder::Problem { url, .. })
+            | Self::Yukicoder(TargetProblemYukicoder::Contest { url, .. }) => url.as_ref(),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
 pub(crate) enum TargetProblemYukicoder {
