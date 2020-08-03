@@ -220,7 +220,7 @@ fn write_workspace_metadata_toml(
     let content = format!(
         r#"[cargo-compete]
 new-workspace-member = "include" # "include", "focus"
-test-suite = "./testcases/{{contest}}/{{problem | kebab-case}}.yml"
+test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
 #open = "vscode" # "vscode", "emacsclient"
 
 [cargo-compete.template]
