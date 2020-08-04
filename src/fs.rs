@@ -39,26 +39,6 @@ pub(crate) fn read_yaml<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow:
         .with_context(|| format!("could not parse the YAML file at `{}`", path.display()))
 }
 
-pub(crate) fn read_toml_preserving<T: DeserializeOwned, P: AsRef<Path>>(
-    path: P,
-) -> anyhow::Result<(T, toml_edit::Document)> {
-    let path = path.as_ref();
-    let content = read_to_string(path)?;
-    let value = toml::from_str(&content).with_context(|| {
-        format!(
-            "could not parse the {} at `{}`",
-            if path.file_name() == Some("Cargo.toml".as_ref()) {
-                "manifest"
-            } else {
-                "TOML file"
-            },
-            path.display()
-        )
-    })?;
-    let edit = content.parse()?;
-    Ok((value, edit))
-}
-
 pub(crate) fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> anyhow::Result<()> {
     let path = path.as_ref();
     std::fs::write(path, content).with_context(|| format!("could not write `{}`", path.display()))

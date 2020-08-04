@@ -79,8 +79,8 @@ pub(crate) enum NewWorkspaceMember {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTempate {
-    pub(crate) code: PathBuf,
-    //dependencies: Option<_>,
+    pub(crate) manifest: PathBuf,
+    pub(crate) src: PathBuf,
 }
 
 #[derive(Deserialize, Debug)]
@@ -219,21 +219,12 @@ impl Metadata {
         problems_are_yukicoder_no: bool,
         shell: &mut Shell,
     ) -> anyhow::Result<Vec<PathBuf>> {
-        let (cargo_compete_config, cargo_compete_config_edit) =
-            self.read_compete_toml_preserving()?;
+        let cargo_compete_config = self.read_compete_toml()?;
 
-        let mut manifest = format!(
-            r#"[package]
-name = ""
-version = "0.1.0"
-edition = "2018"
-publish = false
-
-[package.metadata.cargo-compete.bin]
-{}"#,
-            problems
-                .keys()
-                .map(|problem_index| format!(
+        let mut package_metadata_cargo_compete_bin = problems
+            .keys()
+            .map(|problem_index| {
+                format!(
                     r#"{} = {{ name = "", problem = {{ {} }} }}
 "#,
                     escape_key(&problem_index.to_kebab_case()),
@@ -249,22 +240,21 @@ publish = false
                             r#"platform = "", kind = "contest", contest = "", index = "", url = """#
                         }
                     }
-                ))
-                .join("")
-        )
-        .parse::<toml_edit::Document>()?;
+                )
+            })
+            .join("")
+            .parse::<toml_edit::Document>()?;
 
-        manifest["package"]["name"] = toml_edit::value(package_name);
-
-        let tbl = &mut manifest["package"]["metadata"]["cargo-compete"]["bin"];
         for (problem_index, problem_url) in problems {
-            tbl[problem_index.to_kebab_case()]["name"] = toml_edit::value(format!(
-                "{}-{}",
-                package_name,
-                problem_index.to_kebab_case(),
-            ));
+            package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["name"] =
+                toml_edit::value(format!(
+                    "{}-{}",
+                    package_name,
+                    problem_index.to_kebab_case(),
+                ));
 
-            let tbl = &mut tbl[problem_index.to_kebab_case()]["problem"];
+            let tbl =
+                &mut package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["problem"];
 
             match cargo_compete_config.platform {
                 CargoCompeteConfigPlatform::Atcoder { .. } => {
@@ -292,6 +282,29 @@ publish = false
             }
         }
 
+        let template_manifest_path = self
+            .workspace_root
+            .join(&cargo_compete_config.template.manifest);
+
+        let mut manifest = crate::fs::read_to_string(&template_manifest_path)?
+            .parse::<toml_edit::Document>()
+            .with_context(|| {
+                format!(
+                    "could not parse the manifest at `{}`",
+                    template_manifest_path.display(),
+                )
+            })?;
+
+        manifest["package"]["name"] = toml_edit::value(package_name);
+
+        set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
+        set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);
+        set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]["bin"]);
+
+        for (key, val) in package_metadata_cargo_compete_bin.as_table().iter() {
+            manifest["package"]["metadata"]["cargo-compete"]["bin"][key] = val.clone();
+        }
+
         if let Ok(new_manifest) = manifest
             .to_string()
             .replace("\"} }", "\" } }")
@@ -316,11 +329,6 @@ publish = false
             arr
         });
 
-        if cargo_compete_config_edit["template"]["dependencies"].is_table() {
-            manifest["dependencies"] =
-                cargo_compete_config_edit["template"]["dependencies"].clone();
-        }
-
         let pkg_manifest_dir = self.workspace_root.join(package_name);
 
         if pkg_manifest_dir.exists() {
@@ -334,9 +342,8 @@ publish = false
         let src_bin = pkg_manifest_dir.join("src").join("bin");
         crate::fs::create_dir_all(&src_bin)?;
 
-        let template_code = crate::fs::read_to_string(
-            self.workspace_root.join(cargo_compete_config.template.code),
-        )?;
+        let template_code =
+            crate::fs::read_to_string(self.workspace_root.join(cargo_compete_config.template.src))?;
 
         let src_paths = problems
             .keys()
@@ -390,16 +397,16 @@ publish = false
                 .trim_end()
                 .to_owned()
         }
-    }
-}
 
-#[ext]
-impl Metadata {
-    fn read_compete_toml_preserving(
-        &self,
-    ) -> anyhow::Result<(CargoCompeteConfig, toml_edit::Document)> {
-        let path = self.workspace_root.join("compete.toml");
-        crate::fs::read_toml_preserving(path)
+        fn set_implicit_table_if_none(item: &mut toml_edit::Item) {
+            if item.is_none() {
+                *item = {
+                    let mut tbl = toml_edit::Table::new();
+                    tbl.set_implicit(true);
+                    toml_edit::Item::Table(tbl)
+                };
+            }
+        }
     }
 }
 
