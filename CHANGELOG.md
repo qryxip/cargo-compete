@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.1] - 2020-08-04Z
 
 ### Fixed
 
-- Previously `cargo compete test` was trying to test cross-compiled program even on Windows and macOS. Now it just execute `"$CARGO" build` without `--target`.
+- Previously `cargo compete test` was trying to test cross-compiled program even on Windows and macOS. Now it just execute `"$CARGO" build` without `--target`. ([#10](https://github.com/qryxip/cargo-compete/pull/10))
 
 ## [0.2.0] - 2020-08-04Z
 
