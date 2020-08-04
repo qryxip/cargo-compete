@@ -230,7 +230,8 @@ test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
 [template]
-code = "./cargo-compete-template/src/main.rs"
+manifest = "./cargo-compete-template/Cargo.toml"
+src = "./cargo-compete-template/src/main.rs"
 
 [template.dependencies]
 {template_dependencies}
@@ -272,6 +273,10 @@ name = "cargo-compete-template"
 version = "0.1.0"
 edition = "2018"
 publish = false
+
+[[bin]]
+name = "cargo-compete-template"
+path = "src/main.rs"
 "#
     .to_owned();
 
