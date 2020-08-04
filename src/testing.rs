@@ -1,8 +1,7 @@
 use crate::{
     project::{
+        CargoCompeteConfig, CargoCompeteConfigPlatform, CargoCompeteConfigPlatformViaBinary,
         PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem, TargetProblemYukicoder,
-        WorkspaceMetadataCargoCompete, WorkspaceMetadataCargoCompetePlatform,
-        WorkspaceMetadataCargoCompetePlatformViaBinary,
     },
     shell::Shell,
 };
@@ -17,7 +16,7 @@ use std::path::{Path, PathBuf};
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a Metadata,
     pub(crate) member: &'a Package,
-    pub(crate) workspace_metadata: &'a WorkspaceMetadataCargoCompete,
+    pub(crate) cargo_compete_config: &'a CargoCompeteConfig,
     pub(crate) package_metadata_bin: &'a PackageMetadataCargoCompeteBin,
     pub(crate) release: bool,
     pub(crate) display_limit: Size,
@@ -28,7 +27,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let Args {
         metadata,
         member,
-        workspace_metadata,
+        cargo_compete_config,
         package_metadata_bin,
         release,
         display_limit,
@@ -39,7 +38,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_suite_path = test_suite_path(
         &metadata.workspace_root,
-        &workspace_metadata.test_suite,
+        &cargo_compete_config.test_suite,
         &package_metadata_bin.problem,
     )?;
 
@@ -61,36 +60,35 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let cargo_exe = crate::process::cargo_exe()?;
 
-    let (build_program, target_arg, build_artifact) =
-        if let WorkspaceMetadataCargoCompetePlatform::Atcoder {
-            via_binary: Some(WorkspaceMetadataCargoCompetePlatformViaBinary { target, cross, .. }),
-        } = &workspace_metadata.platform
-        {
-            (
-                if let Some(cross) = cross {
-                    cross
-                } else {
-                    &cargo_exe
-                },
-                vec!["--target", target],
-                metadata
-                    .target_directory
-                    .join(target)
-                    .join(if release { "release" } else { "debug" })
-                    .join(&bin.name)
-                    .with_extension(if cfg!(windows) { "exe" } else { "" }),
-            )
-        } else {
-            (
-                &cargo_exe,
-                vec![],
-                metadata
-                    .target_directory
-                    .join(if release { "release" } else { "debug" })
-                    .join(&bin.name)
-                    .with_extension(if cfg!(windows) { "exe" } else { "" }),
-            )
-        };
+    let (build_program, target_arg, build_artifact) = if let CargoCompeteConfigPlatform::Atcoder {
+        via_binary: Some(CargoCompeteConfigPlatformViaBinary { target, cross, .. }),
+    } = &cargo_compete_config.platform
+    {
+        (
+            if let Some(cross) = cross {
+                cross
+            } else {
+                &cargo_exe
+            },
+            vec!["--target", target],
+            metadata
+                .target_directory
+                .join(target)
+                .join(if release { "release" } else { "debug" })
+                .join(&bin.name)
+                .with_extension(if cfg!(windows) { "exe" } else { "" }),
+        )
+    } else {
+        (
+            &cargo_exe,
+            vec![],
+            metadata
+                .target_directory
+                .join(if release { "release" } else { "debug" })
+                .join(&bin.name)
+                .with_extension(if cfg!(windows) { "exe" } else { "" }),
+        )
+    };
 
     let cwd = member.manifest_path.parent().unwrap();
 
@@ -122,7 +120,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
 pub(crate) fn test_suite_path(
     workspace_root: &Path,
-    workspace_metadata_test_suite: &liquid::Template,
+    cargo_compete_config_test_suite: &liquid::Template,
     target_problem: &TargetProblem,
 ) -> anyhow::Result<PathBuf> {
     let vars = match target_problem {
@@ -136,7 +134,7 @@ pub(crate) fn test_suite_path(
         }
     };
 
-    let test_suite_path = workspace_metadata_test_suite.render(&vars)?;
+    let test_suite_path = cargo_compete_config_test_suite.render(&vars)?;
     let test_suite_path = Path::new(&test_suite_path);
     let test_suite_path = test_suite_path
         .strip_prefix(".")

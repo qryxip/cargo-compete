@@ -1,7 +1,7 @@
 use crate::{
     project::{
-        MetadataExt as _, PackageExt as _, TargetProblem, TargetProblemYukicoder,
-        WorkspaceMetadataCargoCompetePlatform, WorkspaceMetadataCargoCompetePlatformViaBinary,
+        CargoCompeteConfigPlatform, CargoCompeteConfigPlatformViaBinary, MetadataExt as _,
+        PackageExt as _, TargetProblem, TargetProblemYukicoder,
     },
     shell::ColorChoice,
     web::credentials,
@@ -87,7 +87,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
-    let workspace_metadata = metadata.read_workspace_metadata()?;
+    let cargo_compete_config = metadata.read_compete_toml()?;
 
     let member = metadata.query_for_member(package.as_deref())?;
 
@@ -106,7 +106,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         crate::testing::test(crate::testing::Args {
             metadata: &metadata,
             member,
-            workspace_metadata: &workspace_metadata,
+            cargo_compete_config: &cargo_compete_config,
             package_metadata_bin: &package_metadata_bin,
             release,
             display_limit,
@@ -116,15 +116,15 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     let bin = member.bin_target(&package_metadata_bin.name)?;
 
-    let code = if let WorkspaceMetadataCargoCompetePlatform::Atcoder {
+    let code = if let CargoCompeteConfigPlatform::Atcoder {
         via_binary:
-            Some(WorkspaceMetadataCargoCompetePlatformViaBinary {
+            Some(CargoCompeteConfigPlatformViaBinary {
                 target,
                 cross,
                 strip,
                 upx,
             }),
-    } = &workspace_metadata.platform
+    } = &cargo_compete_config.platform
     {
         let original_source_code = crate::fs::read_to_string(&bin.src_path)?;
 

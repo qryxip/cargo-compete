@@ -1,5 +1,5 @@
 use crate::{
-    project::{MetadataExt as _, WorkspaceMetadataCargoCompetePlatform},
+    project::{CargoCompeteConfigPlatform, MetadataExt as _},
     shell::ColorChoice,
 };
 use anyhow::Context as _;
@@ -60,10 +60,10 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
         .map(Ok)
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
-    let workspace_metadata = metadata.read_workspace_metadata()?;
+    let cargo_compete_config = metadata.read_compete_toml()?;
 
-    match workspace_metadata.platform {
-        WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
+    match cargo_compete_config.platform {
+        CargoCompeteConfigPlatform::Atcoder { .. } => {
             let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -90,7 +90,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
-                    &workspace_metadata.test_suite,
+                    &cargo_compete_config.test_suite,
                     outcome,
                     shell,
                 )?,
@@ -100,7 +100,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             if open {
                 crate::open::open(
                     &urls,
-                    workspace_metadata.open,
+                    cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
                     &cwd,
@@ -108,7 +108,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        WorkspaceMetadataCargoCompetePlatform::Codeforces => {
+        CargoCompeteConfigPlatform::Codeforces => {
             let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -135,7 +135,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
-                    &workspace_metadata.test_suite,
+                    &cargo_compete_config.test_suite,
                     outcome,
                     shell,
                 )?,
@@ -145,7 +145,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             if open {
                 crate::open::open(
                     &urls,
-                    workspace_metadata.open,
+                    cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
                     &cwd,
@@ -153,7 +153,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
+        CargoCompeteConfigPlatform::Yukicoder => {
             let contest = contest.as_deref();
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -182,7 +182,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, is_no, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
-                    &workspace_metadata.test_suite,
+                    &cargo_compete_config.test_suite,
                     outcome,
                     shell,
                 )?,
@@ -192,7 +192,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             if open {
                 crate::open::open(
                     &urls,
-                    workspace_metadata.open,
+                    cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
                     &cwd,
