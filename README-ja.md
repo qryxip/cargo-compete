@@ -24,17 +24,21 @@
 
 ## インストール
 
+### Crates.io
+
 ```console
 $ cargo install cargo-compete
 ```
 
-または
+### `master`
 
 ```console
 $ cargo install --git https://github.com/qryxip/cargo-compete
 ```
 
-[GitHub Releases](https://github.com/qryxip/cargo-compete/releases)でバイナリを提供しています。
+### GitHub Releases
+
+[バイナリでの提供]((https://github.com/qryxip/cargo-compete/releases))もしています。
 
 ## 使い方
 
@@ -42,89 +46,95 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 Gitリポジトリ下に、各サイトに対する[ワークスペース](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html)を作ります。
 
-AtCoderを選択に入れる場合、
-
-1. クレートを使用しない
-2. クレートを使用する
-3. バイナリ提出を行なう
-
-の三択を聞き、それに応じた設定を生成します。
-
-![Screenshot](https://user-images.githubusercontent.com/14125495/89116339-16daa200-d4ce-11ea-9c5d-0a67aa958ce3.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
 
 ### `cargo compete login`
 
-`download`コマンド等ではログインが必要であれば認証情報を要求し、ログインしますが`cargo compete login`で明示的にログインできます。
+サイトにログインします。
 
 **ワークスペースやパッケージは対象に取りません。** 引数で与えられた`platform`に対してログインします。
 
+ただし`new`コマンド等ではログインが必要になった場合でも認証情報を聞いてログインし、続行するため事前にこのコマンドを実行しなくてもよいです。
+
 ### `cargo compete participate`
 
-コンテストに参加登録します。 同様に、`download`コマンド等で参加登録は行なわれますがこのコマンドで明示的に参加登録ができます。
+コンテストに参加登録します。
 
 **ワークスペースやパッケージは対象に取りません。** 引数で与えられた`platform`と`contest`に対して参加登録します。
 
-### `cargo compete download`
+同様に、`new`コマンド等で自動で参加登録するため事前にこのコマンドを実行しなくてもよいです。
 
-**インターフェイスがよろしくないのでv0.2.0で`new`, `open`, `download`の3つに分割する予定です。** ([#3](https://github.com/qryxip/cargo-compete/pull/3))
+### `cargo compete new`
 
-テストケースの取得を行います。
+テストケースを取得し、コンテストに応じたパッケージを作ります。
 
-**workspace rootかworkspace memberのどちらかを対象に取ります。**
+**ワークスペースを対象に取ります。**
 
-- workspace rootを対象にした場合、新たにパッケージを作成します。
+![Screenshot](https://user-images.githubusercontent.com/14125495/89306652-206d3100-d6ab-11ea-8d33-8bf3e3419bb8.png)
 
-    ![Screenshot](https://user-images.githubusercontent.com/14125495/89116540-2d81f880-d4d0-11ea-8d6d-14e077cbfa3d.png)
-
-- 既存のworkspace memberを対象にした場合、テストケースを再取得するだけです。
-
-    ![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
-
-`--open`で問題のページを開きます。また`workspace-metadata.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをVSCodeまたはEmacsで開くことができます。
+`--open`で問題のページをブラウザで開きます。また`compete.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをエディタで開くことができます。
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89118593-b05f7f00-d4e1-11ea-9644-32c3560bda29.png)
 
+### `cargo compete download`
+
+テストケースの再取得を行います。
+
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
+
+### `cargo compete open`
+
+`new`の`--open`と同様に問題のページをブラウザで、コードとテストファイルをエディタで開きます。
+
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
+
 ### `cargo compete test`
 
-テストを行ないます。 ただし`submit`時にも提出するコードをテストします。
+テストを行います。 ただし`submit`時にも提出するコードをテストします。
 
-**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。`workspace-metadata.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。**
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
+`compete.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。
 
 ### `cargo compete submit`
 
-提出を行ないます。
+提出を行います。
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89117413-8786bc00-d4d8-11ea-92b3-ce71151c3d45.gif)
 
-**`test`と同様にパッケージを対象に取ります。パッケージ内に`cd`して実行してください。対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。**
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
+対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。
 
 ## 設定
 
-**v0.2.0で`workspace-metadata.toml`は`compete.toml`にして、フォーマットも変更する予定です。** ([#4](https://github.com/qryxip/cargo-compete/pull/4), [#5](https://github.com/qryxip/cargo-compete/pull/5), [#7](https://github.com/qryxip/cargo-compete/pull/7), [#8](https://github.com/qryxip/cargo-compete/pull/8))
-
-設定は各ワークスペース下にある`workspace-metadata.toml`にあります。
+設定は各ワークスペース下にある`compete.toml`にあります。
 バイナリ提出関連の設定もこちらです。
 
 ```toml
-[cargo-compete]
-new-workspace-member = "include" # "include", "focus"
-test-suite = "./testcases/{contest}/{problem | kebab-case}.yml"
-#open = "vscode" # "vscode", "emacsclient"
+# How to manage new workspace members ("include", "focus")
+new-workspace-member = "include"
+# Path to the test file (Liquid template)
+test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
+# Open files with the command (`jq` command)
+#
+# VSCode:
+#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", .manifest_dir]'
+# Emacs:
+#open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
-[cargo-compete.template]
-code = "./cargo-compete-template/src/main.rs"
+[template]
+manifest = "./cargo-compete-template/Cargo.toml"
+src = "./cargo-compete-template/src/main.rs"
 
-[cargo-compete.template.dependencies]
-proconio = { version = "=0.3.6", features = ["derive"] }
-
-[cargo-compete.platform]
+[platform]
 kind = "atcoder"
 
-[cargo-compete.platform.via-binary]
-target = "x86_64-unknown-linux-musl"
-#cross = "cross"
-strip = "strip"
-#upx = "upx"
+#[platform.via-binary]
+#target = "x86_64-unknown-linux-musl"
+##cross = "cross"
+#strip = "strip"
+##upx = "upx"
 ```
 
 各`bin` targetに紐付くサイト上の問題は、パッケージの`Cargo.toml`の`[package.metadata]`に記述されます。
@@ -137,8 +147,8 @@ edition = "2018"
 publish = false
 
 [package.metadata.cargo-compete.bin]
-a = { name = "practice-a", problem = { platform = "atcoder", contest = "practice", index = "A" } }
-b = { name = "practice-b", problem = { platform = "atcoder", contest = "practice", index = "B" } }
+a = { name = "practice-a", problem = { platform = "atcoder", contest = "practice", index = "A", url = "https://atcoder.jp/contests/practice/tasks/practice_1" } }
+b = { name = "practice-b", problem = { platform = "atcoder", contest = "practice", index = "B", url = "https://atcoder.jp/contests/practice/tasks/practice_2" } }
 
 [[bin]]
 name = "practice-a"
