@@ -400,7 +400,7 @@ publish = false
 
 #[ext]
 impl Metadata {
-    fn read_workspace_metadata_preserving(
+    pub(crate) fn read_workspace_metadata_preserving(
         &self,
     ) -> anyhow::Result<(WorkspaceMetadataCargoCompete, toml_edit::Item)> {
         let path = self.workspace_root.join("workspace-metadata.toml");
