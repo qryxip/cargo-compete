@@ -145,7 +145,6 @@ exclude = []
 
         write_compete_toml(
             &root_manifest_dir.join("compete.toml"),
-            dependencies,
             PlatformKind::Atcoder,
             atcoder_crates,
             shell,
@@ -192,7 +191,6 @@ exclude = []
 
             write_compete_toml(
                 &root_manifest_dir.join("compete.toml"),
-                None,
                 platform,
                 AtcoderCrates::None,
                 shell,
@@ -212,7 +210,6 @@ exclude = []
 
 fn write_compete_toml(
     path: &Path,
-    dependencies: Option<&str>,
     platform: PlatformKind,
     atcoder_crates: AtcoderCrates,
     shell: &mut Shell,
@@ -233,8 +230,6 @@ test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
 manifest = "./cargo-compete-template/Cargo.toml"
 src = "./cargo-compete-template/src/main.rs"
 
-[template.dependencies]
-{template_dependencies}
 [platform]
 kind = "{platform_kind}"
 
@@ -244,7 +239,6 @@ kind = "{platform_kind}"
 {comment}strip = "strip"
 {comment}#upx = "upx"
 "#,
-        template_dependencies = dependencies.unwrap_or("\n"),
         platform_kind = platform.to_kebab_case_str(),
         comment = if atcoder_crates == AtcoderCrates::UseViaBinary {
             ""
