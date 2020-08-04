@@ -100,7 +100,7 @@ AtCoderを選択に入れる場合、
 
 ## 設定
 
-**v0.2.0で`workspace-metadata.toml`のフォーマットを変更する予定です。** ([#4](https://github.com/qryxip/cargo-compete/pull/4))
+**v0.2.0で`workspace-metadata.toml`のフォーマットを変更する予定です。** ([#4](https://github.com/qryxip/cargo-compete/pull/4), [#5](https://github.com/qryxip/cargo-compete/pull/5))
 
 設定は各ワークスペース下にある`workspace-metadata.toml`にあります。
 バイナリ提出関連の設定もこちらです。
