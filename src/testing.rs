@@ -1,10 +1,10 @@
 use crate::{
     project::{
-        CargoCompeteConfig, CargoCompeteConfigPlatform, CargoCompeteConfigPlatformViaBinary,
         PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem, TargetProblemYukicoder,
     },
     shell::Shell,
 };
+use anyhow::ensure;
 use az::SaturatingAs as _;
 use cargo_metadata::{Metadata, Package};
 use human_size::{Byte, Size};
@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a Metadata,
     pub(crate) member: &'a Package,
-    pub(crate) cargo_compete_config: &'a CargoCompeteConfig,
+    pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
     pub(crate) package_metadata_bin: &'a PackageMetadataCargoCompeteBin,
     pub(crate) release: bool,
     pub(crate) display_limit: Size,
@@ -27,7 +27,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let Args {
         metadata,
         member,
-        cargo_compete_config,
+        cargo_compete_config_test_suite,
         package_metadata_bin,
         release,
         display_limit,
@@ -38,7 +38,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_suite_path = test_suite_path(
         &metadata.workspace_root,
-        &cargo_compete_config.test_suite,
+        cargo_compete_config_test_suite,
         &package_metadata_bin.problem,
     )?;
 
@@ -58,54 +58,28 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         }
     };
 
-    let cargo_exe = crate::process::cargo_exe()?;
-
-    let (build_program, target_arg, build_artifact) = if let CargoCompeteConfigPlatform::Atcoder {
-        via_binary: Some(CargoCompeteConfigPlatformViaBinary { target, cross, .. }),
-    } = &cargo_compete_config.platform
-    {
-        (
-            if let Some(cross) = cross {
-                cross
-            } else {
-                &cargo_exe
-            },
-            vec!["--target", target],
-            metadata
-                .target_directory
-                .join(target)
-                .join(if release { "release" } else { "debug" })
-                .join(&bin.name)
-                .with_extension(if cfg!(windows) { "exe" } else { "" }),
-        )
-    } else {
-        (
-            &cargo_exe,
-            vec![],
-            metadata
-                .target_directory
-                .join(if release { "release" } else { "debug" })
-                .join(&bin.name)
-                .with_extension(if cfg!(windows) { "exe" } else { "" }),
-        )
-    };
-
-    let cwd = member.manifest_path.parent().unwrap();
-
-    crate::process::with_which(build_program, cwd)?
-        .args(&["build", "--bin"])
-        .arg(&bin.name)
+    crate::process::process(crate::process::cargo_exe()?, &metadata.workspace_root)
+        .args(&["build", "--bin", &bin.name])
         .args(if release { &["--release"] } else { &[] })
-        .args(&target_arg)
+        .arg("--manifest-path")
+        .arg(&member.manifest_path)
         .exec_with_shell_status(shell)?;
+
+    let artifact = metadata
+        .target_directory
+        .join(if release { "release" } else { "debug" })
+        .join(&bin.name)
+        .with_extension(if cfg!(windows) { "exe" } else { "" });
+
+    ensure!(artifact.exists(), "`{}` does not exist", artifact.display());
 
     let outcome = snowchains_core::judge::judge(
         shell.progress_draw_target(),
         tokio::signal::ctrl_c,
         &CommandExpression {
-            program: build_artifact.into(),
+            program: artifact.into(),
             args: vec![],
-            cwd: cwd.to_owned(),
+            cwd: metadata.workspace_root.clone(),
             env: btreemap!(),
         },
         &test_cases,

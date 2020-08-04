@@ -106,7 +106,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         crate::testing::test(crate::testing::Args {
             metadata: &metadata,
             member,
-            cargo_compete_config: &cargo_compete_config,
+            cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
             package_metadata_bin: &package_metadata_bin,
             release,
             display_limit,
