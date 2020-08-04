@@ -5,7 +5,9 @@ use std::{
     env,
     ffi::{OsStr, OsString},
     fmt,
+    io::Write as _,
     path::{Path, PathBuf},
+    process::Stdio,
 };
 
 #[derive(Debug)]
@@ -13,6 +15,7 @@ pub(crate) struct ProcessBuilder {
     program: OsString,
     args: Vec<OsString>,
     cwd: PathBuf,
+    pipe_input: Option<Vec<u8>>,
 }
 
 impl ProcessBuilder {
@@ -26,12 +29,13 @@ impl ProcessBuilder {
         self
     }
 
-    pub(crate) fn exec(&self) -> anyhow::Result<()> {
-        let status = std::process::Command::new(&self.program)
-            .args(&self.args)
-            .current_dir(&self.cwd)
-            .status()?;
+    pub(crate) fn pipe_input(&mut self, pipe_input: Option<impl Into<Vec<u8>>>) -> &mut Self {
+        self.pipe_input = pipe_input.map(Into::into);
+        self
+    }
 
+    pub(crate) fn exec(&self) -> anyhow::Result<()> {
+        let status = self.spawn(Stdio::inherit())?.wait()?;
         if !status.success() {
             bail!("{} didn't exit successfully: {}", self, status);
         }
@@ -41,6 +45,41 @@ impl ProcessBuilder {
     pub(crate) fn exec_with_shell_status(&self, shell: &mut Shell) -> anyhow::Result<()> {
         shell.status("Running", self)?;
         self.exec()
+    }
+
+    fn read(&self) -> anyhow::Result<String> {
+        let std::process::Output { status, stdout, .. } =
+            self.spawn(Stdio::piped())?.wait_with_output()?;
+        if !status.success() {
+            bail!("{} didn't exit successfully: {}", self, status);
+        }
+        String::from_utf8(stdout).with_context(|| "non UTF-8 output")
+    }
+
+    pub(crate) fn read_with_shell_status(&self, shell: &mut Shell) -> anyhow::Result<String> {
+        shell.status("Running", self)?;
+        self.read()
+    }
+
+    fn spawn(&self, stdout: Stdio) -> anyhow::Result<std::process::Child> {
+        let mut child = std::process::Command::new(&self.program)
+            .args(&self.args)
+            .current_dir(&self.cwd)
+            .stdin(if self.pipe_input.is_some() {
+                Stdio::piped()
+            } else {
+                Stdio::inherit()
+            })
+            .stdout(stdout)
+            .spawn()?;
+
+        if let (Some(mut stdin), Some(pipe_input)) = (child.stdin.take(), self.pipe_input.as_ref())
+        {
+            stdin.write_all(pipe_input)?;
+            stdin.flush()?;
+        }
+
+        Ok(child)
     }
 }
 
@@ -64,6 +103,7 @@ pub(crate) fn process(program: impl AsRef<Path>, cwd: impl AsRef<Path>) -> Proce
         program: program.as_ref().into(),
         args: vec![],
         cwd: cwd.as_ref().into(),
+        pipe_input: None,
     }
 }
 
