@@ -77,7 +77,8 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     }
 
     crate::web::retrieve_testcases::dl_for_existing_package(
-        &package_metadata_bin,
+        &member,
+        &mut { package_metadata_bin },
         problems,
         full,
         &metadata.workspace_root,

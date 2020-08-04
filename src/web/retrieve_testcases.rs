@@ -3,10 +3,11 @@ use crate::{
     shell::Shell,
     web::credentials,
 };
+use cargo_metadata::Package;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
 use liquid::object;
-use maplit::{btreemap, btreeset};
+use maplit::btreemap;
 use snowchains_core::{
     testsuite::{Additional, BatchTestSuite, TestSuite},
     web::{
@@ -14,20 +15,22 @@ use snowchains_core::{
         AtcoderRetrieveSampleTestCasesCredentials, AtcoderRetrieveTestCasesTargets, Codeforces,
         CodeforcesRetrieveSampleTestCasesCredentials, CodeforcesRetrieveTestCasesTargets,
         CookieStorage, RetrieveFullTestCases, RetrieveTestCases, RetrieveTestCasesOutcome,
-        RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblemTextFiles, Yukicoder,
+        RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
+        RetrieveTestCasesOutcomeProblemTextFiles, Yukicoder,
         YukicoderRetrieveFullTestCasesCredentials, YukicoderRetrieveTestCasesTargets,
     },
 };
 use std::{
     borrow::BorrowMut as _,
     cell::RefCell,
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     path::{Path, PathBuf},
 };
 
 pub(crate) fn dl_for_existing_package(
-    package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBin>,
-    indexes: Option<&HashSet<String>>,
+    package: &Package,
+    package_metadata_bin: &mut IndexMap<String, PackageMetadataCargoCompeteBin>,
+    bin_indexes: Option<&HashSet<String>>,
     full: bool,
     workspace_root: &Path,
     test_suite_path: &liquid::Template,
@@ -35,29 +38,29 @@ pub(crate) fn dl_for_existing_package(
 ) -> anyhow::Result<()> {
     let mut atcoder_targets = btreemap!();
     let mut codeforces_targets = btreemap!();
-    let mut yukicoder_problem_targets = btreeset!();
+    let mut yukicoder_problem_targets = btreemap!();
     let mut yukicoder_contest_targets = btreemap!();
 
-    for (index, PackageMetadataCargoCompeteBin { problem, .. }) in package_metadata_bin {
-        if indexes.map_or(true, |indexes| indexes.contains(index)) {
+    for (bin_index, PackageMetadataCargoCompeteBin { problem, .. }) in package_metadata_bin {
+        if bin_indexes.map_or(true, |bin_indexes| bin_indexes.contains(bin_index)) {
             match problem {
                 TargetProblem::Atcoder { contest, index, .. } => atcoder_targets
                     .entry(contest.clone())
-                    .or_insert_with(BTreeSet::new)
-                    .insert(index.clone()),
+                    .or_insert_with(BTreeMap::new)
+                    .insert(index.clone(), bin_index.clone()),
                 TargetProblem::Codeforces { contest, index, .. } => codeforces_targets
                     .entry(contest.clone())
-                    .or_insert_with(BTreeSet::new)
-                    .insert(index.clone()),
+                    .or_insert_with(BTreeMap::new)
+                    .insert(index.clone(), bin_index.clone()),
                 TargetProblem::Yukicoder(target) => match target {
                     TargetProblemYukicoder::Problem { no, .. } => {
-                        yukicoder_problem_targets.insert(*no)
+                        yukicoder_problem_targets.insert(no.to_string(), bin_index.clone())
                     }
                     TargetProblemYukicoder::Contest { contest, index, .. } => {
                         yukicoder_contest_targets
                             .entry(contest.clone())
-                            .or_insert_with(BTreeSet::new)
-                            .insert(index.clone())
+                            .or_insert_with(BTreeMap::new)
+                            .insert(index.clone(), bin_index.clone())
                     }
                 },
             };
@@ -65,37 +68,69 @@ pub(crate) fn dl_for_existing_package(
     }
 
     let mut outcomes = vec![];
+    let mut urls = vec![];
 
-    for (contest, problems) in atcoder_targets {
-        outcomes.push(dl_from_atcoder(&contest, Some(problems), full, shell)?);
+    for (contest, mut problems) in atcoder_targets {
+        let problem_indexes = problems.keys().cloned().collect();
+        let outcome = dl_from_atcoder(&contest, Some(problem_indexes), full, shell)?;
+        for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
+            if let Some(bin_index) = problems.remove(index) {
+                urls.push((bin_index, url.clone()));
+            }
+        }
+        outcomes.push(outcome);
     }
-    for (contest, problems) in codeforces_targets {
-        outcomes.push(dl_from_codeforces(&contest, Some(problems), shell)?);
+    for (contest, mut problems) in codeforces_targets {
+        let problem_indexes = problems.keys().cloned().collect();
+        let outcome = dl_from_codeforces(&contest, Some(problem_indexes), shell)?;
+        for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
+            if let Some(bin_index) = problems.remove(index) {
+                urls.push((bin_index, url.clone()));
+            }
+        }
+        outcomes.push(outcome);
     }
     if !yukicoder_problem_targets.is_empty() {
-        outcomes.push(dl_from_yukicoder(
-            None,
-            Some(
-                yukicoder_problem_targets
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect(),
-            ),
-            full,
-            shell,
-        )?);
+        let nos = yukicoder_problem_targets.keys().cloned().collect();
+        let outcome = dl_from_yukicoder(None, Some(nos), full, shell)?;
+        for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
+            if let Some(bin_index) = yukicoder_problem_targets.remove(index) {
+                urls.push((bin_index, url.clone()));
+            }
+        }
+        outcomes.push(outcome);
     }
-    for (contest, problems) in yukicoder_contest_targets {
-        outcomes.push(dl_from_yukicoder(
-            Some(&contest),
-            Some(problems),
-            full,
-            shell,
-        )?);
+    for (contest, mut problems) in yukicoder_contest_targets {
+        let problem_indexes = problems.keys().cloned().collect();
+        let outcome = dl_from_yukicoder(Some(&contest), Some(problem_indexes), full, shell)?;
+        for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
+            if let Some(bin_index) = problems.remove(index) {
+                urls.push((bin_index, url.clone()));
+            }
+        }
+        outcomes.push(outcome);
     }
 
     for outcome in outcomes {
         save_test_cases(workspace_root, test_suite_path, outcome, shell)?;
+    }
+
+    let mut added_url = false;
+    let mut new_package_metadata_bin =
+        crate::fs::read_to_string(&package.manifest_path)?.parse::<toml_edit::Document>()?;
+    let bin = &mut new_package_metadata_bin["package"]["metadata"]["cargo-compete"]["bin"];
+
+    for (bin_index, url) in urls {
+        let bin_url = &mut bin[bin_index]["problem"]["url"];
+        if bin_url.is_none() {
+            *bin_url = toml_edit::value(url.as_str());
+            added_url = true;
+        }
+    }
+
+    if added_url {
+        crate::fs::write(&package.manifest_path, new_package_metadata_bin.to_string())?;
+        shell.status("Modified", package.manifest_path.display())?;
     }
     Ok(())
 }
