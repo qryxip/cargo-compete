@@ -29,7 +29,7 @@ pub(crate) struct WorkspaceMetadataCargoCompete {
     #[derivative(Debug = "ignore")]
     #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
     pub(crate) test_suite: liquid::Template,
-    pub(crate) open: Option<Open>,
+    pub(crate) open: Option<String>,
     pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
     pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
 }
@@ -73,13 +73,6 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
             Ok(Value::scalar(input.to_kstr().to_kebab_case()))
         }
     }
-}
-
-#[derive(Deserialize, Clone, Copy, PartialEq, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum Open {
-    Vscode,
-    Emacsclient,
 }
 
 #[derive(Deserialize, Clone, Copy, Debug)]

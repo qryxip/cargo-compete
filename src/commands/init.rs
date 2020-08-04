@@ -219,9 +219,16 @@ fn write_workspace_metadata_toml(
 ) -> anyhow::Result<()> {
     let content = format!(
         r#"[cargo-compete]
-new-workspace-member = "include" # "include", "focus"
+# How to manage new workspace members ("include", "focus")
+new-workspace-member = "include"
+# Path to the test file (Liquid template)
 test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
-#open = "vscode" # "vscode", "emacsclient"
+# Open files with the command (`jq` command)
+#
+# VSCode:
+#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", .manifest_dir]'
+# Emacs:
+#open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
 [cargo-compete.template]
 code = "./cargo-compete-template/src/main.rs"
