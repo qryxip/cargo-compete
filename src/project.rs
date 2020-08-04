@@ -15,23 +15,17 @@ use std::{
 };
 use url::Url;
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-struct WorkspaceMetadata {
-    cargo_compete: WorkspaceMetadataCargoCompete,
-}
-
 #[derive(Deserialize, Derivative)]
 #[derivative(Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct WorkspaceMetadataCargoCompete {
+pub(crate) struct CargoCompeteConfig {
     pub(crate) new_workspace_member: NewWorkspaceMember,
     #[derivative(Debug = "ignore")]
     #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
-    pub(crate) template: WorkspaceMetadataCargoCompeteTemplate,
-    pub(crate) platform: WorkspaceMetadataCargoCompetePlatform,
+    pub(crate) template: CargoCompeteConfigTempate,
+    pub(crate) platform: CargoCompeteConfigPlatform,
 }
 
 fn deserialize_liquid_template_with_custom_filter<'de, D>(
@@ -84,17 +78,17 @@ pub(crate) enum NewWorkspaceMember {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct WorkspaceMetadataCargoCompeteTemplate {
+pub(crate) struct CargoCompeteConfigTempate {
     pub(crate) code: PathBuf,
     //dependencies: Option<_>,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case", tag = "kind")]
-pub(crate) enum WorkspaceMetadataCargoCompetePlatform {
+pub(crate) enum CargoCompeteConfigPlatform {
     Atcoder {
         #[serde(rename = "via-binary")]
-        via_binary: Option<WorkspaceMetadataCargoCompetePlatformViaBinary>,
+        via_binary: Option<CargoCompeteConfigPlatformViaBinary>,
     },
     Codeforces,
     Yukicoder,
@@ -102,7 +96,7 @@ pub(crate) enum WorkspaceMetadataCargoCompetePlatform {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct WorkspaceMetadataCargoCompetePlatformViaBinary {
+pub(crate) struct CargoCompeteConfigPlatformViaBinary {
     pub(crate) target: String,
     pub(crate) cross: Option<PathBuf>,
     pub(crate) strip: Option<PathBuf>,
@@ -165,10 +159,9 @@ pub(crate) enum TargetProblemYukicoder {
 
 #[ext(MetadataExt)]
 impl Metadata {
-    pub(crate) fn read_workspace_metadata(&self) -> anyhow::Result<WorkspaceMetadataCargoCompete> {
-        let path = self.workspace_root.join("workspace-metadata.toml");
-        let WorkspaceMetadata { cargo_compete } = crate::fs::read_toml(path)?;
-        Ok(cargo_compete)
+    pub(crate) fn read_compete_toml(&self) -> anyhow::Result<CargoCompeteConfig> {
+        let path = self.workspace_root.join("compete.toml");
+        crate::fs::read_toml(path)
     }
 
     pub(crate) fn query_for_member<'a, S: AsRef<str>>(
@@ -226,8 +219,8 @@ impl Metadata {
         problems_are_yukicoder_no: bool,
         shell: &mut Shell,
     ) -> anyhow::Result<Vec<PathBuf>> {
-        let (workspace_metadata, workspace_metadata_edit) =
-            self.read_workspace_metadata_preserving()?;
+        let (cargo_compete_config, cargo_compete_config_edit) =
+            self.read_compete_toml_preserving()?;
 
         let mut manifest = format!(
             r#"[package]
@@ -244,15 +237,15 @@ publish = false
                     r#"{} = {{ name = "", problem = {{ {} }} }}
 "#,
                     escape_key(&problem_index.to_kebab_case()),
-                    match (&workspace_metadata.platform, problems_are_yukicoder_no) {
-                        (WorkspaceMetadataCargoCompetePlatform::Atcoder { .. }, _)
-                        | (WorkspaceMetadataCargoCompetePlatform::Codeforces, _) => {
+                    match (&cargo_compete_config.platform, problems_are_yukicoder_no) {
+                        (CargoCompeteConfigPlatform::Atcoder { .. }, _)
+                        | (CargoCompeteConfigPlatform::Codeforces, _) => {
                             r#"platform = "", contest = "", index = "", url = """#
                         }
-                        (WorkspaceMetadataCargoCompetePlatform::Yukicoder, true) => {
+                        (CargoCompeteConfigPlatform::Yukicoder, true) => {
                             r#"platform = "", kind = "no", no = "", url = """#
                         }
-                        (WorkspaceMetadataCargoCompetePlatform::Yukicoder, false) => {
+                        (CargoCompeteConfigPlatform::Yukicoder, false) => {
                             r#"platform = "", kind = "contest", contest = "", index = "", url = """#
                         }
                     }
@@ -273,20 +266,20 @@ publish = false
 
             let tbl = &mut tbl[problem_index.to_kebab_case()]["problem"];
 
-            match workspace_metadata.platform {
-                WorkspaceMetadataCargoCompetePlatform::Atcoder { .. } => {
+            match cargo_compete_config.platform {
+                CargoCompeteConfigPlatform::Atcoder { .. } => {
                     tbl["platform"] = toml_edit::value("atcoder");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
                     tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
-                WorkspaceMetadataCargoCompetePlatform::Codeforces => {
+                CargoCompeteConfigPlatform::Codeforces => {
                     tbl["platform"] = toml_edit::value("codeforces");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
                     tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
-                WorkspaceMetadataCargoCompetePlatform::Yukicoder => {
+                CargoCompeteConfigPlatform::Yukicoder => {
                     tbl["platform"] = toml_edit::value("yukicoder");
                     if problems_are_yukicoder_no {
                         tbl["no"] = toml_edit::value(&**problem_index);
@@ -323,8 +316,9 @@ publish = false
             arr
         });
 
-        if workspace_metadata_edit["template"]["dependencies"].is_table() {
-            manifest["dependencies"] = workspace_metadata_edit["template"]["dependencies"].clone();
+        if cargo_compete_config_edit["template"]["dependencies"].is_table() {
+            manifest["dependencies"] =
+                cargo_compete_config_edit["template"]["dependencies"].clone();
         }
 
         let pkg_manifest_dir = self.workspace_root.join(package_name);
@@ -340,8 +334,9 @@ publish = false
         let src_bin = pkg_manifest_dir.join("src").join("bin");
         crate::fs::create_dir_all(&src_bin)?;
 
-        let template_code =
-            crate::fs::read_to_string(self.workspace_root.join(workspace_metadata.template.code))?;
+        let template_code = crate::fs::read_to_string(
+            self.workspace_root.join(cargo_compete_config.template.code),
+        )?;
 
         let src_paths = problems
             .keys()
@@ -365,7 +360,7 @@ publish = false
             ),
         )?;
 
-        match workspace_metadata.new_workspace_member {
+        match cargo_compete_config.new_workspace_member {
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
@@ -400,12 +395,11 @@ publish = false
 
 #[ext]
 impl Metadata {
-    pub(crate) fn read_workspace_metadata_preserving(
+    fn read_compete_toml_preserving(
         &self,
-    ) -> anyhow::Result<(WorkspaceMetadataCargoCompete, toml_edit::Item)> {
-        let path = self.workspace_root.join("workspace-metadata.toml");
-        let (WorkspaceMetadata { cargo_compete }, edit) = crate::fs::read_toml_preserving(path)?;
-        Ok((cargo_compete, edit["cargo-compete"].clone()))
+    ) -> anyhow::Result<(CargoCompeteConfig, toml_edit::Document)> {
+        let path = self.workspace_root.join("compete.toml");
+        crate::fs::read_toml_preserving(path)
     }
 }
 

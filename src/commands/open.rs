@@ -54,7 +54,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
         .map(Ok)
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
-    let workspace_metadata = metadata.read_workspace_metadata()?;
+    let cargo_compete_config = metadata.read_compete_toml()?;
 
     let member = metadata.query_for_member(package)?;
 
@@ -70,7 +70,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
             let test_suite_path = crate::testing::test_suite_path(
                 &metadata.workspace_root,
-                &workspace_metadata.test_suite,
+                &cargo_compete_config.test_suite,
                 &problem,
             )?;
 
@@ -91,14 +91,14 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
             Some(&missing),
             full,
             &metadata.workspace_root,
-            &workspace_metadata.test_suite,
+            &cargo_compete_config.test_suite,
             shell,
         )?;
     }
 
     crate::open::open(
         &urls,
-        workspace_metadata.open,
+        cargo_compete_config.open,
         &file_paths,
         member.manifest_path.parent().unwrap(),
         &cwd,

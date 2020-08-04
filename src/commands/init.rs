@@ -143,8 +143,8 @@ exclude = []
             ),
         };
 
-        write_workspace_metadata_toml(
-            &root_manifest_dir.join("workspace-metadata.toml"),
+        write_compete_toml(
+            &root_manifest_dir.join("compete.toml"),
             dependencies,
             PlatformKind::Atcoder,
             atcoder_crates,
@@ -190,8 +190,8 @@ exclude = []
             crate::fs::write(&rust_toolchain_path, rust_toolchain)?;
             shell.status("Wrote", rust_toolchain_path.display())?;
 
-            write_workspace_metadata_toml(
-                &root_manifest_dir.join("workspace-metadata.toml"),
+            write_compete_toml(
+                &root_manifest_dir.join("compete.toml"),
                 None,
                 platform,
                 AtcoderCrates::None,
@@ -210,7 +210,7 @@ exclude = []
     Ok(())
 }
 
-fn write_workspace_metadata_toml(
+fn write_compete_toml(
     path: &Path,
     dependencies: Option<&str>,
     platform: PlatformKind,
@@ -218,8 +218,7 @@ fn write_workspace_metadata_toml(
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     let content = format!(
-        r#"[cargo-compete]
-# How to manage new workspace members ("include", "focus")
+        r#"# How to manage new workspace members ("include", "focus")
 new-workspace-member = "include"
 # Path to the test file (Liquid template)
 test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
@@ -230,15 +229,15 @@ test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
-[cargo-compete.template]
+[template]
 code = "./cargo-compete-template/src/main.rs"
 
-[cargo-compete.template.dependencies]
+[template.dependencies]
 {template_dependencies}
-[cargo-compete.platform]
+[platform]
 kind = "{platform_kind}"
 
-{comment}[cargo-compete.platform.via-binary]
+{comment}[platform.via-binary]
 {comment}target = "x86_64-unknown-linux-musl"
 {comment}#cross = "cross"
 {comment}strip = "strip"

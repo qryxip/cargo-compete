@@ -58,7 +58,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
-    let workspace_metadata = metadata.read_workspace_metadata()?;
+    let cargo_compete_config = metadata.read_compete_toml()?;
 
     let member = metadata.query_for_member(package.as_deref())?;
 
@@ -76,7 +76,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     crate::testing::test(crate::testing::Args {
         metadata: &metadata,
         member,
-        workspace_metadata: &workspace_metadata,
+        cargo_compete_config: &cargo_compete_config,
         package_metadata_bin: &package_metadata_bin,
         release,
         display_limit,
