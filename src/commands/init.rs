@@ -215,7 +215,7 @@ fn write_compete_toml(
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     let content = format!(
-        r#"# How to manage new workspace members ("include", "focus")
+        r#"# How to manage new workspace members ("include" | "exclude" | "focus")
 new-workspace-member = "include"
 # Path to the test file (Liquid template)
 test-suite = "./testcases/{{{{ contest }}}}/{{{{ problem | kebabcase }}}}.yml"
