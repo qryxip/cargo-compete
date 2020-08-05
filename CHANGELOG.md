@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.2] - 2020-08-05Z
 
 ### Added
 
-- Added `--testcases <NAME>...` option to `test` command and `submit` command.
+- Added `--testcases <NAME>...` option to `test` command and `submit` command. ([#12](https://github.com/qryxip/cargo-compete/pull/12))
 
 ## [0.2.1] - 2020-08-04Z
 
