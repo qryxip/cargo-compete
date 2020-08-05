@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `--testcases <NAME>...` option to `test` command and `submit` command.
+
 ## [0.2.1] - 2020-08-04Z
 
 ### Fixed

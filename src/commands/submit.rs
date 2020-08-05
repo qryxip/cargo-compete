@@ -37,6 +37,10 @@ pub struct OptCompeteSubmit {
     #[structopt(long)]
     pub no_watch: bool,
 
+    /// Test for only the test cases
+    #[structopt(long, value_name("NAME"))]
+    pub testcases: Option<Vec<String>>,
+
     /// Display limit for the test
     #[structopt(long, value_name("SIZE"), default_value("4KiB"))]
     pub display_limit: Size,
@@ -70,6 +74,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let OptCompeteSubmit {
         no_test,
         no_watch,
+        testcases,
         display_limit,
         package,
         release,
@@ -109,6 +114,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
             package_metadata_bin: &package_metadata_bin,
             release,
+            test_case_names: testcases.map(|ss| ss.into_iter().collect()),
             display_limit,
             shell,
         })?;
