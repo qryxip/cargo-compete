@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `exclude` value to `new-workspace-member`.
+
 ## [0.2.2] - 2020-08-05Z
 
 ### Added

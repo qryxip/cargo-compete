@@ -73,6 +73,7 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum NewWorkspaceMember {
     Include,
+    Exclude,
     Focus,
 }
 
@@ -371,14 +372,21 @@ impl Metadata {
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
-                    .exec()
+                    .exec()?;
+            }
+            NewWorkspaceMember::Exclude => {
+                cargo_member::Exclude::new(&self.workspace_root, &[&pkg_manifest_dir])
+                    .stderr(shell.err())
+                    .exec()?;
+                let dst = symlink_compete_toml(&self.workspace_root, &pkg_manifest_dir)?;
+                shell.status("Created", format!("a symlink at {}", dst.display()))?;
             }
             NewWorkspaceMember::Focus => {
                 cargo_member::Focus::new(&self.workspace_root, &pkg_manifest_dir)
                     .stderr(shell.err())
-                    .exec()
+                    .exec()?;
             }
-        }?;
+        }
 
         return Ok(src_paths);
 
@@ -408,6 +416,32 @@ impl Metadata {
             }
         }
     }
+}
+
+fn symlink_compete_toml(workspace_root: &Path, pkg_manifest_dir: &Path) -> anyhow::Result<PathBuf> {
+    #[cfg(unix)]
+    use std::os::unix::fs::symlink as symlink_file;
+
+    #[cfg(windows)]
+    use std::os::windows::fs::symlink_file;
+
+    let src = if let Ok(path) = pkg_manifest_dir.strip_prefix(workspace_root) {
+        path.iter()
+            .fold(PathBuf::new(), |p, _| p.join(".."))
+            .join("compete.toml")
+    } else {
+        unimplemented!()
+    };
+    let dst = pkg_manifest_dir.join("compete.toml");
+
+    symlink_file(&src, &dst).with_context(|| {
+        format!(
+            "could not create symlink: `{}` -> `{}`",
+            src.display(),
+            dst.display(),
+        )
+    })?;
+    Ok(dst)
 }
 
 #[ext(PackageExt)]
@@ -478,6 +512,21 @@ mod tests {
             .map_err(anyhow::Error::msg)?
             .render(&object!({ "s": "FooBarBaz" }))?;
         assert_eq!("foo-bar-baz", output);
+        Ok(())
+    }
+
+    #[test]
+    fn symlink_compete_toml() -> anyhow::Result<()> {
+        let tempdir = tempfile::tempdir()?;
+
+        std::fs::write(tempdir.path().join("compete.toml"), "#content\n")?;
+        std::fs::create_dir(tempdir.path().join("a"))?;
+
+        let dst = super::symlink_compete_toml(tempdir.path(), &tempdir.path().join("a"))?;
+        assert_eq!(tempdir.path().join("a").join("compete.toml"), dst);
+        assert_eq!(std::fs::read_to_string(dst)?, "#content\n");
+
+        tempdir.close()?;
         Ok(())
     }
 }

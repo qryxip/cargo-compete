@@ -114,7 +114,7 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 バイナリ提出関連の設定もこちらです。
 
 ```toml
-# How to manage new workspace members ("include", "focus")
+# How to manage new workspace members ("include" | "exclude" | "focus")
 new-workspace-member = "include"
 # Path to the test file (Liquid template)
 test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
