@@ -10,6 +10,10 @@ use strum::VariantNames as _;
 
 #[derive(StructOpt, Debug)]
 pub struct OptCompeteTest {
+    /// Test for only the test cases
+    #[structopt(long, value_name("NAME"))]
+    pub testcases: Option<Vec<String>>,
+
     /// Display limit
     #[structopt(long, value_name("SIZE"), default_value("4KiB"))]
     pub display_limit: Size,
@@ -41,6 +45,7 @@ pub struct OptCompeteTest {
 
 pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteTest {
+        testcases,
         display_limit,
         package,
         release,
@@ -79,6 +84,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
         package_metadata_bin: &package_metadata_bin,
         release,
+        test_case_names: testcases.map(|ss| ss.into_iter().collect()),
         display_limit,
         shell,
     })

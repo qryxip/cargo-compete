@@ -11,7 +11,10 @@ use human_size::{Byte, Size};
 use liquid::object;
 use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a Metadata,
@@ -19,6 +22,7 @@ pub(crate) struct Args<'a> {
     pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
     pub(crate) package_metadata_bin: &'a PackageMetadataCargoCompeteBin,
     pub(crate) release: bool,
+    pub(crate) test_case_names: Option<HashSet<String>>,
     pub(crate) display_limit: Size,
     pub(crate) shell: &'a mut Shell,
 }
@@ -30,6 +34,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         cargo_compete_config_test_suite,
         package_metadata_bin,
         release,
+        test_case_names,
         display_limit,
         shell,
     } = args;
@@ -46,7 +51,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_cases = match test_suite {
         TestSuite::Batch(test_suite) => {
-            test_suite.load_test_cases(test_suite_path.parent().unwrap())?
+            test_suite.load_test_cases(test_suite_path.parent().unwrap(), test_case_names)?
         }
         TestSuite::Interactive(_) => {
             shell.warn("tests for `Interactive` problems are currently not supported")?;
