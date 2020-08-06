@@ -283,6 +283,7 @@ checksum = "c74d84029116787153e02106bf53e66828452a4b325cc8652b788b5967c0a0b6"
 dependencies = [
  "num-integer",
  "num-traits",
+ "serde",
  "time 0.1.43",
 ]
 
@@ -2198,9 +2199,9 @@ checksum = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 
 [[package]]
 name = "snowchains_core"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c6fe58af0d9d2d652d70ce70093b825c657a69bdabf69f74375007eeab311c3"
+checksum = "ad25a0672923f044f01fb5ec8b1345900c2ce01857e734379e0dc72953138dd6"
 dependencies = [
  "anyhow",
  "chrono",
