@@ -1,7 +1,7 @@
 use crate::{
     project::{
-        CargoCompeteConfigPlatform, CargoCompeteConfigPlatformViaBinary, MetadataExt as _,
-        PackageExt as _, TargetProblem, TargetProblemYukicoder,
+        CargoCompeteConfigSubmitViaBinary, MetadataExt as _, PackageExt as _, TargetProblem,
+        TargetProblemYukicoder,
     },
     shell::ColorChoice,
     web::credentials,
@@ -122,15 +122,12 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     let bin = member.bin_target(&package_metadata_bin.name)?;
 
-    let code = if let CargoCompeteConfigPlatform::Atcoder {
-        via_binary:
-            Some(CargoCompeteConfigPlatformViaBinary {
-                target,
-                cross,
-                strip,
-                upx,
-            }),
-    } = &cargo_compete_config.platform
+    let code = if let Some(CargoCompeteConfigSubmitViaBinary {
+        target,
+        cross,
+        strip,
+        upx,
+    }) = &cargo_compete_config.submit_via_binary
     {
         let original_source_code = crate::fs::read_to_string(&bin.src_path)?;
 

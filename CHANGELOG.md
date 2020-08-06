@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+#### `compete.toml`
+
+- Changed the format.
+
 ### Added
 
 #### New commands

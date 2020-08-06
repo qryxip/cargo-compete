@@ -228,7 +228,7 @@ fn gen_compete_toml(
     liquid::Parser::new()
         .parse(include_str!("../../resources/compete.toml.liquid"))?
         .render(&object!({
-            "platform_kind": platform.to_kebab_case_str(),
+            "template_platform": platform.to_kebab_case_str(),
             "comment": if atcoder_crates == AtcoderCrates::UseViaBinary {
                 ""
             } else {

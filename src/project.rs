@@ -7,6 +7,7 @@ use heck::KebabCase as _;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
 use serde::{de::Error as _, Deserialize, Deserializer};
+use snowchains_core::web::PlatformKind;
 use std::{
     collections::BTreeMap,
     env,
@@ -25,7 +26,7 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
     pub(crate) template: CargoCompeteConfigTempate,
-    pub(crate) platform: CargoCompeteConfigPlatform,
+    pub(crate) submit_via_binary: Option<CargoCompeteConfigSubmitViaBinary>,
 }
 
 fn deserialize_liquid_template_with_custom_filter<'de, D>(
@@ -80,24 +81,36 @@ pub(crate) enum NewWorkspaceMember {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTempate {
+    #[serde(deserialize_with = "deserialize_platform_kind_in_kebab_case")]
+    pub(crate) platform: PlatformKind,
     pub(crate) manifest: PathBuf,
     pub(crate) src: PathBuf,
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case", tag = "kind")]
-pub(crate) enum CargoCompeteConfigPlatform {
-    Atcoder {
-        #[serde(rename = "via-binary")]
-        via_binary: Option<CargoCompeteConfigPlatformViaBinary>,
-    },
-    Codeforces,
-    Yukicoder,
+fn deserialize_platform_kind_in_kebab_case<'de, D>(
+    deserializer: D,
+) -> Result<PlatformKind, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    return PlatformKindKebabCased::deserialize(deserializer).map(|kind| match kind {
+        PlatformKindKebabCased::Atcoder => PlatformKind::Atcoder,
+        PlatformKindKebabCased::Codeforces => PlatformKind::Codeforces,
+        PlatformKindKebabCased::Yukicoder => PlatformKind::Yukicoder,
+    });
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "kebab-case")]
+    enum PlatformKindKebabCased {
+        Atcoder,
+        Codeforces,
+        Yukicoder,
+    }
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct CargoCompeteConfigPlatformViaBinary {
+pub(crate) struct CargoCompeteConfigSubmitViaBinary {
     pub(crate) target: String,
     pub(crate) cross: Option<PathBuf>,
     pub(crate) strip: Option<PathBuf>,
@@ -229,15 +242,17 @@ impl Metadata {
                     r#"{} = {{ name = "", problem = {{ {} }} }}
 "#,
                     escape_key(&problem_index.to_kebab_case()),
-                    match (&cargo_compete_config.platform, problems_are_yukicoder_no) {
-                        (CargoCompeteConfigPlatform::Atcoder { .. }, _)
-                        | (CargoCompeteConfigPlatform::Codeforces, _) => {
+                    match (
+                        cargo_compete_config.template.platform,
+                        problems_are_yukicoder_no
+                    ) {
+                        (PlatformKind::Atcoder, _) | (PlatformKind::Codeforces, _) => {
                             r#"platform = "", contest = "", index = "", url = """#
                         }
-                        (CargoCompeteConfigPlatform::Yukicoder, true) => {
+                        (PlatformKind::Yukicoder, true) => {
                             r#"platform = "", kind = "no", no = "", url = """#
                         }
-                        (CargoCompeteConfigPlatform::Yukicoder, false) => {
+                        (PlatformKind::Yukicoder, false) => {
                             r#"platform = "", kind = "contest", contest = "", index = "", url = """#
                         }
                     }
@@ -257,20 +272,20 @@ impl Metadata {
             let tbl =
                 &mut package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["problem"];
 
-            match cargo_compete_config.platform {
-                CargoCompeteConfigPlatform::Atcoder { .. } => {
+            match cargo_compete_config.template.platform {
+                PlatformKind::Atcoder => {
                     tbl["platform"] = toml_edit::value("atcoder");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
                     tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
-                CargoCompeteConfigPlatform::Codeforces => {
+                PlatformKind::Codeforces => {
                     tbl["platform"] = toml_edit::value("codeforces");
                     tbl["contest"] = toml_edit::value(package_name);
                     tbl["index"] = toml_edit::value(&**problem_index);
                     tbl["url"] = toml_edit::value(problem_url.as_str());
                 }
-                CargoCompeteConfigPlatform::Yukicoder => {
+                PlatformKind::Yukicoder => {
                     tbl["platform"] = toml_edit::value("yukicoder");
                     if problems_are_yukicoder_no {
                         tbl["no"] = toml_edit::value(&**problem_index);
