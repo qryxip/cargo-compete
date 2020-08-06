@@ -76,13 +76,28 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89118593-b05f7f00-d4e1-11ea-9644-32c3560bda29.png)
 
-### `cargo compete download`
+### `cargo compete retrieve testcases` / `cargo compete download`
 
 テストケースの再取得を行います。
 
 **パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
+
+### `cargo compete retrieve submission-summaries`
+
+自分の提出の一覧を取得し、JSONで出力します。
+
+**パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
+
+![Record](https://user-images.githubusercontent.com/14125495/89495297-f7f04e80-d7f2-11ea-9973-88763993e70a.gif)
+
+例えばAtCoderであれば(AtCoderしか実装してませんが)`| jq -r '.summaries[0].detail`とすることで「最新の提出の詳細ページのURL」が得られます。
+
+```console
+$ # 最新の提出の詳細ページをブラウザで開く (Linuxの場合)
+$ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
+```
 
 ### `cargo compete open`
 

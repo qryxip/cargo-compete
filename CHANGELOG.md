@@ -4,6 +4,10 @@
 
 ### Added
 
+#### New commands
+
+- Added `retrieve submission summaries` command.
+
 #### `compete.toml`
 
 - Added `exclude` value to `new-workspace-member`.

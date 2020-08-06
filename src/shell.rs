@@ -38,6 +38,10 @@ impl Shell {
         }
     }
 
+    pub(crate) fn out(&mut self) -> &mut dyn Write {
+        self.output.stdout()
+    }
+
     pub fn err(&mut self) -> &mut dyn WriteColor {
         self.output.stderr()
     }
@@ -236,6 +240,13 @@ impl ShellOut {
                 termcolor::ColorChoice::Never
             }),
             stderr_tty: atty::is(atty::Stream::Stderr),
+        }
+    }
+
+    fn stdout(&mut self) -> &mut dyn Write {
+        match self {
+            Self::Write(wtr) => wtr,
+            Self::Stream { stdout, .. } => stdout,
         }
     }
 

@@ -10,9 +10,10 @@ mod web;
 use crate::{
     commands::{
         init::OptCompeteInit, login::OptCompeteLogin, new::OptCompeteNew, open::OptCompeteOpen,
-        participate::OptCompeteParticipate, retrieve_testcases::OptCompeteRetrieveTestcases,
-        submit::OptCompeteSubmit, test::OptCompeteTest,
-        watch_submissions::OptCompeteWatchSubmissions,
+        participate::OptCompeteParticipate,
+        retrieve_submission_summaries::OptCompeteRetrieveSubmissionSummaries,
+        retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
+        test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
     },
     shell::Shell,
 };
@@ -94,6 +95,10 @@ pub enum OptCompeteRetrieve {
     /// Retrieve test cases
     #[structopt(author, visible_alias("t"))]
     Testcases(OptCompeteRetrieveTestcases),
+
+    /// Retrieve submission summaries
+    #[structopt(author, visible_alias("ss"))]
+    SubmissionSummaries(OptCompeteRetrieveSubmissionSummaries),
 }
 
 #[derive(StructOpt, Debug)]
@@ -116,6 +121,9 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::New(opt) => commands::new::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
+        }
+        OptCompete::Retrieve(OptCompeteRetrieve::SubmissionSummaries(opt)) => {
+            commands::retrieve_submission_summaries::run(opt, ctx)
         }
         OptCompete::Watch(OptCompeteWatch::Submissions(opt)) => {
             commands::watch_submissions::run(opt, ctx)
