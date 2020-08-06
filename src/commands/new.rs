@@ -1,10 +1,8 @@
-use crate::{
-    project::{CargoCompeteConfigPlatform, MetadataExt as _},
-    shell::ColorChoice,
-};
+use crate::{project::MetadataExt as _, shell::ColorChoice};
 use anyhow::Context as _;
 use snowchains_core::web::{
-    RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeContest, RetrieveTestCasesOutcomeProblem,
+    PlatformKind, RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeContest,
+    RetrieveTestCasesOutcomeProblem,
 };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -62,8 +60,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
 
-    match cargo_compete_config.platform {
-        CargoCompeteConfigPlatform::Atcoder { .. } => {
+    match cargo_compete_config.template.platform {
+        PlatformKind::Atcoder => {
             let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -109,7 +107,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        CargoCompeteConfigPlatform::Codeforces => {
+        PlatformKind::Codeforces => {
             let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -155,7 +153,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        CargoCompeteConfigPlatform::Yukicoder => {
+        PlatformKind::Yukicoder => {
             let contest = contest.as_deref();
             let problems = problems.map(|ps| ps.into_iter().collect());
 

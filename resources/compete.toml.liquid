@@ -17,7 +17,7 @@ new-workspace-member = "include"
 #
 # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
 test-suite = "{{ "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml" }}"
-#test-suite = "{{ "{{manifest_dir}}/testcases/{{ problem | kebabcase }}.yml" }}"
+#test-suite = "{{ "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml" }}"
 
 # Open files with the command (`jq` command)
 #
@@ -27,13 +27,11 @@ test-suite = "{{ "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml" }}"
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
 [template]
+platform = "{{ template_platform }}"
 manifest = "./cargo-compete-template/Cargo.toml"
 src = "./cargo-compete-template/src/main.rs"
 
-[platform]
-kind = "{{ platform_kind }}"
-
-{{ comment }}[platform.via-binary]
+{{ comment }}[submit-via-binary]
 {{ comment }}target = "x86_64-unknown-linux-musl"
 {{ comment }}#cross = "cross"
 {{ comment }}strip = "strip"
