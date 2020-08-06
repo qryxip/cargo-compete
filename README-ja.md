@@ -115,9 +115,26 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 ```toml
 # How to manage new workspace members ("include" | "exclude" | "focus")
+#
+# - `include`: Adds a new package to `workspace.members`
+# - `exclude`: Adds a new package to `workspace.exclude` and create a symlink to the `compete.toml`
+# - `focus`:   Adds a new package to `workspace.members` and adds the existing others to `workspace.exclude`
 new-workspace-member = "include"
+
 # Path to the test file (Liquid template)
+#
+# Variables:
+#
+# - `manifest_dir`: Package directory
+# - `contest`:      Contest ID (e.g. "abc100")
+# - `problem`:      Problem index (e.g. "a", "b")
+#
+# Additional filters:
+#
+# - `kebabcase`: Convert to kebab case (by using the `heck` crate)
 test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
+#test-suite = "{{manifest_dir}}/{{ problem | kebabcase }}.yml"
+
 # Open files with the command (`jq` command)
 #
 # VSCode:
@@ -132,11 +149,11 @@ src = "./cargo-compete-template/src/main.rs"
 [platform]
 kind = "atcoder"
 
-#[platform.via-binary]
-#target = "x86_64-unknown-linux-musl"
-##cross = "cross"
-#strip = "strip"
-##upx = "upx"
+[platform.via-binary]
+target = "x86_64-unknown-linux-musl"
+#cross = "cross"
+strip = "strip"
+#upx = "upx"
 ```
 
 各`bin` targetに紐付くサイト上の問題は、パッケージの`Cargo.toml`の`[package.metadata]`に記述されます。

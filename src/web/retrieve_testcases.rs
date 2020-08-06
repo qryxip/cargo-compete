@@ -1,5 +1,7 @@
 use crate::{
-    project::{PackageMetadataCargoCompeteBin, TargetProblem, TargetProblemYukicoder},
+    project::{
+        PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem, TargetProblemYukicoder,
+    },
     shell::Shell,
     web::credentials,
 };
@@ -112,7 +114,13 @@ pub(crate) fn dl_for_existing_package(
     }
 
     for outcome in outcomes {
-        save_test_cases(workspace_root, test_suite_path, outcome, shell)?;
+        save_test_cases(
+            workspace_root,
+            package.manifest_dir_utf8(),
+            test_suite_path,
+            outcome,
+            shell,
+        )?;
     }
 
     let mut added_url = false;
@@ -246,6 +254,7 @@ pub(crate) fn dl_from_yukicoder(
 
 pub(crate) fn save_test_cases(
     workspace_root: &Path,
+    pkg_manifest_dir: &str,
     path: &liquid::Template,
     outcome: RetrieveTestCasesOutcome,
     shell: &mut Shell,
@@ -265,7 +274,11 @@ pub(crate) fn save_test_cases(
         ..
     } in outcome.problems
     {
-        let path = path.render(&object!({ "contest": contest, "problem": &index }))?;
+        let path = path.render(&object!({
+            "manifest_dir": pkg_manifest_dir,
+            "contest": contest,
+            "problem": &index,
+        }))?;
         let path = Path::new(&path);
         let path = workspace_root.join(path.strip_prefix(".").unwrap_or(&path));
 

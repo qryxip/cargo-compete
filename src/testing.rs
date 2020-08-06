@@ -43,6 +43,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_suite_path = test_suite_path(
         &metadata.workspace_root,
+        member.manifest_dir_utf8(),
         cargo_compete_config_test_suite,
         &package_metadata_bin.problem,
     )?;
@@ -99,19 +100,26 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
 pub(crate) fn test_suite_path(
     workspace_root: &Path,
+    pkg_manifest_dir: &str,
     cargo_compete_config_test_suite: &liquid::Template,
     target_problem: &TargetProblem,
 ) -> anyhow::Result<PathBuf> {
-    let vars = match target_problem {
+    let (contest, problem) = match target_problem {
         TargetProblem::Atcoder { contest, index, .. }
         | TargetProblem::Codeforces { contest, index, .. }
         | TargetProblem::Yukicoder(TargetProblemYukicoder::Contest { contest, index, .. }) => {
-            object!({ "contest": contest, "problem": index })
+            (&**contest, index.clone())
         }
         TargetProblem::Yukicoder(TargetProblemYukicoder::Problem { no, .. }) => {
-            object!({ "contest": "problems", "problem": no.to_string() })
+            ("problems", no.to_string())
         }
     };
+
+    let vars = object!({
+        "manifest_dir": pkg_manifest_dir,
+        "contest": contest,
+        "problem": problem,
+    });
 
     let test_suite_path = cargo_compete_config_test_suite.render(&vars)?;
     let test_suite_path = Path::new(&test_suite_path);

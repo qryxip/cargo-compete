@@ -90,6 +90,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
+                    &pkg_manifest_dir.to_str().expect("this is from JSON"),
                     &cargo_compete_config.test_suite,
                     outcome,
                     shell,
@@ -135,6 +136,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, false, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
+                    &pkg_manifest_dir.to_str().expect("this is from JSON"),
                     &cargo_compete_config.test_suite,
                     outcome,
                     shell,
@@ -182,6 +184,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 metadata.add_member(package_name, &problems, is_no, shell)?,
                 crate::web::retrieve_testcases::save_test_cases(
                     &workspace_root,
+                    &pkg_manifest_dir.to_str().expect("this is from JSON"),
                     &cargo_compete_config.test_suite,
                     outcome,
                     shell,
