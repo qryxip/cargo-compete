@@ -1,23 +1,23 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2020-08-06Z
 
 ### Changed
 
 #### `compete.toml`
 
-- Changed the format.
+- Changed the format. ([#17](https://github.com/qryxip/cargo-compete/pull/17))
 
 ### Added
 
 #### New commands
 
-- Added `retrieve submission summaries` command.
+- Added `retrieve submission summaries` command. ([#16](https://github.com/qryxip/cargo-compete/pull/16))
 
 #### `compete.toml`
 
-- Added `exclude` value to `new-workspace-member`.
-- Added `manifest_dir` variable for `test-suite`.
+- Added `exclude` value to `new-workspace-member`. ([#14](https://github.com/qryxip/cargo-compete/pull/14))
+- Added `manifest_dir` variable for `test-suite`. ([#15](https://github.com/qryxip/cargo-compete/pull/15))
 
 ## [0.2.2] - 2020-08-05Z
 
