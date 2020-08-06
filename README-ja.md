@@ -191,6 +191,74 @@ name = "practice-b"
 path = "src/bin/b.rs"
 ```
 
+## cargo-atcoderとの対応
+
+### `cargo atcoder new`
+
+[`cargo compete new`](#cargo-compete-new)でパッケージを作成します。
+
+[`compete.toml`](#設定)があるワークスペースから実行する必要があります。
+[`cargo compete init`](#cargo-compete-init)でワークスペースを作成してください。
+
+[`compete.toml`](#設定)の`new-workspace-member`が`"include"`または`"focus"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
+クレートを使う場合も初回を除いて"warmup"は不要です。
+
+`"exclude"`の場合独立したワークスペースが作られます。
+こちらは`cargo atcoder new`の挙動に近いです。
+ただし`cargo compete submit`等のコマンドのために`compete.toml`のシンボリックリンクが作られます。
+Windows上では一般ユーザーでシンボリックリンクを作れるようにしてください。
+
+なお、開始前のコンテストには使えません。
+ビルドキャッシュを共有する限り"warmup"が不要なためです。
+ブラウザとエディタを開くのも`--open`で自動で行えます。
+
+### `cargo atcoder submit`
+
+[`cargo compete submit`](#cargo-compete-submit)でコード、または「エンコード」したコードを提出します。
+
+他のコマンドと同様に、ワークスペース下に[`compete.toml`](#設定)がある必要があります。
+
+「バイナリ提出」を行う場合の設定は[`compete.toml`](#設定)にあります。
+
+### `cargo atcoder test`
+
+[`cargo compete test`](#cargo-compete-test)でテストを実行します。
+
+他のコマンドと同様に、ワークスペース下に[`compete.toml`](#設定)がある必要があります。
+
+一部のテストのみを実行する場合は、`<case-num>...`の代わりに`--testcases <NAME>...`で`"sample1"`等の「名前」で絞ります。
+
+### `cargo atcoder login`
+
+[`cargo compete login`](#cargo-comepte-login)でログインします。
+
+### `cargo atcoder status`
+
+`cargo compete watch submissions`で提出一覧をwatchします。
+
+注意として、cargo-competeの方はブラウザ上の表示に近い挙動をします。
+実行時点で「ジャッジ待ち」/「ジャッジ中」のものが無い場合、直近20件を表示だけして終了します。
+
+### `cargo atcoder result`
+
+今のところありません。 [`cargo compete retrieve submissions`](#cargo-compete-retrieve-submissions)の出力を`| jq -r ".summaries[$nth].detail"`して得たURLをブラウザで開いてください。
+
+### `cargo atcoder clear-session`
+
+今のところありません。 [local data directory](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)下の`cargo-compete`を削除してください。
+
+### `cargo atcoder info`
+
+今のところありません。 ログインしているかを確認する場合、[practice contest](https://atcoder.jp/contests/practice)のテストケースをダウンロードしてください。 practice contestの場合問題の閲覧にログインが必要です。
+
+### `cargo atcoder warmup`
+
+今のところありません。上で述べた通り、`target`ディレクトリを共有する場合初回を除きwarmupは不要です。
+
+### `cargo atcoder gen-binary`
+
+今のところありません。`cargo compete submit`で作られるコードはファイルシステムに置かれません。
+
 ## ライセンス
 
 [MIT](https://opensource.org/licenses/MIT) or [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0)のデュアルライセンスです。
