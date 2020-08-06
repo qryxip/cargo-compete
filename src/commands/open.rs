@@ -70,6 +70,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
             let test_suite_path = crate::testing::test_suite_path(
                 &metadata.workspace_root,
+                member.manifest_dir_utf8(),
                 &cargo_compete_config.test_suite,
                 &problem,
             )?;

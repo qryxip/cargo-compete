@@ -1,0 +1,40 @@
+# How to manage new workspace members ("include" | "exclude" | "focus")
+#
+# - `include`: Adds a new package to `workspace.members`
+# - `exclude`: Adds a new package to `workspace.exclude` and create a symlink to the `compete.toml`
+# - `focus`:   Adds a new package to `workspace.members` and adds the existing others to `workspace.exclude`
+new-workspace-member = "include"
+
+# Path to the test file (Liquid template)
+#
+# Variables:
+#
+# - `manifest_dir`: Package directory
+# - `contest`:      Contest ID (e.g. "abc100")
+# - `problem`:      Problem index (e.g. "a", "b")
+#
+# Additional filters:
+#
+# - `kebabcase`: Convert to kebab case (by using the `heck` crate)
+test-suite = "{{ "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml" }}"
+#test-suite = "{{ "{{manifest_dir}}/testcases/{{ problem | kebabcase }}.yml" }}"
+
+# Open files with the command (`jq` command)
+#
+# VSCode:
+#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", .manifest_dir]'
+# Emacs:
+#open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
+
+[template]
+manifest = "./cargo-compete-template/Cargo.toml"
+src = "./cargo-compete-template/src/main.rs"
+
+[platform]
+kind = "{{ platform_kind }}"
+
+{{ comment }}[platform.via-binary]
+{{ comment }}target = "x86_64-unknown-linux-musl"
+{{ comment }}#cross = "cross"
+{{ comment }}strip = "strip"
+{{ comment }}#upx = "upx"

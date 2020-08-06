@@ -446,6 +446,18 @@ fn symlink_compete_toml(workspace_root: &Path, pkg_manifest_dir: &Path) -> anyho
 
 #[ext(PackageExt)]
 impl Package {
+    pub(crate) fn manifest_dir(&self) -> &Path {
+        self.manifest_path
+            .parent()
+            .expect("`manifest_path` should end with `Cargo.toml`")
+    }
+
+    pub(crate) fn manifest_dir_utf8(&self) -> &str {
+        self.manifest_dir()
+            .to_str()
+            .expect("this is from JSON string")
+    }
+
     pub(crate) fn read_package_metadata(&self) -> anyhow::Result<PackageMetadataCargoCompete> {
         let CargoToml {
             package:
