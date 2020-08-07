@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.1] - 2020-08-07Z
 
 ### Changed
 
-- On `submit` command, now it snows the result before `watch`ing the submission.
+- On `submit` command, now it snows the result before `watch`ing the submission. ([#19](https://github.com/qryxip/cargo-compete/pull/19))
 
 ### Fixed
 
