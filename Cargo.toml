@@ -41,16 +41,16 @@ serde = { version = "1.0.114", features = ["derive"] }
 serde_json = "1.0.57"
 serde_yaml = "0.8.13"
 shell-escape = "0.1.5"
-snowchains_core = "0.3.0"
-structopt = "0.3.15"
-strum = { version = "0.18.0", features = ["derive"] }
+snowchains_core = "0.3.1"
+structopt = "0.3.16"
+strum = { version = "0.19.2", features = ["derive"] }
 tempfile = "3.1.0"
 termcolor = "1.1.0"
 tokio = { version = "0.2.22", features = ["signal"] }
 toml = "0.5.6"
 toml_edit = "0.2.0"
 url = { version = "2.1.1", features = ["serde"] }
-which = "4.0.1"
+which = "4.0.2"
 
 [target.'cfg(windows)'.dependencies]
-term_size = "1.0.0-beta.2"
+term_size = "=1.0.0-beta.2"

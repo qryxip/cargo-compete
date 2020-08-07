@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- On `submit` command, now it snows the result before `watch`ing the submission.
+
+### Fixed
+
+- Fixed the parser for AtCoder submissions. ([qryxip/snowchains#71](https://github.com/qryxip/snowchains/pull/71))
+
 ## [0.3.0] - 2020-08-06Z
 
 ### Changed

@@ -15,9 +15,10 @@ use prettytable::{
     row, Table,
 };
 use snowchains_core::web::{
-    Atcoder, AtcoderSubmitCredentials, AtcoderSubmitTarget, Codeforces,
-    CodeforcesSubmitCredentials, CodeforcesSubmitTarget, CookieStorage, Submit, Yukicoder,
-    YukicoderSubmitCredentials, YukicoderSubmitTarget,
+    Atcoder, AtcoderSubmitCredentials, AtcoderSubmitTarget, AtcoderWatchSubmissionsCredentials,
+    AtcoderWatchSubmissionsTarget, Codeforces, CodeforcesSubmitCredentials, CodeforcesSubmitTarget,
+    CookieStorage, Submit, WatchSubmissions, Yukicoder, YukicoderSubmitCredentials,
+    YukicoderSubmitTarget,
 };
 use std::{borrow::BorrowMut as _, cell::RefCell, cmp, path::PathBuf};
 use structopt::StructOpt;
@@ -222,11 +223,10 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         TargetProblem::Yukicoder(_) => YUKICODER_RUST_LANG_ID,
     };
 
-    let watch_submission = !no_watch;
     let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
     let timeout = crate::web::TIMEOUT;
 
-    let outcome = match package_metadata_bin.problem {
+    let outcome = match &package_metadata_bin.problem {
         TargetProblem::Atcoder { contest, index, .. } => {
             let shell = RefCell::new(shell.borrow_mut());
 
@@ -240,13 +240,13 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
             Atcoder::exec(Submit {
                 target: AtcoderSubmitTarget {
-                    contest,
-                    problem: index,
+                    contest: contest.clone(),
+                    problem: index.clone(),
                 },
                 credentials,
                 language_id: ATCODER_RUST_LANG_ID.to_owned(),
                 code,
-                watch_submission,
+                watch_submission: false,
                 cookie_storage,
                 timeout,
                 shell: &shell,
@@ -269,13 +269,13 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
             Codeforces::exec(Submit {
                 target: CodeforcesSubmitTarget {
-                    contest,
-                    problem: index,
+                    contest: contest.clone(),
+                    problem: index.clone(),
                 },
                 credentials,
                 language_id: CODEFORCES_RUST_LANG_ID.to_owned(),
                 code,
-                watch_submission,
+                watch_submission: false,
                 cookie_storage,
                 timeout,
                 shell: &shell,
@@ -289,7 +289,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             Yukicoder::exec(Submit {
                 target: match target_problem {
                     TargetProblemYukicoder::Contest { contest, index, .. } => {
-                        YukicoderSubmitTarget::Contest(contest, index)
+                        YukicoderSubmitTarget::Contest(contest.clone(), index.clone())
                     }
                     TargetProblemYukicoder::Problem { no, .. } => {
                         YukicoderSubmitTarget::ProblemNo(no.to_string())
@@ -298,7 +298,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 credentials,
                 language_id: YUKICODER_RUST_LANG_ID.to_owned(),
                 code,
-                watch_submission,
+                watch_submission: false,
                 cookie_storage: (),
                 timeout,
                 shell: shell.borrow_mut(),
@@ -327,5 +327,39 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     write!(shell.err(), "{}", table)?;
     shell.err().flush()?;
+
+    if !no_watch {
+        let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+        let timeout = crate::web::TIMEOUT;
+
+        match package_metadata_bin.problem {
+            TargetProblem::Atcoder { contest, .. } => {
+                let shell = RefCell::new(shell);
+
+                let credentials = AtcoderWatchSubmissionsCredentials {
+                    username_and_password: &mut credentials::username_and_password(
+                        &shell,
+                        "Username: ",
+                        "Password: ",
+                    ),
+                };
+
+                Atcoder::exec(WatchSubmissions {
+                    target: AtcoderWatchSubmissionsTarget { contest },
+                    credentials,
+                    cookie_storage,
+                    timeout,
+                    shell: &shell,
+                })?;
+            }
+            TargetProblem::Codeforces { .. } => {
+                shell.warn("watching submissions for Codeforces is not implemented")?;
+            }
+            TargetProblem::Yukicoder(_) => {
+                shell.warn("watching submissions for yukicoder is not implemented")?;
+            }
+        }
+    }
+
     Ok(())
 }
