@@ -3,11 +3,22 @@
 //! # Original source code
 //!
 {% capture newline %}
-{% endcapture %}
-{%- assign lines = code_block | rstrip | split: newline -%}
-{%- for line in lines -%}
-{% if line == "" %}{{ "//!" }}{% else %}{{ "//! " }}{{ line }}{% endif %}{{ newline }}
-{%- endfor -%}
+{% endcapture -%}
+{%- if source_code contains "```" -%}
+  {%- assign backquotes = "````" -%}
+{%- else -%}
+  {%- assign backquotes = "```" -%}
+{%- endif -%}
+{%- assign lines = source_code | rstrip | split: newline -%}
+//! {{ backquotes }}ignore
+{% for line in lines -%}
+  {%- if line == "" -%}
+    {{ "//!" }}
+  {%- else -%}
+    {{ "//! " }}{{ line }}
+  {%- endif %}
+{% endfor -%}
+//! {{ backquotes }}
 
 use std::{
     fs::{File, Permissions},
@@ -57,4 +68,4 @@ fn decode() -> Vec<u8> {
 }
 
 static PATH: &str = "/tmp/a.out";
-static BASE64: &str = "{{base64}}";
+static BASE64: &str = "{{ base64 }}";
