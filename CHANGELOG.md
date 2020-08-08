@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `migrate packages` command.
+
 ## [0.3.1] - 2020-08-07Z
 
 ### Changed

@@ -31,6 +31,11 @@ platform = "{{ template_platform }}"
 manifest = "./cargo-compete-template/Cargo.toml"
 src = "./cargo-compete-template/src/main.rs"
 
+{% if submit_via_binary == true -%}
+  {%- assign comment = "" -%}
+{%- else -%}
+  {%- assign comment = "#" -%}
+{%- endif -%}
 {{ comment }}[submit-via-binary]
 {{ comment }}target = "x86_64-unknown-linux-musl"
 {{ comment }}#cross = "cross"

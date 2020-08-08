@@ -194,6 +194,8 @@ dependencies = [
  "fwdansi",
  "heck",
  "human-size",
+ "if_chain",
+ "ignore",
  "indexmap",
  "indicatif",
  "itertools",
@@ -1012,6 +1014,12 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
 ]
+
+[[package]]
+name = "if_chain"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3360c7b59e5ffa2653671fb74b4741a5d343c03f331c0a4aeda42b5c2b0ec7d"
 
 [[package]]
 name = "ignore"

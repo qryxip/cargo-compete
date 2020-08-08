@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{bail, Context as _};
 use cargo_metadata::MetadataCommand;
-use liquid::object;
 use snowchains_core::web::PlatformKind;
 use std::{
     collections::HashSet,
@@ -215,26 +214,11 @@ fn write_compete_toml(
     atcoder_crates: AtcoderCrates,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
-    let content = gen_compete_toml(platform, atcoder_crates)?;
+    let content =
+        crate::project::gen_compete_toml(platform, atcoder_crates == AtcoderCrates::UseViaBinary)?;
     crate::fs::write(path, content)?;
     shell.status("Wrote", path.display())?;
     Ok(())
-}
-
-fn gen_compete_toml(
-    platform: PlatformKind,
-    atcoder_crates: AtcoderCrates,
-) -> Result<String, liquid::Error> {
-    liquid::Parser::new()
-        .parse(include_str!("../../resources/compete.toml.liquid"))?
-        .render(&object!({
-            "template_platform": platform.to_kebab_case_str(),
-            "comment": if atcoder_crates == AtcoderCrates::UseViaBinary {
-                ""
-            } else {
-                "#"
-            },
-        }))
 }
 
 fn new_template_package(
@@ -286,25 +270,4 @@ enum AtcoderCrates {
     None,
     UseNormally,
     UseViaBinary,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{commands::init::AtcoderCrates, project::CargoCompeteConfig};
-    use snowchains_core::web::PlatformKind;
-
-    #[test]
-    fn gen_compete_toml() -> anyhow::Result<()> {
-        fn test(platform: PlatformKind, atcoder_crates: AtcoderCrates) -> anyhow::Result<()> {
-            let content = super::gen_compete_toml(platform, atcoder_crates)?;
-            toml::from_str::<CargoCompeteConfig>(&content)?;
-            Ok(())
-        }
-
-        test(PlatformKind::Atcoder, AtcoderCrates::None)?;
-        test(PlatformKind::Atcoder, AtcoderCrates::UseNormally)?;
-        test(PlatformKind::Atcoder, AtcoderCrates::UseViaBinary)?;
-        test(PlatformKind::Codeforces, AtcoderCrates::None)?;
-        test(PlatformKind::Yukicoder, AtcoderCrates::None)
-    }
 }
