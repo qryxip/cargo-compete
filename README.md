@@ -11,6 +11,14 @@ A Cargo subcommand for competitive programming.
 
 Supports AtCoder, Codeforces, and yukicoder.
 
+![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/89712134-d5fcf480-d9c9-11ea-9124-bcd0caabb545.png)
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/89712184-25432500-d9ca-11ea-92fe-f699b6e0cfab.png)
+
+![Record](https://user-images.githubusercontent.com/14125495/89711920-40149a00-d9c8-11ea-86ec-154f662405ed.gif)
+
 ## License
 
 Dual-licensed under [MIT](https://opensource.org/licenses/MIT) or [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0).
