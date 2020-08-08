@@ -1,5 +1,6 @@
 pub(crate) mod init;
 pub(crate) mod login;
+pub(crate) mod migrate_packages;
 pub(crate) mod new;
 pub(crate) mod open;
 pub(crate) mod participate;

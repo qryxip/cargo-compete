@@ -6,6 +6,7 @@ use easy_ext::ext;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
+use liquid::object;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
@@ -176,6 +177,13 @@ impl Metadata {
     pub(crate) fn read_compete_toml(&self) -> anyhow::Result<CargoCompeteConfig> {
         let path = self.workspace_root.join("compete.toml");
         crate::fs::read_toml(path)
+    }
+
+    pub(crate) fn all_members(&self) -> Vec<&Package> {
+        self.packages
+            .iter()
+            .filter(|Package { id, .. }| self.workspace_members.contains(id))
+            .collect()
     }
 
     pub(crate) fn query_for_member<'a, S: AsRef<str>>(
@@ -507,6 +515,14 @@ impl Package {
             .find(|t| t.name == name && t.kind == ["bin".to_owned()])
             .with_context(|| format!("no bin target named `{}` in `{}`", name, self.name))
     }
+
+    pub(crate) fn all_bin_targets_sorted(&self) -> Vec<&Target> {
+        self.targets
+            .iter()
+            .filter(|Target { kind, .. }| *kind == ["bin".to_owned()])
+            .sorted_by(|t1, t2| t1.name.cmp(&t2.name))
+            .collect()
+    }
 }
 
 pub(crate) fn locate_project(cwd: &Path) -> anyhow::Result<PathBuf> {
@@ -528,10 +544,35 @@ pub(crate) fn cargo_metadata(manifest_path: impl AsRef<Path>) -> cargo_metadata:
         .exec()
 }
 
+pub(crate) fn cargo_metadata_no_deps_frozen(
+    manifest_path: impl AsRef<Path>,
+) -> cargo_metadata::Result<Metadata> {
+    MetadataCommand::new()
+        .manifest_path(manifest_path.as_ref())
+        .no_deps()
+        .other_options(vec!["--frozen".to_owned()])
+        .exec()
+}
+
+pub(crate) fn gen_compete_toml(
+    platform: PlatformKind,
+    submit_via_binary: bool,
+) -> Result<String, liquid::Error> {
+    liquid::ParserBuilder::with_stdlib()
+        .build()?
+        .parse(include_str!("../resources/compete.toml.liquid"))?
+        .render(&object!({
+            "template_platform": platform.to_kebab_case_str(),
+            "submit_via_binary": submit_via_binary,
+        }))
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::project::CargoCompeteConfig;
     use liquid::object;
     use pretty_assertions::assert_eq;
+    use snowchains_core::web::PlatformKind;
 
     #[test]
     fn liquid_template_with_custom_filter() -> anyhow::Result<()> {
@@ -555,5 +596,19 @@ mod tests {
 
         tempdir.close()?;
         Ok(())
+    }
+
+    #[test]
+    fn gen_compete_toml() -> anyhow::Result<()> {
+        fn test(platform: PlatformKind, submit_via_binary: bool) -> anyhow::Result<()> {
+            let content = super::gen_compete_toml(platform, submit_via_binary)?;
+            toml::from_str::<CargoCompeteConfig>(&content)?;
+            Ok(())
+        }
+
+        test(PlatformKind::Atcoder, false)?;
+        test(PlatformKind::Atcoder, true)?;
+        test(PlatformKind::Codeforces, false)?;
+        test(PlatformKind::Yukicoder, false)
     }
 }

@@ -48,6 +48,10 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
 
+### `cargo compete migrate packages`
+
+`cargo-atcoder`で作ったパッケージを、ワークスペースにまとめて`cargo-compete`用にマイグレードします。
+
 ### `cargo compete login`
 
 サイトにログインします。
@@ -198,7 +202,7 @@ path = "src/bin/b.rs"
 [`cargo compete new`](#cargo-compete-new)でパッケージを作成します。
 
 [`compete.toml`](#設定)があるワークスペースから実行する必要があります。
-[`cargo compete init`](#cargo-compete-init)でワークスペースを作成してください。
+[`cargo compete init`](#cargo-compete-init)でワークスペースを作成するか、[`cargo compete migrate packages`](#cargo-compete-migrate-packages)でパッケージ達をマイグレードしてください。
 
 [`compete.toml`](#設定)の`new-workspace-member`が`"include"`または`"focus"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
 クレートを使う場合も初回を除いて"warmup"は不要です。
