@@ -20,7 +20,7 @@ use snowchains_core::web::{
     CookieStorage, Submit, WatchSubmissions, Yukicoder, YukicoderSubmitCredentials,
     YukicoderSubmitTarget,
 };
-use std::{borrow::BorrowMut as _, cell::RefCell, cmp, path::PathBuf};
+use std::{borrow::BorrowMut as _, cell::RefCell, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
@@ -186,29 +186,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 "../../resources/exec-base64-encoded-binary.rs.liquid"
             ))?
             .render(&object!({
-                "code_block": ({
-                    let max_seq_backquotes_len = {
-                        let (max, cur) = original_source_code.chars().fold((0, 0), |(max, cur), c| {
-                            if c == '`' {
-                                (max, cur + 1)
-                            } else {
-                                (cmp::max(max, cur), 0)
-                            }
-                        });
-                        cmp::max(max, cur)
-                    };
-
-                    format!(
-                        "{backquotes}ignore\n{code}{eol}{backquotes}",
-                        backquotes = "`".repeat(cmp::max(max_seq_backquotes_len + 1, 3)),
-                        code = original_source_code,
-                        eol = if original_source_code.ends_with('\n') {
-                            ""
-                        } else {
-                            "\n"
-                        },
-                    )
-                }),
+                "source_code": original_source_code,
                 "base64": base64::encode(artifact_binary),
             }))?
     } else {

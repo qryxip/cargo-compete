@@ -16,11 +16,11 @@
 - コードのテスト
 - 提出
 
-|            | 参加登録           | テストケース (サンプル) | テストケース (全部) | 提出               | 提出を見る      | 提出一覧をwatchする |
-| :--------: | :----------------: | :---------------------: | :-----------------: | :----------------: | :-------------: | :-----------------: |
-| AtCoder    | :heavy_check_mark: | :heavy_check_mark:      | :heavy_check_mark:  | :heavy_check_mark: | :x:             | :grey_question:     |
-| Codeforces | :x:                | :heavy_check_mark:      | N/A                 | :heavy_check_mark: | :x:             | :x:                 |
-| yukicoder  | N/A                | :heavy_check_mark:      | :heavy_check_mark:  | :heavy_check_mark: | :x:             | :x:                 |
+|            | 参加登録           | テストケース (サンプル) | テストケース (全部) | 提出               | 提出一覧をwatchする | 提出の詳細を見る |
+| :--------: | :----------------: | :---------------------: | :-----------------: | :----------------: | :-----------------: | :--------------: |
+| AtCoder    | :heavy_check_mark: | :heavy_check_mark:      | :heavy_check_mark:  | :heavy_check_mark: | :grey_question:     | :x:              |
+| Codeforces | :x:                | :heavy_check_mark:      | N/A                 | :heavy_check_mark: | :x:                 | :x:              |
+| yukicoder  | N/A                | :heavy_check_mark:      | :heavy_check_mark:  | :heavy_check_mark: | :x:                 | :x:              |
 
 ## インストール
 
@@ -257,7 +257,9 @@ Windows上では一般ユーザーでシンボリックリンクを作れるよ�
 
 ### `cargo atcoder gen-binary`
 
-今のところありません。`cargo compete submit`で作られるコードはファイルシステムに置かれません。
+今のところありません。
+`cargo compete submit`で作られるコードはファイルシステムに置かれません。
+このリポジトリの[`resources/exec-base64-encoded-binary.rs.liquid`](https://github.com/qryxip/cargo-compete/blob/master/resources/exec-base64-encoded-binary.rs.liquid)に、`source_code`と`base64`のパラメータを与えたものが提出されます。
 
 ## ライセンス
 
