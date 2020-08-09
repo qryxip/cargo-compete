@@ -48,9 +48,11 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
 
-### `cargo compete migrate packages`
+### `cargo compete migrate cargo-atcoder`
 
-`cargo-atcoder`で作ったパッケージを、ワークスペースにまとめて`cargo-compete`用にマイグレードします。
+`cargo-atcoder`で作ったパッケージを、ワークスペースにまとめて`cargo-compete`用にマイグレートします。
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/89726038-1489c200-da51-11ea-93ae-d317a13f04e9.png)
 
 ### `cargo compete login`
 
@@ -137,9 +139,10 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 ```toml
 # How to manage new workspace members ("include" | "exclude" | "focus")
 #
-# - `include`: Adds a new package to `workspace.members`
-# - `exclude`: Adds a new package to `workspace.exclude` and create a symlink to the `compete.toml`
-# - `focus`:   Adds a new package to `workspace.members` and adds the existing others to `workspace.exclude`
+# - `skip`:    Does not modify `[workspace]`
+# - `include`: Adds the package to `workspace.members`
+# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`
+# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`
 new-workspace-member = "include"
 
 # Path to the test file (Liquid template)
@@ -204,7 +207,7 @@ path = "src/bin/b.rs"
 [`cargo compete new`](#cargo-compete-new)でパッケージを作成します。
 
 [`compete.toml`](#設定)があるワークスペースから実行する必要があります。
-[`cargo compete init`](#cargo-compete-init)でワークスペースを作成するか、[`cargo compete migrate packages`](#cargo-compete-migrate-packages)でパッケージ達をマイグレードしてください。
+[`cargo compete init`](#cargo-compete-init)でワークスペースを作成するか、[`cargo compete migrate cargo-atcoder`](#cargo-compete-migrate-cargo-atcoder)でパッケージ達をマイグレートしてください。
 
 [`compete.toml`](#設定)の`new-workspace-member`が`"include"`または`"focus"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
 クレートを使う場合も初回を除いて"warmup"は不要です。
