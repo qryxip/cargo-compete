@@ -14,7 +14,7 @@ use strum::VariantNames as _;
 use termcolor::Color;
 
 #[derive(StructOpt, Debug)]
-pub struct OptCompeteMigratePackages {
+pub struct OptCompeteMigrateCargoAtcoder {
     /// Process glob patterns given with the `--glob` flag case insensitively
     #[structopt(long)]
     pub glob_case_insensitive: bool,
@@ -32,27 +32,24 @@ pub struct OptCompeteMigratePackages {
     )]
     pub color: ColorChoice,
 
-    #[structopt(possible_value("atcoder"))]
-    pub platform: PlatformKind,
-
     #[structopt(default_value("."))]
     pub path: PathBuf,
 }
 
-pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> anyhow::Result<()> {
-    let OptCompeteMigratePackages {
+pub(crate) fn run(
+    opt: OptCompeteMigrateCargoAtcoder,
+    ctx: crate::Context<'_>,
+) -> anyhow::Result<()> {
+    let OptCompeteMigrateCargoAtcoder {
         glob_case_insensitive,
         glob,
         color,
-        platform,
         path,
     } = opt;
 
     let crate::Context { cwd, shell } = ctx;
 
     shell.set_color_choice(color);
-
-    debug_assert_eq!(platform, PlatformKind::Atcoder);
 
     let path = cwd.join(path.strip_prefix(".").unwrap_or(&path));
 

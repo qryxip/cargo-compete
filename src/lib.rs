@@ -9,8 +9,9 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, login::OptCompeteLogin, migrate_packages::OptCompeteMigratePackages,
-        new::OptCompeteNew, open::OptCompeteOpen, participate::OptCompeteParticipate,
+        init::OptCompeteInit, login::OptCompeteLogin,
+        migrate_cargo_atcoder::OptCompeteMigrateCargoAtcoder, new::OptCompeteNew,
+        open::OptCompeteOpen, participate::OptCompeteParticipate,
         retrieve_submission_summaries::OptCompeteRetrieveSubmissionSummaries,
         retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
         test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
@@ -97,8 +98,8 @@ pub enum OptCompete {
 #[derive(StructOpt, Debug)]
 pub enum OptCompeteMigrate {
     /// Migrate existing packages
-    #[structopt(author, visible_alias("p"))]
-    Packages(OptCompeteMigratePackages),
+    #[structopt(author, visible_alias("c"))]
+    CargoAtcoder(OptCompeteMigrateCargoAtcoder),
 }
 
 #[derive(StructOpt, Debug)]
@@ -127,8 +128,8 @@ pub struct Context<'s> {
 pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
     match opt {
         OptCompete::Init(opt) => commands::init::run(opt, ctx),
-        OptCompete::Migrate(OptCompeteMigrate::Packages(opt)) => {
-            commands::migrate_packages::run(opt, ctx)
+        OptCompete::Migrate(OptCompeteMigrate::CargoAtcoder(opt)) => {
+            commands::migrate_cargo_atcoder::run(opt, ctx)
         }
         OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
