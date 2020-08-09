@@ -8,7 +8,7 @@ use if_chain::if_chain;
 use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use itertools::Itertools as _;
 use snowchains_core::web::PlatformKind;
-use std::path::PathBuf;
+use std::{iter, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use termcolor::Color;
@@ -152,24 +152,25 @@ pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> an
         }
     }
 
+    crate::project::new_template_package(
+        &path,
+        None,
+        include_str!("../../resources/template-main.rs"),
+        shell,
+    )?;
+
     let root_manifest_path = path.join("Cargo.toml");
     crate::fs::write(&root_manifest_path, "[workspace]\n")?;
     shell.status("Wrote", root_manifest_path.display())?;
 
-    shell.status(
-        "Adding",
-        format!(
-            "{} package{}",
-            include.len(),
-            if include.len() > 1 { "s" } else { "" },
-        ),
-    )?;
+    shell.status("Adding", format!("{} + 1 packages", include.len()))?;
 
     cargo_member::Include::new(
         &path,
         include
             .iter()
-            .map(|Package { manifest_path, .. }| manifest_path.parent().unwrap()),
+            .map(|Package { manifest_path, .. }| manifest_path.with_file_name(""))
+            .chain(iter::once(path.join("cargo-compete-template"))),
     )
     .stderr(shell.err())
     .exec()

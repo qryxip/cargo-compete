@@ -3,7 +3,6 @@ use crate::{
     ATCODER_RUST_VERSION, CODEFORCES_RUST_VERSION, YUKICODER_RUST_VERSION,
 };
 use anyhow::{bail, Context as _};
-use cargo_metadata::MetadataCommand;
 use snowchains_core::web::PlatformKind;
 use std::{
     collections::HashSet,
@@ -150,8 +149,8 @@ exclude = []
             shell,
         )?;
 
-        new_template_package(
-            &root_manifest_dir.join("cargo-compete-template"),
+        crate::project::new_template_package(
+            &root_manifest_dir,
             dependencies,
             if atcoder_crates == AtcoderCrates::None {
                 include_str!("../../resources/template-main.rs")
@@ -196,8 +195,8 @@ exclude = []
                 shell,
             )?;
 
-            new_template_package(
-                &root_manifest_dir.join("cargo-compete-template"),
+            crate::project::new_template_package(
+                &root_manifest_dir,
                 None,
                 include_str!("../../resources/template-main.rs"),
                 shell,
@@ -218,50 +217,6 @@ fn write_compete_toml(
         crate::project::gen_compete_toml(platform, atcoder_crates == AtcoderCrates::UseViaBinary)?;
     crate::fs::write(path, content)?;
     shell.status("Wrote", path.display())?;
-    Ok(())
-}
-
-fn new_template_package(
-    path: &Path,
-    deps: Option<&str>,
-    main_rs: &str,
-    shell: &mut Shell,
-) -> anyhow::Result<()> {
-    crate::fs::create_dir_all(path)?;
-
-    let new_pkg_manifest_path = path.join("Cargo.toml");
-
-    let mut new_manifest = r#"[package]
-name = "cargo-compete-template"
-version = "0.1.0"
-edition = "2018"
-publish = false
-
-[[bin]]
-name = "cargo-compete-template"
-path = "src/main.rs"
-"#
-    .to_owned();
-
-    if let Some(deps) = deps {
-        new_manifest += "\n";
-        new_manifest += "[dependencies]\n";
-        new_manifest += deps;
-    }
-
-    crate::fs::write(&new_pkg_manifest_path, new_manifest)?;
-    crate::fs::create_dir_all(path.join("src"))?;
-    crate::fs::write(path.join("src").join("main.rs"), main_rs)?;
-    shell.status(
-        "Created",
-        format!("`cargo-compete-template` package at {}", path.display()),
-    )?;
-
-    shell.status("Updating", path.join("Cargo.lock").display())?;
-
-    MetadataCommand::new()
-        .manifest_path(new_pkg_manifest_path)
-        .exec()?;
     Ok(())
 }
 
