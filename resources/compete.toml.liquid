@@ -1,8 +1,9 @@
 # How to manage new workspace members ("include" | "exclude" | "focus")
 #
-# - `include`: Adds a new package to `workspace.members`
-# - `exclude`: Adds a new package to `workspace.exclude` and create a symlink to the `compete.toml`
-# - `focus`:   Adds a new package to `workspace.members` and adds the existing others to `workspace.exclude`
+# - `skip`:    Does not modify `[workspace]`
+# - `include`: Adds the package to `workspace.members`
+# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`
+# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`
 new-workspace-member = "include"
 
 # Path to the test file (Liquid template)

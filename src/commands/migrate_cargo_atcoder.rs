@@ -8,13 +8,13 @@ use if_chain::if_chain;
 use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use itertools::Itertools as _;
 use snowchains_core::web::PlatformKind;
-use std::path::PathBuf;
+use std::{iter, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use termcolor::Color;
 
 #[derive(StructOpt, Debug)]
-pub struct OptCompeteMigratePackages {
+pub struct OptCompeteMigrateCargoAtcoder {
     /// Process glob patterns given with the `--glob` flag case insensitively
     #[structopt(long)]
     pub glob_case_insensitive: bool,
@@ -32,27 +32,24 @@ pub struct OptCompeteMigratePackages {
     )]
     pub color: ColorChoice,
 
-    #[structopt(possible_value("atcoder"))]
-    pub platform: PlatformKind,
-
     #[structopt(default_value("."))]
     pub path: PathBuf,
 }
 
-pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> anyhow::Result<()> {
-    let OptCompeteMigratePackages {
+pub(crate) fn run(
+    opt: OptCompeteMigrateCargoAtcoder,
+    ctx: crate::Context<'_>,
+) -> anyhow::Result<()> {
+    let OptCompeteMigrateCargoAtcoder {
         glob_case_insensitive,
         glob,
         color,
-        platform,
         path,
     } = opt;
 
     let crate::Context { cwd, shell } = ctx;
 
     shell.set_color_choice(color);
-
-    debug_assert_eq!(platform, PlatformKind::Atcoder);
 
     let path = cwd.join(path.strip_prefix(".").unwrap_or(&path));
 
@@ -81,7 +78,6 @@ pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> an
         .collect::<Result<Vec<_>, ignore::Error>>()?;
 
     let mut include = vec![];
-    let mut submit_via_binary = false;
 
     for manifest_path in manifest_paths.into_iter().sorted() {
         let metadata = crate::project::cargo_metadata_no_deps_frozen(&manifest_path)?;
@@ -104,8 +100,6 @@ pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> an
     for package in &include {
         let mut manifest =
             crate::fs::read_to_string(&package.manifest_path)?.parse::<toml_edit::Document>()?;
-
-        submit_via_binary |= !manifest["profile"].is_none();
 
         manifest["profile"] = toml_edit::Item::None;
 
@@ -152,24 +146,59 @@ pub(crate) fn run(opt: OptCompeteMigratePackages, ctx: crate::Context<'_>) -> an
         }
     }
 
+    crate::project::new_template_package(
+        &path,
+        None,
+        include_str!("../../resources/template-main.rs"),
+        shell,
+    )?;
+
+    let cargo_atcoder_config = (|| -> _ {
+        let path = dirs::config_dir()?.join("cargo-atcoder.toml");
+        crate::fs::read_to_string(path)
+            .ok()?
+            .parse::<toml_edit::Document>()
+            .ok()
+    })();
+
+    let submit_via_binary = matches!(
+        &cargo_atcoder_config,
+        Some(c) if c["atcoder"]["submit_via_binary"].as_bool() == Some(true)
+    );
+
+    let mut root_manifest = r#"[workspace]
+members = []
+exclude = []
+"#
+    .parse::<toml_edit::Document>()
+    .unwrap();
+
+    if submit_via_binary {
+        if let Some(profile_release) = (|| -> _ {
+            let path = dirs::config_dir()?.join("cargo-atcoder.toml");
+            let config = crate::fs::read_to_string(path)
+                .ok()?
+                .parse::<toml_edit::Document>()
+                .ok()?;
+            Some(config["profile"]["release"].clone())
+        })() {
+            root_manifest["profile"] = implicit_table();
+            root_manifest["profile"]["release"] = profile_release;
+        }
+    }
+
     let root_manifest_path = path.join("Cargo.toml");
-    crate::fs::write(&root_manifest_path, "[workspace]\n")?;
+    crate::fs::write(&root_manifest_path, root_manifest.to_string())?;
     shell.status("Wrote", root_manifest_path.display())?;
 
-    shell.status(
-        "Adding",
-        format!(
-            "{} package{}",
-            include.len(),
-            if include.len() > 1 { "s" } else { "" },
-        ),
-    )?;
+    shell.status("Adding", format!("{} + 1 packages", include.len()))?;
 
     cargo_member::Include::new(
         &path,
         include
             .iter()
-            .map(|Package { manifest_path, .. }| manifest_path.parent().unwrap()),
+            .map(|Package { manifest_path, .. }| manifest_path.with_file_name(""))
+            .chain(iter::once(path.join("cargo-compete-template"))),
     )
     .stderr(shell.err())
     .exec()

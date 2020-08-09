@@ -74,6 +74,7 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
 #[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum NewWorkspaceMember {
+    Skip,
     Include,
     Exclude,
     Focus,
@@ -392,6 +393,7 @@ impl Metadata {
         )?;
 
         match cargo_compete_config.new_workspace_member {
+            NewWorkspaceMember::Skip => {}
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
@@ -565,6 +567,54 @@ pub(crate) fn gen_compete_toml(
             "template_platform": platform.to_kebab_case_str(),
             "submit_via_binary": submit_via_binary,
         }))
+}
+
+pub(crate) fn new_template_package(
+    workspace_root: &Path,
+    deps: Option<&str>,
+    main_rs: &str,
+    shell: &mut Shell,
+) -> anyhow::Result<()> {
+    let new_pkg_manifest_dir = workspace_root.join("cargo-compete-template");
+    let new_pkg_manifest_path = new_pkg_manifest_dir.join("Cargo.toml");
+
+    crate::fs::create_dir_all(&new_pkg_manifest_dir)?;
+
+    let mut new_manifest = r#"[package]
+name = "cargo-compete-template"
+version = "0.1.0"
+edition = "2018"
+publish = false
+
+[[bin]]
+name = "cargo-compete-template"
+path = "src/main.rs"
+"#
+    .to_owned();
+
+    if let Some(deps) = deps {
+        new_manifest += "\n";
+        new_manifest += "[dependencies]\n";
+        new_manifest += deps;
+    }
+
+    crate::fs::write(&new_pkg_manifest_path, new_manifest)?;
+    crate::fs::create_dir_all(new_pkg_manifest_dir.join("src"))?;
+    crate::fs::write(new_pkg_manifest_dir.join("src").join("main.rs"), main_rs)?;
+    shell.status(
+        "Created",
+        format!(
+            "`cargo-compete-template` package at {}",
+            new_pkg_manifest_dir.display(),
+        ),
+    )?;
+
+    shell.status("Updating", workspace_root.join("Cargo.lock").display())?;
+
+    MetadataCommand::new()
+        .manifest_path(new_pkg_manifest_path)
+        .exec()?;
+    Ok(())
 }
 
 #[cfg(test)]

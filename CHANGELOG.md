@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- [`compete.toml`] Changed the behavior of `exclude`.
+- [rename] Renamed `migrate packages` command to `migrate cargo-atcoder`.
+
+### Added
+
+- [`compete.toml`] `skip` variant to `new-workspace-members`.
+
+### Fixed
+
+- [`migrate cargo-atcoder`] Now `cargo compete migrate` also generates a template package as `cargo compete init` does.
+
 ## [0.3.2] - 2020-08-08Z
 
 ### Added
