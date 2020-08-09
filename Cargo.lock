@@ -230,6 +230,8 @@ dependencies = [
 [[package]]
 name = "cargo-member"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04bca21303c6c81acc03eb5db980e5b5b30210b9b571024238b163476dbe7e00"
 dependencies = [
  "anyhow",
  "atty",

@@ -74,6 +74,7 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
 #[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum NewWorkspaceMember {
+    Skip,
     Include,
     Exclude,
     Focus,
@@ -392,6 +393,7 @@ impl Metadata {
         )?;
 
         match cargo_compete_config.new_workspace_member {
+            NewWorkspaceMember::Skip => {}
             NewWorkspaceMember::Include => {
                 cargo_member::Include::new(&self.workspace_root, &[pkg_manifest_dir])
                     .stderr(shell.err())
