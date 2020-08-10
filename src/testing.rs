@@ -13,6 +13,7 @@ use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
 use std::{
     collections::HashSet,
+    env,
     path::{Path, PathBuf},
 };
 
@@ -76,7 +77,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         .target_directory
         .join(if release { "release" } else { "debug" })
         .join(&bin.name)
-        .with_extension(if cfg!(windows) { "exe" } else { "" });
+        .with_extension(env::consts::EXE_EXTENSION);
 
     ensure!(artifact.exists(), "`{}` does not exist", artifact.display());
 
