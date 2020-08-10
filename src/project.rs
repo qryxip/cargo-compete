@@ -527,7 +527,7 @@ impl Package {
     }
 }
 
-pub(crate) fn locate_project(cwd: &Path) -> anyhow::Result<PathBuf> {
+pub(crate) fn locate_project(cwd: PathBuf) -> anyhow::Result<PathBuf> {
     cwd.ancestors()
         .map(|p| p.join("Cargo.toml"))
         .find(|p| p.exists())

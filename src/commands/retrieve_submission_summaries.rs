@@ -53,7 +53,7 @@ pub(crate) fn run(
 
     let manifest_path = manifest_path
         .map(Ok)
-        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
     let member = metadata.query_for_member(package)?;

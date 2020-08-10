@@ -90,7 +90,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     let manifest_path = manifest_path
         .map(Ok)
-        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
     let cargo_compete_config = metadata.read_compete_toml()?;
@@ -163,14 +163,14 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         std::fs::copy(orig_artifact, &artifact)?;
 
         if let Some(strip) = strip {
-            crate::process::with_which(strip, &cwd)?
+            crate::process::with_which(strip, &metadata.workspace_root)?
                 .arg("-s")
                 .arg(&artifact)
                 .exec_with_shell_status(shell)?;
         }
 
         if let Some(upx) = upx {
-            crate::process::with_which(upx, &cwd)?
+            crate::process::with_which(upx, &metadata.workspace_root)?
                 .arg("--best")
                 .arg(&artifact)
                 .exec_with_shell_status(shell)?;
