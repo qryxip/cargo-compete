@@ -52,7 +52,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     let manifest_path = manifest_path
         .map(Ok)
-        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
 
@@ -102,7 +102,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
         cargo_compete_config.open,
         &file_paths,
         member.manifest_path.parent().unwrap(),
-        &cwd,
+        &metadata.workspace_root,
         shell,
     )
 }

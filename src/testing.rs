@@ -64,11 +64,12 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         }
     };
 
-    crate::process::process(crate::process::cargo_exe()?, &metadata.workspace_root)
+    crate::process::process(crate::process::cargo_exe()?)
         .args(&["build", "--bin", &bin.name])
         .args(if release { &["--release"] } else { &[] })
         .arg("--manifest-path")
         .arg(&member.manifest_path)
+        .cwd(&metadata.workspace_root)
         .exec_with_shell_status(shell)?;
 
     let artifact = metadata

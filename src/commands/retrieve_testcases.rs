@@ -52,7 +52,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
     let manifest_path = manifest_path
         .map(Ok)
-        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
 

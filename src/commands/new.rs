@@ -56,7 +56,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
     let manifest_path = manifest_path
         .map(Ok)
-        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
 
@@ -102,7 +102,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
-                    &cwd,
+                    &workspace_root,
                     shell,
                 )?;
             }
@@ -148,7 +148,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
-                    &cwd,
+                    &workspace_root,
                     shell,
                 )?;
             }
@@ -196,7 +196,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     cargo_compete_config.open,
                     &file_paths,
                     &pkg_manifest_dir,
-                    &cwd,
+                    &workspace_root,
                     shell,
                 )?;
             }

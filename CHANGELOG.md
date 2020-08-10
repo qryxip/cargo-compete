@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- [`new`, `open`] CWD for `jq` is set to the workspace root.
+
 ## [0.4.0] - 2020-08-09Z
 
 ### Changed

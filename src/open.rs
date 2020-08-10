@@ -9,7 +9,7 @@ pub(crate) fn open(
     open: Option<impl AsRef<str>>,
     paths: &[(impl AsRef<Path>, impl AsRef<Path>)],
     pkg_manifest_dir: &Path,
-    cwd: &Path,
+    workspace_root: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     for url in urls {
@@ -40,13 +40,14 @@ pub(crate) fn open(
         })
         .to_string();
 
-        let jq = crate::process::which("jq", cwd).with_context(|| {
+        let jq = crate::process::which("jq", workspace_root).with_context(|| {
             "`jq` not found. install `jq` from https://github.com/stedolan/jq/releases"
         })?;
 
-        let output = crate::process::process(jq, &cwd)
+        let output = crate::process::process(jq)
             .args(&["-c", open.as_ref()])
             .pipe_input(Some(input))
+            .cwd(workspace_root)
             .read_with_shell_status(shell)?;
 
         let args = serde_json::from_str::<Vec<String>>(&output)
@@ -54,7 +55,7 @@ pub(crate) fn open(
 
         ensure!(!args.is_empty(), "empty command");
 
-        crate::process::with_which(&args[0], cwd)?
+        crate::process::with_which(&args[0], workspace_root)?
             .args(&args[1..])
             .exec_with_shell_status(shell)?;
     }
