@@ -138,7 +138,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             crate::process::cargo_exe()?
         };
 
-        crate::process::with_which(program, member.manifest_path.parent().unwrap())?
+        crate::process::with_which(program, &metadata.workspace_root)?
             .args(&[
                 "build",
                 "--bin",
@@ -147,6 +147,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 "--target",
                 &target,
             ])
+            .cwd(member.manifest_path.parent().unwrap())
+            .display_cwd()
             .exec_with_shell_status(shell)?;
 
         let orig_artifact = metadata

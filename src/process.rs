@@ -15,6 +15,7 @@ pub(crate) struct ProcessBuilder<C: Presence<PathBuf>> {
     program: OsString,
     args: Vec<OsString>,
     cwd: C::Value,
+    display_cwd: bool,
     pipe_input: Option<Vec<u8>>,
 }
 
@@ -34,7 +35,15 @@ impl<C: Presence<PathBuf>> ProcessBuilder<C> {
             program: self.program,
             args: self.args,
             cwd: cwd.as_ref().to_owned(),
+            display_cwd: self.display_cwd,
             pipe_input: self.pipe_input,
+        }
+    }
+
+    pub(crate) fn display_cwd(self) -> Self {
+        Self {
+            display_cwd: true,
+            ..self
         }
     }
 
@@ -98,13 +107,17 @@ impl fmt::Display for ProcessBuilder<Present> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmt,
-            "`{}{}` in {}",
+            "`{}{}`{}",
             shell_escape::escape(self.program.to_string_lossy()),
             self.args.iter().format_with("", |arg, f| f(&format_args!(
                 " {}",
                 shell_escape::escape(arg.to_string_lossy()),
             ))),
-            self.cwd.display(),
+            if self.display_cwd {
+                format!(" in {}", self.cwd.display())
+            } else {
+                "".to_owned()
+            }
         )
     }
 }
@@ -132,6 +145,7 @@ pub(crate) fn process(program: impl AsRef<Path>) -> ProcessBuilder<NotPresent> {
         program: program.as_ref().into(),
         args: vec![],
         cwd: (),
+        display_cwd: false,
         pipe_input: None,
     }
 }
@@ -142,10 +156,12 @@ pub(crate) fn with_which(
 ) -> anyhow::Result<ProcessBuilder<Present>> {
     let (program, cwd) = (program.as_ref(), cwd.as_ref().to_owned());
     let program = which(program, &cwd)?.into();
+
     Ok(ProcessBuilder {
         program,
         args: vec![],
         cwd,
+        display_cwd: false,
         pipe_input: None,
     })
 }
