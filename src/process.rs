@@ -11,29 +11,40 @@ use std::{
 };
 
 #[derive(Debug)]
-pub(crate) struct ProcessBuilder {
+pub(crate) struct ProcessBuilder<C: Presence<PathBuf>> {
     program: OsString,
     args: Vec<OsString>,
-    cwd: PathBuf,
+    cwd: C::Value,
     pipe_input: Option<Vec<u8>>,
 }
 
-impl ProcessBuilder {
-    pub(crate) fn arg(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
+impl<C: Presence<PathBuf>> ProcessBuilder<C> {
+    pub(crate) fn arg(mut self, arg: impl AsRef<OsStr>) -> Self {
         self.args.push(arg.as_ref().to_owned());
         self
     }
 
-    pub(crate) fn args(&mut self, args: &[impl AsRef<OsStr>]) -> &mut Self {
+    pub(crate) fn args(mut self, args: &[impl AsRef<OsStr>]) -> Self {
         self.args.extend(args.iter().map(|s| s.as_ref().to_owned()));
         self
     }
 
-    pub(crate) fn pipe_input(&mut self, pipe_input: Option<impl Into<Vec<u8>>>) -> &mut Self {
+    pub(crate) fn cwd(self, cwd: impl AsRef<Path>) -> ProcessBuilder<Present> {
+        ProcessBuilder {
+            program: self.program,
+            args: self.args,
+            cwd: cwd.as_ref().to_owned(),
+            pipe_input: self.pipe_input,
+        }
+    }
+
+    pub(crate) fn pipe_input(mut self, pipe_input: Option<impl Into<Vec<u8>>>) -> Self {
         self.pipe_input = pipe_input.map(Into::into);
         self
     }
+}
 
+impl ProcessBuilder<Present> {
     pub(crate) fn exec(&self) -> anyhow::Result<()> {
         let status = self.spawn(Stdio::inherit())?.wait()?;
         if !status.success() {
@@ -83,7 +94,7 @@ impl ProcessBuilder {
     }
 }
 
-impl fmt::Display for ProcessBuilder {
+impl fmt::Display for ProcessBuilder<Present> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmt,
@@ -98,11 +109,29 @@ impl fmt::Display for ProcessBuilder {
     }
 }
 
-pub(crate) fn process(program: impl AsRef<Path>, cwd: impl AsRef<Path>) -> ProcessBuilder {
+pub(crate) trait Presence<T> {
+    type Value;
+}
+
+#[derive(Debug)]
+pub(crate) enum NotPresent {}
+
+impl<T> Presence<T> for NotPresent {
+    type Value = ();
+}
+
+#[derive(Debug)]
+pub(crate) enum Present {}
+
+impl<T> Presence<T> for Present {
+    type Value = T;
+}
+
+pub(crate) fn process(program: impl AsRef<Path>) -> ProcessBuilder<NotPresent> {
     ProcessBuilder {
         program: program.as_ref().into(),
         args: vec![],
-        cwd: cwd.as_ref().into(),
+        cwd: (),
         pipe_input: None,
     }
 }
@@ -110,10 +139,15 @@ pub(crate) fn process(program: impl AsRef<Path>, cwd: impl AsRef<Path>) -> Proce
 pub(crate) fn with_which(
     program: impl AsRef<Path>,
     cwd: impl AsRef<Path>,
-) -> anyhow::Result<ProcessBuilder> {
-    let (program, cwd) = (program.as_ref(), cwd.as_ref());
-    let program = which(program, cwd)?;
-    Ok(process(program, cwd))
+) -> anyhow::Result<ProcessBuilder<Present>> {
+    let (program, cwd) = (program.as_ref(), cwd.as_ref().to_owned());
+    let program = which(program, &cwd)?.into();
+    Ok(ProcessBuilder {
+        program,
+        args: vec![],
+        cwd,
+        pipe_input: None,
+    })
 }
 
 pub(crate) fn which(

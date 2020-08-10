@@ -44,9 +44,10 @@ pub(crate) fn open(
             "`jq` not found. install `jq` from https://github.com/stedolan/jq/releases"
         })?;
 
-        let output = crate::process::process(jq, &workspace_root)
+        let output = crate::process::process(jq)
             .args(&["-c", open.as_ref()])
             .pipe_input(Some(input))
+            .cwd(workspace_root)
             .read_with_shell_status(shell)?;
 
         let args = serde_json::from_str::<Vec<String>>(&output)
