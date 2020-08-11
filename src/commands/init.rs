@@ -33,11 +33,12 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
 
     shell.set_color_choice(color);
 
+    let git_repo_root = cwd.ancestors().find(|p| p.join(".git").is_dir());
+
     let path = if let Some(path) = path {
         cwd.join(path.strip_prefix(".").unwrap_or(&path))
     } else {
-        cwd.ancestors()
-            .find(|p| p.join(".git").is_dir())
+        git_repo_root
             .with_context(|| {
                 "not a Git repository. run `git init` first, or specify a path with CLI arguments"
             })?
@@ -91,6 +92,17 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
                 "3" => break AtcoderCrates::UseViaBinary,
                 _ => writeln!(shell.err(), "Choose 1, 2, or 3.")?,
             }
+        }
+    }
+
+    if let Some(git_repo_root) = git_repo_root {
+        let gitignore = git_repo_root.join(".gitignore");
+        if !gitignore.exists() {
+            crate::fs::write(
+                &gitignore,
+                include_str!("../../resources/default-gitignore"),
+            )?;
+            shell.status("Wrote", gitignore.display())?;
         }
     }
 
