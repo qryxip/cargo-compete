@@ -87,6 +87,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: '`git config --global core.autocrlf false`'
+        run: git config --global core.autocrlf false
+        if: matrix.os == 'windows-2019'
+
       - name: Checkout
         uses: actions/checkout@v2
 
