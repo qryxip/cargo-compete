@@ -65,7 +65,7 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
     struct KebabcaseFilter;
 
     impl Filter for KebabcaseFilter {
-        fn evaluate(&self, input: &dyn ValueView, _: &Runtime) -> liquid_core::Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _: &Runtime<'_>) -> liquid_core::Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_kebab_case()))
         }
     }

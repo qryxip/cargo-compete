@@ -1,3 +1,5 @@
+#![warn(rust_2018_idioms)]
+
 use anyhow::Context as _;
 use cargo_compete::{shell::Shell, Context, Opt};
 use std::env;
