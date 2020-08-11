@@ -1,0 +1,42 @@
+---
+source: tests/init.rs
+expression: tree
+---
+{
+  "atcoder": {
+    "Cargo.lock": "..",
+    "Cargo.toml": "[workspace]\nmembers = [\"cargo-compete-template\"]\nexclude = []\n",
+    "cargo-compete-template": {
+      "Cargo.toml": "[package]\nname = \"cargo-compete-template\"\nversion = \"0.1.0\"\nedition = \"2018\"\npublish = false\n\n[[bin]]\nname = \"cargo-compete-template\"\npath = \"src/main.rs\"\n",
+      "src": {
+        "main.rs": "use std::io::{self, Read as _};\n\nfn main() {\n    let mut input = \"\".to_owned();\n    io::stdin().read_to_string(&mut input).unwrap();\n    let mut input = input.split_whitespace();\n    macro_rules! read(\n        ([$tt:tt]) => (read!([$tt; read!(usize)]));\n        ([$tt:tt; $n:expr]) => ((0..$n).map(|_| read!($tt)).collect::<Vec<_>>());\n        (($($tt:tt),+)) => (($(read!($tt)),*));\n        (Usize1) => (read!(usize) - 1);\n        (Byte) => (read!(char) as u8);\n        (Bytes) => (read!(String).into_bytes());\n        ($ty:ty) => (input.next().unwrap().parse::<$ty>().unwrap());\n    );\n\n    let n = read!(usize);\n}\n"
+      }
+    },
+    "compete.toml": "# How to manage new workspace members (\"include\" | \"exclude\" | \"focus\")\n#\n# - `skip`:    Does not modify `[workspace]`\n# - `include`: Adds the package to `workspace.members`\n# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`\n# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`\nnew-workspace-member = \"include\"\n\n# Path to the test file (Liquid template)\n#\n# Variables:\n#\n# - `manifest_dir`: Package directory\n# - `contest`:      Contest ID (e.g. \"abc100\")\n# - `problem`:      Problem index (e.g. \"a\", \"b\")\n#\n# Additional filters:\n#\n# - `kebabcase`: Convert to kebab case (by using the `heck` crate)\ntest-suite = \"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml\"\n#test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n# Open files with the command (`jq` command)\n#\n# VSCode:\n#open = '[\"code\"] + (.paths | map([.src, .test_suite]) | flatten) + [\"-a\", .manifest_dir]'\n# Emacs:\n#open = '[\"emacsclient\", \"-n\"] + (.paths | map([.src, .test_suite]) | flatten)'\n\n[template]\nplatform = \"atcoder\"\nmanifest = \"./cargo-compete-template/Cargo.toml\"\nsrc = \"./cargo-compete-template/src/main.rs\"\n\n#[submit-via-binary]\n#target = \"x86_64-unknown-linux-musl\"\n##cross = \"cross\"\n#strip = \"strip\"\n##upx = \"upx\"\n",
+    "rust-toolchain": "1.42.0\n"
+  },
+  "codeforces": {
+    "Cargo.lock": "..",
+    "Cargo.toml": "[workspace]\nmembers = [\"cargo-compete-template\"]\nexclude = []\n",
+    "cargo-compete-template": {
+      "Cargo.toml": "[package]\nname = \"cargo-compete-template\"\nversion = \"0.1.0\"\nedition = \"2018\"\npublish = false\n\n[[bin]]\nname = \"cargo-compete-template\"\npath = \"src/main.rs\"\n",
+      "src": {
+        "main.rs": "use std::io::{self, Read as _};\n\nfn main() {\n    let mut input = \"\".to_owned();\n    io::stdin().read_to_string(&mut input).unwrap();\n    let mut input = input.split_whitespace();\n    macro_rules! read(\n        ([$tt:tt]) => (read!([$tt; read!(usize)]));\n        ([$tt:tt; $n:expr]) => ((0..$n).map(|_| read!($tt)).collect::<Vec<_>>());\n        (($($tt:tt),+)) => (($(read!($tt)),*));\n        (Usize1) => (read!(usize) - 1);\n        (Byte) => (read!(char) as u8);\n        (Bytes) => (read!(String).into_bytes());\n        ($ty:ty) => (input.next().unwrap().parse::<$ty>().unwrap());\n    );\n\n    let n = read!(usize);\n}\n"
+      }
+    },
+    "compete.toml": "# How to manage new workspace members (\"include\" | \"exclude\" | \"focus\")\n#\n# - `skip`:    Does not modify `[workspace]`\n# - `include`: Adds the package to `workspace.members`\n# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`\n# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`\nnew-workspace-member = \"include\"\n\n# Path to the test file (Liquid template)\n#\n# Variables:\n#\n# - `manifest_dir`: Package directory\n# - `contest`:      Contest ID (e.g. \"abc100\")\n# - `problem`:      Problem index (e.g. \"a\", \"b\")\n#\n# Additional filters:\n#\n# - `kebabcase`: Convert to kebab case (by using the `heck` crate)\ntest-suite = \"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml\"\n#test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n# Open files with the command (`jq` command)\n#\n# VSCode:\n#open = '[\"code\"] + (.paths | map([.src, .test_suite]) | flatten) + [\"-a\", .manifest_dir]'\n# Emacs:\n#open = '[\"emacsclient\", \"-n\"] + (.paths | map([.src, .test_suite]) | flatten)'\n\n[template]\nplatform = \"codeforces\"\nmanifest = \"./cargo-compete-template/Cargo.toml\"\nsrc = \"./cargo-compete-template/src/main.rs\"\n\n#[submit-via-binary]\n#target = \"x86_64-unknown-linux-musl\"\n##cross = \"cross\"\n#strip = \"strip\"\n##upx = \"upx\"\n",
+    "rust-toolchain": "1.42.0\n"
+  },
+  "yukicoder": {
+    "Cargo.lock": "..",
+    "Cargo.toml": "[workspace]\nmembers = [\"cargo-compete-template\"]\nexclude = []\n",
+    "cargo-compete-template": {
+      "Cargo.toml": "[package]\nname = \"cargo-compete-template\"\nversion = \"0.1.0\"\nedition = \"2018\"\npublish = false\n\n[[bin]]\nname = \"cargo-compete-template\"\npath = \"src/main.rs\"\n",
+      "src": {
+        "main.rs": "use std::io::{self, Read as _};\n\nfn main() {\n    let mut input = \"\".to_owned();\n    io::stdin().read_to_string(&mut input).unwrap();\n    let mut input = input.split_whitespace();\n    macro_rules! read(\n        ([$tt:tt]) => (read!([$tt; read!(usize)]));\n        ([$tt:tt; $n:expr]) => ((0..$n).map(|_| read!($tt)).collect::<Vec<_>>());\n        (($($tt:tt),+)) => (($(read!($tt)),*));\n        (Usize1) => (read!(usize) - 1);\n        (Byte) => (read!(char) as u8);\n        (Bytes) => (read!(String).into_bytes());\n        ($ty:ty) => (input.next().unwrap().parse::<$ty>().unwrap());\n    );\n\n    let n = read!(usize);\n}\n"
+      }
+    },
+    "compete.toml": "# How to manage new workspace members (\"include\" | \"exclude\" | \"focus\")\n#\n# - `skip`:    Does not modify `[workspace]`\n# - `include`: Adds the package to `workspace.members`\n# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`\n# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`\nnew-workspace-member = \"include\"\n\n# Path to the test file (Liquid template)\n#\n# Variables:\n#\n# - `manifest_dir`: Package directory\n# - `contest`:      Contest ID (e.g. \"abc100\")\n# - `problem`:      Problem index (e.g. \"a\", \"b\")\n#\n# Additional filters:\n#\n# - `kebabcase`: Convert to kebab case (by using the `heck` crate)\ntest-suite = \"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml\"\n#test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n# Open files with the command (`jq` command)\n#\n# VSCode:\n#open = '[\"code\"] + (.paths | map([.src, .test_suite]) | flatten) + [\"-a\", .manifest_dir]'\n# Emacs:\n#open = '[\"emacsclient\", \"-n\"] + (.paths | map([.src, .test_suite]) | flatten)'\n\n[template]\nplatform = \"yukicoder\"\nmanifest = \"./cargo-compete-template/Cargo.toml\"\nsrc = \"./cargo-compete-template/src/main.rs\"\n\n#[submit-via-binary]\n#target = \"x86_64-unknown-linux-musl\"\n##cross = \"cross\"\n#strip = \"strip\"\n##upx = \"upx\"\n",
+    "rust-toolchain": "1.44.1\n"
+  }
+}
