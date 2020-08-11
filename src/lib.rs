@@ -1,3 +1,6 @@
+#![forbid(unsafe_code)]
+#![warn(rust_2018_idioms)]
+
 mod commands;
 mod fs;
 mod open;

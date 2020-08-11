@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/qryxip/cargo-compete/workflows/CI/badge.svg)](https://github.com/qryxip/cargo-compete/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/qryxip/cargo-compete/branch/master/graph/badge.svg)](https://codecov.io/gh/qryxip/cargo-compete/branch/master)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 [![Crates.io](https://img.shields.io/crates/v/cargo-compete.svg)](https://crates.io/crates/cargo-compete)
 [![Crates.io](https://img.shields.io/crates/l/cargo-compete.svg)](https://crates.io/crates/cargo-compete)
 
@@ -38,7 +39,7 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 ### GitHub Releases
 
-[バイナリでの提供]((https://github.com/qryxip/cargo-compete/releases))もしています。
+[バイナリでの提供](https://github.com/qryxip/cargo-compete/releases)もしています。
 
 ## 使い方
 
@@ -83,6 +84,20 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89712184-25432500-d9ca-11ea-92fe-f699b6e0cfab.png)
 
 `--open`を付け忘れた場合は[`cargo compete open`](#cargo-compete-open)で開いてください。
+
+[`compete.toml`](#設定)の`new-workspace-member`が`"include"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
+クレートを使う場合も初回を除いて"warmup"は不要です。
+
+パッケージが増えすぎたら`"include"`から`"focus"`に変更してください。
+`cargo compete new`時に既存のパッケージを`workspace.members`から外して[無効化](https://github.com/rust-lang/cargo/blob/7bce509826e29bd79566f7a33621fea7e7a657f9/src/cargo/core/workspace.rs#L797-L807)します。
+ビルドキャッシュはそのまま使われます。
+その場合`workspace.{member, exclude}`を操作するツールとして[cargo-member](https://github.com/qryxip/cargo-member)というのも作ってあるのでこれを使ってください。
+
+`"exclude"`の場合独立したワークスペースが作られます。
+こちらは`cargo atcoder new`の挙動に近いです。
+クレートを一切使わない場合はこちらに設定するといいでしょう。
+ただし`cargo compete submit`等のコマンドのために`compete.toml`のシンボリックリンクが作られます。
+Windows上では一般ユーザーでシンボリックリンクを作れるようにしてください。
 
 ### `cargo compete retrieve testcases` / `cargo compete download`
 
@@ -209,13 +224,7 @@ path = "src/bin/b.rs"
 [`compete.toml`](#設定)があるワークスペースから実行する必要があります。
 [`cargo compete init`](#cargo-compete-init)でワークスペースを作成するか、[`cargo compete migrate cargo-atcoder`](#cargo-compete-migrate-cargo-atcoder)でパッケージ達をマイグレートしてください。
 
-[`compete.toml`](#設定)の`new-workspace-member`が`"include"`または`"focus"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
-クレートを使う場合も初回を除いて"warmup"は不要です。
-
-`"exclude"`の場合独立したワークスペースが作られます。
-こちらは`cargo atcoder new`の挙動に近いです。
-ただし`cargo compete submit`等のコマンドのために`compete.toml`のシンボリックリンクが作られます。
-Windows上では一般ユーザーでシンボリックリンクを作れるようにしてください。
+クレートを使っているか、パッケージの数が多いか等に応じて[`compete.toml`](#設定)の`new-workspace-member`を適切に設定してください。
 
 なお、開始前のコンテストには使えません。
 ビルドキャッシュを共有する限り"warmup"が不要なためです。
