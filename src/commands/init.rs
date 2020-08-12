@@ -29,7 +29,11 @@ pub struct OptCompeteInit {
 pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteInit { color, path } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path: _,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 

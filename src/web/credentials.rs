@@ -3,13 +3,6 @@ use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, path::PathBuf};
 
-pub(crate) fn cookies_path() -> anyhow::Result<PathBuf> {
-    let data_local_dir =
-        dirs::data_local_dir().with_context(|| "could not find the local data directory")?;
-
-    Ok(data_local_dir.join("cargo-compete").join("cookies.jsonl"))
-}
-
 pub(crate) fn username_and_password<'a>(
     shell: &'a RefCell<&'a mut Shell>,
     username_prompt: &'static str,

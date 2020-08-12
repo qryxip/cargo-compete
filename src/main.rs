@@ -12,15 +12,22 @@ fn main() {
     let Opt::Compete(opt) = Opt::from_args();
     let mut shell = Shell::new();
 
-    let result = env::current_dir()
-        .with_context(|| "could not get the current directory")
-        .and_then(|cwd| {
-            let ctx = Context {
-                cwd,
-                shell: &mut shell,
-            };
-            cargo_compete::run(opt, ctx)
-        });
+    let result = (|| -> _ {
+        let cwd = env::current_dir().with_context(|| "could not get the current directory")?;
+
+        let cookies_path = dirs::data_local_dir()
+            .with_context(|| "could not find the local data directory")?
+            .join("cargo-compete")
+            .join("cookies.jsonl");
+
+        let ctx = Context {
+            cwd,
+            cookies_path,
+            shell: &mut shell,
+        };
+
+        cargo_compete::run(opt, ctx)
+    })();
 
     if let Err(err) = result {
         exit_with_error(err, shell.err());

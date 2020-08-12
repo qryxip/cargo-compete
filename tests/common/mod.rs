@@ -1,6 +1,53 @@
+use cargo_compete::{shell::Shell, Opt};
 use ignore::WalkBuilder;
 use serde_json::json;
-use std::path::Path;
+use std::{io::BufRead, path::Path};
+use structopt::StructOpt as _;
+
+pub fn run(
+    before: impl FnOnce(&Path) -> anyhow::Result<()>,
+    input: impl BufRead + 'static,
+    args: &[&str],
+) -> anyhow::Result<(String, serde_json::Value)> {
+    let workspace = tempfile::Builder::new()
+        .prefix("cargo-compete-test-workspace")
+        .tempdir()?;
+
+    let cookies_jsonl = tempfile::Builder::new()
+        .prefix("cargo-compete-test-cookies")
+        .suffix(".jsonl")
+        .tempfile()?
+        .into_temp_path();
+
+    let (output_file, output) = tempfile::Builder::new()
+        .prefix("cargo-compete-test-output")
+        .tempfile()?
+        .into_parts();
+
+    before(workspace.path())?;
+
+    let Opt::Compete(opt) = Opt::from_iter_safe(args)?;
+
+    cargo_compete::run(
+        opt,
+        cargo_compete::Context {
+            cwd: workspace.path().to_owned(),
+            cookies_path: Path::new(&cookies_jsonl).to_owned(),
+            shell: &mut Shell::from_read_write(Box::new(input), Box::new(output_file)),
+        },
+    )?;
+
+    let output_masked = std::fs::read_to_string(&output)?
+        .replace(workspace.path().to_str().unwrap(), "{{ cwd }}")
+        .replace(std::path::MAIN_SEPARATOR, "{{ separator }}");
+
+    let tree = tree(workspace.as_ref())?;
+
+    workspace.close()?;
+    output.close()?;
+
+    Ok((output_masked, tree))
+}
 
 pub fn tree(path: &Path) -> anyhow::Result<serde_json::Value> {
     let mut tree = serde_json::Map::new();

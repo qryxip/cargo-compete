@@ -54,7 +54,11 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         problem,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path: _,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 

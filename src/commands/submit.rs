@@ -84,7 +84,11 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         problem,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 
@@ -203,7 +207,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         TargetProblem::Yukicoder(_) => YUKICODER_RUST_LANG_ID,
     };
 
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+    let cookie_storage = CookieStorage::with_jsonl(&cookies_path)?;
     let timeout = crate::web::TIMEOUT;
 
     let outcome = match &package_metadata_bin.problem {
@@ -309,7 +313,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     shell.err().flush()?;
 
     if !no_watch {
-        let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+        let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
         let timeout = crate::web::TIMEOUT;
 
         match package_metadata_bin.problem {
