@@ -1,9 +1,9 @@
+pub mod common;
+
 use cargo_compete::{shell::Shell, Opt};
 use duct::cmd;
-use ignore::WalkBuilder;
 use insta::{assert_json_snapshot, assert_snapshot};
-use serde_json::json;
-use std::{path::Path, str};
+use std::str;
 use structopt::StructOpt as _;
 
 #[test]
@@ -56,56 +56,10 @@ fn run(input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
         .replace(workspace.path().to_str().unwrap(), "{{ cwd }}")
         .replace(std::path::MAIN_SEPARATOR, "{{ separator }}");
 
-    let tree = tree(workspace.as_ref())?;
+    let tree = common::tree(workspace.as_ref())?;
 
     workspace.close()?;
     output.close()?;
 
     Ok((output_masked, tree))
-}
-
-fn tree(path: &Path) -> anyhow::Result<serde_json::Value> {
-    let mut tree = serde_json::Map::new();
-
-    for entry in WalkBuilder::new(path)
-        .git_ignore(false)
-        .sort_by_file_name(Ord::cmp)
-        .build()
-    {
-        let entry = entry?;
-
-        let components = entry
-            .path()
-            .strip_prefix(path)?
-            .iter()
-            .map(|p| p.to_str().unwrap())
-            .collect::<Vec<_>>();
-
-        let mut tree = &mut tree;
-        if entry.path().is_dir() {
-            for component in components {
-                tree = tree
-                    .entry(component)
-                    .or_insert_with(|| json!({}))
-                    .as_object_mut()
-                    .unwrap();
-            }
-        } else if let [components @ .., file_name] = &*components {
-            for &component in components {
-                tree = tree
-                    .entry(component)
-                    .or_insert_with(|| json!({}))
-                    .as_object_mut()
-                    .unwrap();
-            }
-            tree.insert(
-                (*file_name).to_owned(),
-                json!(std::fs::read_to_string(entry.path())?),
-            );
-        } else {
-            panic!();
-        }
-    }
-
-    Ok(serde_json::Value::Object(tree))
 }
