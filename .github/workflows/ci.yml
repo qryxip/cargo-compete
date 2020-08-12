@@ -37,7 +37,7 @@ jobs:
   grcov:
     name: grcov
     runs-on: ubuntu-18.04
-    if: "github.actor == github.repository_owner || github.actor == 'bors[bot]'"
+    if: "!!github.token"
 
     steps:
       - name: Checkout
@@ -120,7 +120,7 @@ jobs:
       - name: Determine `cargo test` features
         id: cargo-test-features
         run: |
-          if ${{ !!secrets }}; then
+          if ${{ !!secrets.ATCODER_USERNAME }}; then
             echo '::set-output name=features::--features __test_with_credentials'
           else
             echo '::set-output name=features::'

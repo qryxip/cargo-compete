@@ -23,15 +23,22 @@ fn atcoder_practice() -> anyhow::Result<()> {
 
 #[cfg(feature = "__test_with_credentials")]
 fn credentials() -> anyhow::Result<impl BufRead> {
-    use anyhow::Context as _;
+    use anyhow::{ensure, Context as _};
     use std::io::Cursor;
 
     let username =
         env::var("ATCODER_USERNAME").with_context(|| "could not read `$ATCODER_USERNAME`")?;
+
     let password =
         env::var("ATCODER_PASSWORD").with_context(|| "could not read `$ATCODER_PASSWORD`")?;
+
+    let (username, password) = (username.trim(), password.trim());
+
+    ensure!(!username.is_empty(), "`$ATCODER_USERNAME` is empty");
+    ensure!(!password.is_empty(), "`$ATCODER_PASSWORD` is empty");
+
     Ok(Cursor::new(
-        format!("{}\n{}\n", username.trim(), password.trim()).into_bytes(),
+        format!("{}\n{}\n", username, password).into_bytes(),
     ))
 }
 
