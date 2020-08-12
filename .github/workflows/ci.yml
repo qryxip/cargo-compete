@@ -120,10 +120,10 @@ jobs:
       - name: Determine `cargo test` features
         id: cargo-test-features
         run: |
-          if ${{ !!secrets }}; then
-            echo '::set-output name=features::--features __test_with_credentials'
-          else
+          if ${{ toJSON(secrets) == '{}' }}; then
             echo '::set-output name=features::'
+          else
+            echo '::set-output name=features::--features __test_with_credentials'
           fi
         shell: bash
 
