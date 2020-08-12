@@ -10,6 +10,10 @@ readme = "README.md"
 keywords = ["competitive", "cli", "windows"]
 categories = ["command-line-utilities", "development-tools::cargo-plugins"]
 
+[features]
+default = []
+__test_with_credentials = []
+
 [dependencies]
 anyhow = "1.0.32"
 atty = "0.2.14"

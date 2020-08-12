@@ -1,0 +1,10 @@
+---
+source: tests/new.rs
+expression: output
+---
+Username: Password:      Created `practice` package at {{ cwd }}{{ slash_or_backslash }}practice
+      Adding "practice" to `workspace.members`
+    Updating {{ cwd }}{{ slash_or_backslash }}Cargo.lock
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}practice{{ slash_or_backslash }}a.yml
+       Saved no test cases (interactive problem) to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}practice{{ slash_or_backslash }}b.yml
+

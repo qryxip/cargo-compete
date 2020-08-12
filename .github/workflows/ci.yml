@@ -34,10 +34,10 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
   grcov:
     name: grcov
     runs-on: ubuntu-18.04
+    if: "github.actor == github.repository_owner || github.actor == 'bors[bot]'"
 
     steps:
       - name: Checkout
@@ -49,16 +49,18 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: '`cargo test --no-fail-fast`'
+      - name: '`cargo test --no-fail-fast --features __test_with_credentials`'
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast
+          args: --no-fail-fast --features __test_with_credentials
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off'
           RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off'
           RUST_BACKTRACE: full
+          ATCODER_USERNAME: ${{ secrets.ATCODER_USERNAME }}
+          ATCODER_PASSWORD: ${{ secrets.ATCODER_PASSWORD }}
 
       - name: grcov
         id: grcov
@@ -103,19 +105,37 @@ jobs:
           profile: minimal
           components: clippy
 
-      - name: '`cargo clippy --workspace --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
+      - name: '`cargo clippy --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --workspace --all-targets --target ${{ matrix.target-triple }} -- -D warnings
+          args: --all-targets --target ${{ matrix.target-triple }} -- -D warnings
 
-      - name: '`cargo test --no-fail-fast --target ${{ matrix.target-triple }}`'
+      - name: '`cargo clippy --all-targets --features __test_with_credentials --target ${{ matrix.target-triple }} -- -D warnings`'
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets --features __test_with_credentials --target ${{ matrix.target-triple }} -- -D warnings
+
+      - name: Determine `cargo test` features
+        id: cargo-test-features
+        run: |
+          if ${{ !!secrets }}; then
+            echo '::set-output name=features::--features __test_with_credentials'
+          else
+            echo '::set-output name=features::'
+          fi
+        shell: bash
+
+      - name: '`cargo test --no-fail-fast ${{ steps.cargo-test-features.outputs.features }} --target ${{ matrix.target-triple }}`'
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-fail-fast --target ${{ matrix.target-triple }}
+          args: --no-fail-fast ${{ steps.cargo-test-features.outputs.features }} --target ${{ matrix.target-triple }}
         env:
           RUST_BACKTRACE: full
+          ATCODER_USERNAME: ${{ secrets.ATCODER_USERNAME }}
+          ATCODER_PASSWORD: ${{ secrets.ATCODER_PASSWORD }}
 
   upload:
     strategy:

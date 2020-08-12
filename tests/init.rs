@@ -36,5 +36,10 @@ fn run(input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
         },
         input.as_bytes(),
         &["", "compete", "i"],
+        |workspace_root, output| {
+            output
+                .replace(workspace_root.to_str().unwrap(), "{{ cwd }}")
+                .replace(std::path::MAIN_SEPARATOR, "{{ main_path_separator }}")
+        },
     )
 }

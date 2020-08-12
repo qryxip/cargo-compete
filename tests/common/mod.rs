@@ -8,6 +8,7 @@ pub fn run(
     before: impl FnOnce(&Path) -> anyhow::Result<()>,
     input: impl BufRead + 'static,
     args: &[&str],
+    process_output: impl FnOnce(&Path, String) -> String,
 ) -> anyhow::Result<(String, serde_json::Value)> {
     let workspace = tempfile::Builder::new()
         .prefix("cargo-compete-test-workspace")
@@ -37,19 +38,16 @@ pub fn run(
         },
     )?;
 
-    let output_masked = std::fs::read_to_string(&output)?
-        .replace(workspace.path().to_str().unwrap(), "{{ cwd }}")
-        .replace(std::path::MAIN_SEPARATOR, "{{ separator }}");
-
+    let output_content = process_output(workspace.path(), std::fs::read_to_string(&output)?);
     let tree = tree(workspace.as_ref())?;
 
     workspace.close()?;
     output.close()?;
 
-    Ok((output_masked, tree))
+    Ok((output_content, tree))
 }
 
-pub fn tree(path: &Path) -> anyhow::Result<serde_json::Value> {
+fn tree(path: &Path) -> anyhow::Result<serde_json::Value> {
     let mut tree = serde_json::Map::new();
 
     for entry in WalkBuilder::new(path)
