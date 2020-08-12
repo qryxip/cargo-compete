@@ -1,0 +1,14 @@
+---
+source: tests/new.rs
+expression: output
+---
+     Created `agc047` package at {{ cwd }}{{ slash_or_backslash }}agc047
+      Adding "agc047" to `workspace.members`
+    Updating {{ cwd }}{{ slash_or_backslash }}Cargo.lock
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}a.yml
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}b.yml
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}c.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}d.yml
+       Saved 1 test case to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}e.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}testcases{{ slash_or_backslash }}agc047{{ slash_or_backslash }}f.yml
+

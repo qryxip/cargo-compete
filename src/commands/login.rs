@@ -30,11 +30,15 @@ pub struct OptCompeteLogin {
 pub(crate) fn run(opt: OptCompeteLogin, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteLogin { color, platform } = opt;
 
-    let crate::Context { cwd: _, shell } = ctx;
+    let crate::Context {
+        cwd: _,
+        cookies_path,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+    let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
     let timeout = crate::web::TIMEOUT;
 
     match platform {

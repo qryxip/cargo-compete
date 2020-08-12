@@ -125,6 +125,7 @@ pub enum OptCompeteWatch {
 
 pub struct Context<'s> {
     pub cwd: PathBuf,
+    pub cookies_path: PathBuf,
     pub shell: &'s mut Shell,
 }
 

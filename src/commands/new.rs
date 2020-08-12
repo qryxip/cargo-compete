@@ -50,7 +50,11 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
         contest,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 
@@ -65,8 +69,13 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
-            let outcome =
-                crate::web::retrieve_testcases::dl_from_atcoder(&contest, problems, full, shell)?;
+            let outcome = crate::web::retrieve_testcases::dl_from_atcoder(
+                &contest,
+                problems,
+                full,
+                &cookies_path,
+                shell,
+            )?;
 
             let package_name = outcome
                 .contest
@@ -111,8 +120,12 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
-            let outcome =
-                crate::web::retrieve_testcases::dl_from_codeforces(&contest, problems, shell)?;
+            let outcome = crate::web::retrieve_testcases::dl_from_codeforces(
+                &contest,
+                problems,
+                &cookies_path,
+                shell,
+            )?;
 
             let package_name = outcome
                 .contest

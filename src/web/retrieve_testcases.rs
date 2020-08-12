@@ -29,6 +29,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn dl_for_existing_package(
     package: &Package,
     package_metadata_bin: &mut IndexMap<String, PackageMetadataCargoCompeteBin>,
@@ -36,6 +37,7 @@ pub(crate) fn dl_for_existing_package(
     full: bool,
     workspace_root: &Path,
     test_suite_path: &liquid::Template,
+    cookies_path: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     let mut atcoder_targets = btreemap!();
@@ -74,7 +76,7 @@ pub(crate) fn dl_for_existing_package(
 
     for (contest, mut problems) in atcoder_targets {
         let problem_indexes = problems.keys().cloned().collect();
-        let outcome = dl_from_atcoder(&contest, Some(problem_indexes), full, shell)?;
+        let outcome = dl_from_atcoder(&contest, Some(problem_indexes), full, cookies_path, shell)?;
         for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
             if let Some(bin_index) = problems.remove(index) {
                 urls.push((bin_index, url.clone()));
@@ -84,7 +86,7 @@ pub(crate) fn dl_for_existing_package(
     }
     for (contest, mut problems) in codeforces_targets {
         let problem_indexes = problems.keys().cloned().collect();
-        let outcome = dl_from_codeforces(&contest, Some(problem_indexes), shell)?;
+        let outcome = dl_from_codeforces(&contest, Some(problem_indexes), cookies_path, shell)?;
         for RetrieveTestCasesOutcomeProblem { index, url, .. } in &outcome.problems {
             if let Some(bin_index) = problems.remove(index) {
                 urls.push((bin_index, url.clone()));
@@ -147,6 +149,7 @@ pub(crate) fn dl_from_atcoder(
     contest: &str,
     problems: Option<BTreeSet<String>>,
     full: bool,
+    cookies_path: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<RetrieveTestCasesOutcome> {
     let targets = AtcoderRetrieveTestCasesTargets {
@@ -174,7 +177,7 @@ pub(crate) fn dl_from_atcoder(
         None
     };
 
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+    let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
 
     Atcoder::exec(RetrieveTestCases {
         targets,
@@ -189,6 +192,7 @@ pub(crate) fn dl_from_atcoder(
 pub(crate) fn dl_from_codeforces(
     contest: &str,
     problems: Option<BTreeSet<String>>,
+    cookies_path: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<RetrieveTestCasesOutcome> {
     let targets = CodeforcesRetrieveTestCasesTargets {
@@ -206,7 +210,7 @@ pub(crate) fn dl_from_codeforces(
         ),
     };
 
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+    let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
 
     Codeforces::exec(RetrieveTestCases {
         targets,

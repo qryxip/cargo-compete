@@ -47,7 +47,11 @@ pub(crate) fn run(
         path,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path: _,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 

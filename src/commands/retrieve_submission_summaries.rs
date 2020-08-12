@@ -47,7 +47,11 @@ pub(crate) fn run(
         problem,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 
@@ -87,7 +91,7 @@ pub(crate) fn run(
         bail!("found multiple candicates. specify the target with argument");
     }
 
-    let cookie_storage = CookieStorage::with_jsonl(credentials::cookies_path()?)?;
+    let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
     let timeout = crate::web::TIMEOUT;
 
     if let Some(contest) = atcoder_targets.into_iter().next() {

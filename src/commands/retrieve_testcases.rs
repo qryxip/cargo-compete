@@ -43,7 +43,11 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         color,
     } = opt;
 
-    let crate::Context { cwd, shell } = ctx;
+    let crate::Context {
+        cwd,
+        cookies_path,
+        shell,
+    } = ctx;
 
     shell.set_color_choice(color);
 
@@ -84,6 +88,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         full,
         &metadata.workspace_root,
         &cargo_compete_config.test_suite,
+        &cookies_path,
         shell,
     )?;
 
