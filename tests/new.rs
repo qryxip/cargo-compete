@@ -2,7 +2,7 @@ pub mod common;
 
 use insta::{assert_json_snapshot, assert_snapshot};
 use liquid::object;
-use std::{env, io::BufRead};
+use std::io::BufRead;
 
 #[test]
 fn atcoder_agc047() -> anyhow::Result<()> {
@@ -15,31 +15,10 @@ fn atcoder_agc047() -> anyhow::Result<()> {
 #[cfg(feature = "__test_with_credentials")]
 #[test]
 fn atcoder_practice() -> anyhow::Result<()> {
-    let (output, tree) = run(credentials()?, "practice")?;
+    let (output, tree) = run(common::atcoder_credentials()?, "practice")?;
     assert_snapshot!("atcoder_practice_output", output);
     assert_json_snapshot!("atcoder_practice_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
     Ok(())
-}
-
-#[cfg(feature = "__test_with_credentials")]
-fn credentials() -> anyhow::Result<impl BufRead> {
-    use anyhow::{ensure, Context as _};
-    use std::io::Cursor;
-
-    let username =
-        env::var("ATCODER_USERNAME").with_context(|| "could not read `$ATCODER_USERNAME`")?;
-
-    let password =
-        env::var("ATCODER_PASSWORD").with_context(|| "could not read `$ATCODER_PASSWORD`")?;
-
-    let (username, password) = (username.trim(), password.trim());
-
-    ensure!(!username.is_empty(), "`$ATCODER_USERNAME` is empty");
-    ensure!(!password.is_empty(), "`$ATCODER_PASSWORD` is empty");
-
-    Ok(Cursor::new(
-        format!("{}\n{}\n", username, password).into_bytes(),
-    ))
 }
 
 fn run(

@@ -1,0 +1,6 @@
+---
+source: tests/login.rs
+expression: output
+---
+Username: Password: Successfully Logged in
+
