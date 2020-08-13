@@ -37,7 +37,7 @@ jobs:
   grcov:
     name: grcov
     runs-on: ubuntu-18.04
-    if: "github.repository_owner == 'qryxip' && github.ref == 'master'"
+    if: "github.repository_owner == 'qryxip' && github.ref == 'refs/heads/master'"
 
     steps:
       - name: Checkout
