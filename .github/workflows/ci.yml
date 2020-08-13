@@ -37,7 +37,7 @@ jobs:
   grcov:
     name: grcov
     runs-on: ubuntu-18.04
-    if: "!!github.token"
+    if: "github.actor == 'qryxip' && github.repository_owner == 'qryxip'"
 
     steps:
       - name: Checkout
