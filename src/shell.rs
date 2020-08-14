@@ -94,16 +94,17 @@ impl Shell {
         } = &mut self.output
         {
             err_erase_line(stderr);
+            let _ = stderr.flush();
             self.needs_clear = false;
         }
 
         #[cfg(unix)]
-        fn err_erase_line(mut stderr: impl Write) {
+        fn err_erase_line(stderr: &mut impl Write) {
             let _ = stderr.write_all(b"\x1B[K");
         }
 
         #[cfg(windows)]
-        fn err_erase_line(mut stderr: impl Write) {
+        fn err_erase_line(stderr: &mut impl Write) {
             if let Some((width, _)) = term_size::dimensions_stderr() {
                 let _ = write!(stderr, "{}\r", " ".repeat(width));
             }
