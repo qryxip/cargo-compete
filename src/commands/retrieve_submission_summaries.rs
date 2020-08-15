@@ -56,7 +56,7 @@ pub(crate) fn run(
     shell.set_color_choice(color);
 
     let manifest_path = manifest_path
-        .map(Ok)
+        .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
