@@ -1,6 +1,7 @@
 pub mod common;
 
 use duct::cmd;
+use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
 use std::str;
 
@@ -41,5 +42,6 @@ fn run(input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
                 .replace(workspace_root.to_str().unwrap(), "{{ cwd }}")
                 .replace(std::path::MAIN_SEPARATOR, "{{ main_path_separator }}")
         },
+        |_| Ok(Override::empty()),
     )
 }

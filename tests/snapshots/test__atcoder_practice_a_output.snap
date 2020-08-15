@@ -1,0 +1,26 @@
+---
+source: tests/test.rs
+expression: output
+---
+     Running {{ command }}
+
+1/2 ("sample1") Accepted ({{ elapsed }}) ms)
+stdin:
+1
+2 3
+test
+expected:
+6 test
+actual:
+6 test
+
+2/2 ("sample2") Accepted ({{ elapsed }}) ms)
+stdin:
+72
+128 256
+myonmyon
+expected:
+456 myonmyon
+actual:
+456 myonmyon
+

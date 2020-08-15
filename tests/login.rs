@@ -2,6 +2,7 @@
 
 pub mod common;
 
+use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
 
 #[test]
@@ -18,5 +19,6 @@ fn run(platform: &str) -> anyhow::Result<(String, serde_json::Value)> {
         common::atcoder_credentials()?,
         &["", "compete", "l", platform],
         |_, output| output,
+        |_| Ok(Override::empty()),
     )
 }
