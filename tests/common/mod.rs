@@ -1,5 +1,5 @@
 use cargo_compete::{shell::Shell, Opt};
-use ignore::WalkBuilder;
+use ignore::{overrides::Override, WalkBuilder};
 use serde_json::json;
 use std::{io::BufRead, path::Path};
 use structopt::StructOpt as _;
@@ -30,6 +30,7 @@ pub fn run(
     input: impl BufRead + 'static,
     args: &[&str],
     process_output: impl FnOnce(&Path, String) -> String,
+    walk_override: impl FnOnce(&Path) -> Result<Override, ignore::Error>,
 ) -> anyhow::Result<(String, serde_json::Value)> {
     let workspace = tempfile::Builder::new()
         .prefix("cargo-compete-test-workspace")
@@ -60,7 +61,7 @@ pub fn run(
     )?;
 
     let output_content = process_output(workspace.path(), std::fs::read_to_string(&output)?);
-    let tree = tree(workspace.as_ref())?;
+    let tree = tree(workspace.as_ref(), walk_override(workspace.path())?)?;
 
     workspace.close()?;
     output.close()?;
@@ -68,11 +69,12 @@ pub fn run(
     Ok((output_content, tree))
 }
 
-fn tree(path: &Path) -> anyhow::Result<serde_json::Value> {
+fn tree(path: &Path, walk_override: Override) -> anyhow::Result<serde_json::Value> {
     let mut tree = serde_json::Map::new();
 
     for entry in WalkBuilder::new(path)
         .git_ignore(false)
+        .overrides(walk_override)
         .sort_by_file_name(Ord::cmp)
         .build()
     {

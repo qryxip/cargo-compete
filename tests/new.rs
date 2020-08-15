@@ -1,5 +1,6 @@
 pub mod common;
 
+use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
 use liquid::object;
 use std::io::BufRead;
@@ -78,5 +79,6 @@ edition = "2018"
                 .replace('/', "{{ slash_or_backslash }}")
                 .replace('\\', "{{ slash_or_backslash }}")
         },
+        |_| Ok(Override::empty()),
     )
 }

@@ -55,7 +55,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     let problems = problems.map(|ps| ps.into_iter().collect::<HashSet<_>>());
 
     let manifest_path = manifest_path
-        .map(Ok)
+        .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
