@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`new`] Now empty virtual workspaces are supported.
+
 ## [0.4.1] - 2020-08-12Z
 
 ### Changed

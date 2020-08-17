@@ -2,7 +2,6 @@ pub mod common;
 
 use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
-use liquid::object;
 use std::io::BufRead;
 
 #[test]
@@ -28,30 +27,26 @@ fn run(
 ) -> anyhow::Result<(String, serde_json::Value)> {
     common::run(
         |workspace_root| -> _ {
-            std::fs::create_dir_all(workspace_root.join("cargo-compete-template").join("src"))?;
-
             std::fs::write(
                 workspace_root.join("Cargo.toml"),
                 r#"[workspace]
-members = ["cargo-compete-template"]
 "#,
             )?;
 
             std::fs::write(
                 workspace_root.join("compete.toml"),
-                liquid::ParserBuilder::with_stdlib()
-                    .build()?
-                    .parse(include_str!("../resources/compete.toml.liquid"))?
-                    .render(&object!({
-                        "template_platform": "atcoder",
-                        "submit_via_binary": false,
-                    }))?,
+                r#"new-workspace-member = "include"
+test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
+
+[template]
+platform = "atcoder"
+manifest = "./template-manifest.toml"
+src = "./template-code.rs"
+"#,
             )?;
 
             std::fs::write(
-                workspace_root
-                    .join("cargo-compete-template")
-                    .join("Cargo.toml"),
+                workspace_root.join("template-manifest.toml"),
                 r#"[package]
 name = "cargo-compete-template"
 version = "0.1.0"
@@ -60,10 +55,7 @@ edition = "2018"
             )?;
 
             std::fs::write(
-                workspace_root
-                    .join("cargo-compete-template")
-                    .join("src")
-                    .join("main.rs"),
+                workspace_root.join("template-code.rs"),
                 r#"fn main() {
     todo!();
 }

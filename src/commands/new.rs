@@ -61,7 +61,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path)?;
+    let metadata = crate::project::cargo_metadata_no_deps_frozen(&manifest_path)?;
     let cargo_compete_config = metadata.read_compete_toml()?;
 
     match cargo_compete_config.template.platform {
