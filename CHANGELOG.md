@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Support [ABC003](https://atcoder.jp/contests/abc003) and [ABC007](https://atcoder.jp/contests/abc007) to [ABC010](https://atcoder.jp/contests/abc010). ([qryxip/snowchains_core#76](https://github.com/qryxip/snowchains/pull/76))
+
 ## [0.4.2] - 2020-08-17Z
 
 ### Added
