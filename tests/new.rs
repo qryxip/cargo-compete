@@ -5,6 +5,22 @@ use insta::{assert_json_snapshot, assert_snapshot};
 use std::io::BufRead;
 
 #[test]
+fn atcoder_abc003() -> anyhow::Result<()> {
+    let (output, tree) = run(&b""[..], "abc003")?;
+    assert_snapshot!("atcoder_abc003_output", output);
+    assert_json_snapshot!("atcoder_abc003_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+    Ok(())
+}
+
+#[test]
+fn atcoder_abc007() -> anyhow::Result<()> {
+    let (output, tree) = run(&b""[..], "abc007")?;
+    assert_snapshot!("atcoder_abc007_output", output);
+    assert_json_snapshot!("atcoder_abc007_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+    Ok(())
+}
+
+#[test]
 fn atcoder_agc047() -> anyhow::Result<()> {
     let (output, tree) = run(&b""[..], "agc047")?;
     assert_snapshot!("atcoder_agc047_output", output);

@@ -82,7 +82,7 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 `--open`で問題のページをブラウザで開きます。また`compete.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをエディタで開くことができます。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89712184-25432500-d9ca-11ea-92fe-f699b6e0cfab.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/90397677-2ca5b500-e0d3-11ea-94f1-c246bc11621a.png)
 
 `--open`を付け忘れた場合は[`cargo compete open`](#cargo-compete-open)で開いてください。
 
@@ -142,7 +142,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 提出を行います。
 
-![Record](https://user-images.githubusercontent.com/14125495/89711920-40149a00-d9c8-11ea-86ec-154f662405ed.gif)
+![Record](https://user-images.githubusercontent.com/14125495/90531691-546b4a80-e1b1-11ea-95c2-c205e5640f72.gif)
 
 **パッケージを対象に取ります。パッケージ内に`cd`して実行してください。**
 対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。
