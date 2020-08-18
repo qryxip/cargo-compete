@@ -17,9 +17,9 @@ Supports AtCoder, Codeforces, and yukicoder.
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89712134-d5fcf480-d9c9-11ea-9124-bcd0caabb545.png)
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89712184-25432500-d9ca-11ea-92fe-f699b6e0cfab.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/90397677-2ca5b500-e0d3-11ea-94f1-c246bc11621a.png)
 
-![Record](https://user-images.githubusercontent.com/14125495/89711920-40149a00-d9c8-11ea-86ec-154f662405ed.gif)
+![Record](https://user-images.githubusercontent.com/14125495/90531691-546b4a80-e1b1-11ea-95c2-c205e5640f72.gif)
 
 ## License
 
