@@ -1,14 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.4] - 2020-08-19Z
 
 ### Changed
 
-- Improved error messages.
+- Improved error messages. ([#47](https://github.com/qryxip/cargo-compete/pull/47))
 
 ### Added
 
-- Now each command can be run against a virtual manifest when the workspace has exactly one member.
+- Now each command can be run against a virtual manifest when the workspace has exactly one member. ([#47](https://github.com/qryxip/cargo-compete/pull/47))
 
 ## [0.4.3] - 2020-08-18Z
 
