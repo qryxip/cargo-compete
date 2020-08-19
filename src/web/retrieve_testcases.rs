@@ -5,9 +5,9 @@ use crate::{
     shell::Shell,
     web::credentials,
 };
-use cargo_metadata::Package;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
+use krates::cm;
 use liquid::object;
 use maplit::btreemap;
 use snowchains_core::{
@@ -31,7 +31,7 @@ use std::{
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn dl_for_existing_package(
-    package: &Package,
+    package: &cm::Package,
     package_metadata_bin: &mut IndexMap<String, PackageMetadataCargoCompeteBin>,
     bin_indexes: Option<&HashSet<String>>,
     full: bool,

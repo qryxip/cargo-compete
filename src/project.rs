@@ -1,17 +1,16 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
-use cargo_metadata::{Metadata, MetadataCommand, Package, Resolve, Target};
 use derivative::Derivative;
 use easy_ext::ext;
 use heck::KebabCase as _;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
+use krates::cm;
 use liquid::object;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
     collections::BTreeMap,
-    env,
     path::{Path, PathBuf},
     str,
 };
@@ -174,65 +173,64 @@ pub(crate) enum TargetProblemYukicoder {
 }
 
 #[ext(MetadataExt)]
-impl Metadata {
+impl cm::Metadata {
     pub(crate) fn read_compete_toml(&self) -> anyhow::Result<CargoCompeteConfig> {
         let path = self.workspace_root.join("compete.toml");
         crate::fs::read_toml(path)
     }
 
-    pub(crate) fn all_members(&self) -> Vec<&Package> {
+    pub(crate) fn all_members(&self) -> Vec<&cm::Package> {
         self.packages
             .iter()
-            .filter(|Package { id, .. }| self.workspace_members.contains(id))
+            .filter(|cm::Package { id, .. }| self.workspace_members.contains(id))
             .collect()
     }
 
     pub(crate) fn query_for_member<'a, S: AsRef<str>>(
         &'a self,
         spec: Option<S>,
-    ) -> anyhow::Result<&'a Package> {
-        let spec = spec.as_ref().map(AsRef::as_ref);
+    ) -> anyhow::Result<&'a cm::Package> {
+        if let Some(spec_str) = spec {
+            let spec_str = spec_str.as_ref();
+            let spec = spec_str.parse::<krates::PkgSpec>()?;
 
-        let cargo_exe = env::var_os("CARGO").with_context(|| "`$CARGO` should be present")?;
+            match *self
+                .packages
+                .iter()
+                .filter(|package| {
+                    self.workspace_members.contains(&package.id) && spec.matches(package)
+                })
+                .collect::<Vec<_>>()
+            {
+                [] => bail!("package `{}` is not a member of the workspace", spec_str),
+                [member] => Ok(member),
+                [_, _, ..] => bail!("`{}` matched multiple members?????", spec_str),
+            }
+        } else {
+            let current_member = self
+                .resolve
+                .as_ref()
+                .and_then(|cm::Resolve { root, .. }| root.as_ref())
+                .map(|root| &self[root]);
 
-        let manifest_path = self
-            .resolve
-            .as_ref()
-            .and_then(|Resolve { root, .. }| root.as_ref())
-            .map(|id| self[id].manifest_path.clone())
-            .unwrap_or_else(|| self.workspace_root.join("Cargo.toml"));
-
-        let output = std::process::Command::new(cargo_exe)
-            .arg("pkgid")
-            .arg("--manifest-path")
-            .arg(manifest_path)
-            .args(spec)
-            .output()?;
-        let stdout = str::from_utf8(&output.stdout)?.trim_end();
-        let stderr = str::from_utf8(&output.stderr)?.trim_end();
-        if !output.status.success() {
-            bail!("{}", stderr.trim_start_matches("error: "));
+            if let Some(current_member) = current_member {
+                Ok(current_member)
+            } else {
+                match *self.workspace_members.iter().collect::<Vec<_>>() {
+                    [] => bail!(
+                        "this workspace has no members. first, create one with `cargo compete new`",
+                    ),
+                    [one] => Ok(&self[one]),
+                    [..] => {
+                        bail!(
+                            "this manifest is virtual, and the workspace has {} members. specify \
+                             one with `--manifest-path` or `--package`",
+                            self.workspace_members.len(),
+                        );
+                    }
+                }
+            }
         }
-
-        let url = stdout.parse::<Url>()?;
-        let fragment = url.fragment().expect("the URL should contain fragment");
-        let name = match *fragment.splitn(2, ':').collect::<Vec<_>>() {
-            [name, _] => name,
-            [_] => url
-                .path_segments()
-                .and_then(Iterator::last)
-                .expect("should contain name"),
-            _ => unreachable!(),
-        };
-
-        self.packages
-            .iter()
-            .filter(move |Package { id, .. }| self.workspace_members.contains(id))
-            .find(|p| p.name == name)
-            .with_context(|| {
-                let spec = spec.expect("should be present here");
-                format!("`{}` is not a member of the workspace", spec)
-            })
     }
 
     pub(crate) fn add_member(
@@ -470,7 +468,7 @@ fn symlink_compete_toml(workspace_root: &Path, pkg_manifest_dir: &Path) -> anyho
 }
 
 #[ext(PackageExt)]
-impl Package {
+impl cm::Package {
     pub(crate) fn manifest_dir(&self) -> &Path {
         self.manifest_path
             .parent()
@@ -511,17 +509,17 @@ impl Package {
         }
     }
 
-    pub(crate) fn bin_target<'a>(&'a self, name: &str) -> anyhow::Result<&'a Target> {
+    pub(crate) fn bin_target<'a>(&'a self, name: &str) -> anyhow::Result<&'a cm::Target> {
         self.targets
             .iter()
             .find(|t| t.name == name && t.kind == ["bin".to_owned()])
             .with_context(|| format!("no bin target named `{}` in `{}`", name, self.name))
     }
 
-    pub(crate) fn all_bin_targets_sorted(&self) -> Vec<&Target> {
+    pub(crate) fn all_bin_targets_sorted(&self) -> Vec<&cm::Target> {
         self.targets
             .iter()
-            .filter(|Target { kind, .. }| *kind == ["bin".to_owned()])
+            .filter(|cm::Target { kind, .. }| *kind == ["bin".to_owned()])
             .sorted_by(|t1, t2| t1.name.cmp(&t2.name))
             .collect()
     }
@@ -540,16 +538,16 @@ pub(crate) fn locate_project(cwd: PathBuf) -> anyhow::Result<PathBuf> {
         })
 }
 
-pub(crate) fn cargo_metadata(manifest_path: impl AsRef<Path>) -> cargo_metadata::Result<Metadata> {
-    MetadataCommand::new()
+pub(crate) fn cargo_metadata(manifest_path: impl AsRef<Path>) -> cm::Result<cm::Metadata> {
+    cm::MetadataCommand::new()
         .manifest_path(manifest_path.as_ref())
         .exec()
 }
 
 pub(crate) fn cargo_metadata_no_deps_frozen(
     manifest_path: impl AsRef<Path>,
-) -> cargo_metadata::Result<Metadata> {
-    MetadataCommand::new()
+) -> cm::Result<cm::Metadata> {
+    cm::MetadataCommand::new()
         .manifest_path(manifest_path.as_ref())
         .no_deps()
         .other_options(vec!["--frozen".to_owned()])
@@ -611,7 +609,7 @@ path = "src/main.rs"
 
     shell.status("Updating", workspace_root.join("Cargo.lock").display())?;
 
-    MetadataCommand::new()
+    cm::MetadataCommand::new()
         .manifest_path(new_pkg_manifest_path)
         .exec()?;
     Ok(())

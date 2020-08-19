@@ -6,8 +6,8 @@ use crate::{
 };
 use anyhow::ensure;
 use az::SaturatingAs as _;
-use cargo_metadata::{Metadata, Package};
 use human_size::{Byte, Size};
+use krates::cm;
 use liquid::object;
 use maplit::btreemap;
 use snowchains_core::{judge::CommandExpression, testsuite::TestSuite};
@@ -18,8 +18,8 @@ use std::{
 };
 
 pub(crate) struct Args<'a> {
-    pub(crate) metadata: &'a Metadata,
-    pub(crate) member: &'a Package,
+    pub(crate) metadata: &'a cm::Metadata,
+    pub(crate) member: &'a cm::Package,
     pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
     pub(crate) package_metadata_bin: &'a PackageMetadataCargoCompeteBin,
     pub(crate) release: bool,

@@ -3,10 +3,10 @@ use crate::{
     shell::ColorChoice,
 };
 use anyhow::Context as _;
-use cargo_metadata::Package;
 use if_chain::if_chain;
 use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use itertools::Itertools as _;
+use krates::cm;
 use snowchains_core::web::PlatformKind;
 use std::{iter, path::PathBuf};
 use structopt::StructOpt;
@@ -201,7 +201,7 @@ exclude = []
         &path,
         include
             .iter()
-            .map(|Package { manifest_path, .. }| manifest_path.with_file_name(""))
+            .map(|cm::Package { manifest_path, .. }| manifest_path.with_file_name(""))
             .chain(iter::once(path.join("cargo-compete-template"))),
     )
     .stderr(shell.err())
