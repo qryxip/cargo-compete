@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Improved error messages.
+
+### Added
+
+- Now each command can be run against a virtual manifest when the workspace has exactly one member.
+
 ## [0.4.3] - 2020-08-18Z
 
 ### Fixed

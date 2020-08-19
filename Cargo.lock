@@ -187,7 +187,6 @@ dependencies = [
  "az",
  "base64 0.12.3",
  "cargo-member",
- "cargo_metadata",
  "derivative",
  "dirs 3.0.1",
  "duct",
@@ -201,6 +200,7 @@ dependencies = [
  "indicatif",
  "insta",
  "itertools",
+ "krates",
  "liquid",
  "liquid-core",
  "liquid-derive",
@@ -274,6 +274,15 @@ name = "cc"
 version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9a06fb2e53271d7c279ec1efea6ab691c35a2ae67ec0d91d7acec0caf13b518"
+
+[[package]]
+name = "cfg-expr"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c2be76f06820200669a77ae59a8328c6b8fe4496e8fb7fed02f2806a442c5ff"
+dependencies = [
+ "smallvec",
+]
 
 [[package]]
 name = "cfg-if"
@@ -678,6 +687,12 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
+
+[[package]]
+name = "fixedbitset"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
 
 [[package]]
 name = "fnv"
@@ -1149,6 +1164,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "krates"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f8aaf078e1ecab63c4a43c97f087ed61085fd06449cd3cc1ffb2c72b6024703"
+dependencies = [
+ "cargo_metadata",
+ "cfg-expr",
+ "petgraph",
+ "semver 0.10.0",
+]
+
+[[package]]
 name = "kstring"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1553,6 +1580,16 @@ dependencies = [
  "maplit",
  "pest",
  "sha-1",
+]
+
+[[package]]
+name = "petgraph"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "467d164a6de56270bd7c4d070df81d07beace25012d5103ced4e9ff08d6afdb7"
+dependencies = [
+ "fixedbitset",
+ "indexmap",
 ]
 
 [[package]]
