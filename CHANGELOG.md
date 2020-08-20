@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.5] - 2020-08-20Z
 
 ### Added
 
-- [`test`, `submit`] Enabled specifying a `bin` with `src_path` instead of index for `package.metadata.cargo-compete.bin`.
+- [`test`, `submit`] Enabled specifying a `bin` with `src_path` instead of index for `package.metadata.cargo-compete.bin`. ([#49](https://github.com/qryxip/cargo-compete/pull/49))
 
     ```console
     $ cargo compete s a
@@ -13,6 +13,10 @@
     ```console
     $ cargo compete s --src ./contest/src/bin/a.rs
     ```
+
+### Fixed
+
+- [`new`, `download`] Against AtCoder, retrieving sample cases proceeds when encountered scraping errors. ([qryxip/snowchains_core#80](https://github.com/qryxip/snowchains/pull/80))
 
 ## [0.4.4] - 2020-08-19Z
 
