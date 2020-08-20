@@ -180,7 +180,7 @@ checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
 
 [[package]]
 name = "cargo-compete"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "atty",
@@ -233,9 +233,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-member"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04bca21303c6c81acc03eb5db980e5b5b30210b9b571024238b163476dbe7e00"
+checksum = "daa2d28575d8fae291a2bd2dd29feb7dfe1334cd58daa462d880e7e611b98649"
 dependencies = [
  "anyhow",
  "atty",
@@ -271,9 +271,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.58"
+version = "1.0.59"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9a06fb2e53271d7c279ec1efea6ab691c35a2ae67ec0d91d7acec0caf13b518"
+checksum = "66120af515773fb005778dc07c261bd201ec8ce50bd6e7144c927753fe013381"
 
 [[package]]
 name = "cfg-expr"
@@ -1205,9 +1205,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.74"
+version = "0.2.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2f02823cf78b754822df5f7f268fb59822e7296276d3e069d8e8cb26a14bd10"
+checksum = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
 
 [[package]]
 name = "linked-hash-map"
@@ -1680,9 +1680,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "237a5ed80e274dbc66f86bd59c1e25edc039660be53194b5fe0a482e0f2612ea"
+checksum = "c36fa947111f5c62a733b652544dd0016a43ce89619538a8ef92724a6f501a20"
 
 [[package]]
 name = "precomputed-hash"
@@ -2278,9 +2278,9 @@ checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
 
 [[package]]
 name = "snowchains_core"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0a3169f5c8646930575627f5a7e22b29776cdf6322ff92b22b093be7377bbb8"
+checksum = "e395384ae58a3d64e278879a3e2c167412c3f58d24da188d448c3ac2cc5c484a"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2312,7 +2312,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
- "strum 0.18.0",
+ "strum 0.19.2",
  "termcolor",
  "tokio",
  "unicode-width",
