@@ -83,7 +83,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
                 missing.insert(index.clone());
             }
 
-            file_paths.push((&member.bin_target(&name)?.src_path, test_suite_path));
+            file_paths.push((&member.bin_target_by_name(name)?.src_path, test_suite_path));
         }
     }
 

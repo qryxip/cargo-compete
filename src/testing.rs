@@ -1,7 +1,5 @@
 use crate::{
-    project::{
-        PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem, TargetProblemYukicoder,
-    },
+    project::{PackageExt as _, TargetProblem, TargetProblemYukicoder},
     shell::Shell,
 };
 use anyhow::ensure;
@@ -20,8 +18,9 @@ use std::{
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a cm::Metadata,
     pub(crate) member: &'a cm::Package,
+    pub(crate) bin: &'a cm::Target,
     pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
-    pub(crate) package_metadata_bin: &'a PackageMetadataCargoCompeteBin,
+    pub(crate) target_problem: &'a TargetProblem,
     pub(crate) release: bool,
     pub(crate) test_case_names: Option<HashSet<String>>,
     pub(crate) display_limit: Size,
@@ -32,21 +31,20 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let Args {
         metadata,
         member,
+        bin,
         cargo_compete_config_test_suite,
-        package_metadata_bin,
+        target_problem,
         release,
         test_case_names,
         display_limit,
         shell,
     } = args;
 
-    let bin = member.bin_target(&package_metadata_bin.name)?;
-
     let test_suite_path = test_suite_path(
         &metadata.workspace_root,
         member.manifest_dir_utf8(),
         cargo_compete_config_test_suite,
-        &package_metadata_bin.problem,
+        target_problem,
     )?;
 
     let test_suite = crate::fs::read_yaml(&test_suite_path)?;

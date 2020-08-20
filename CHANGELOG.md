@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`test`, `submit`] Enabled specifying a `bin` with `src_path` instead of index for `package.metadata.cargo-compete.bin`.
+
+    ```console
+    $ cargo compete s a
+    ```
+
+    ```console
+    $ cargo compete s --src ./contest/src/bin/a.rs
+    ```
+
 ## [0.4.4] - 2020-08-19Z
 
 ### Changed
