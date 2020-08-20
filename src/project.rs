@@ -124,6 +124,40 @@ pub(crate) struct PackageMetadataCargoCompete {
     pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
 }
 
+impl PackageMetadataCargoCompete {
+    pub(crate) fn bin_by_bin_index(
+        &self,
+        bin_index: impl AsRef<str>,
+    ) -> anyhow::Result<&PackageMetadataCargoCompeteBin> {
+        let bin_index = bin_index.as_ref();
+
+        self.bin.get(bin_index).with_context(|| {
+            format!(
+                "could not find `{}` in `package.metadata.cargo-compete.bin`",
+                bin_index,
+            )
+        })
+    }
+
+    pub(crate) fn bin_by_bin_name(
+        &self,
+        bin_name: impl AsRef<str>,
+    ) -> anyhow::Result<&PackageMetadataCargoCompeteBin> {
+        let bin_name = bin_name.as_ref();
+
+        self.bin
+            .values()
+            .find(|PackageMetadataCargoCompeteBin { name, .. }| name == bin_name)
+            .with_context(|| {
+                format!(
+                    "could not find metadata in `package.metadata.cargo-compete.bin` which points \
+                     `{}`",
+                    bin_name,
+                )
+            })
+    }
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompeteBin {
@@ -509,11 +543,31 @@ impl cm::Package {
         }
     }
 
-    pub(crate) fn bin_target<'a>(&'a self, name: &str) -> anyhow::Result<&'a cm::Target> {
+    pub(crate) fn bin_target_by_name(&self, name: impl AsRef<str>) -> anyhow::Result<&cm::Target> {
+        let name = name.as_ref();
+
         self.targets
             .iter()
             .find(|t| t.name == name && t.kind == ["bin".to_owned()])
             .with_context(|| format!("no bin target named `{}` in `{}`", name, self.name))
+    }
+
+    pub(crate) fn bin_target_by_src_path(
+        &self,
+        src_path: impl AsRef<Path>,
+    ) -> anyhow::Result<&cm::Target> {
+        let src_path = src_path.as_ref();
+
+        self.targets
+            .iter()
+            .find(|t| t.src_path == src_path && t.kind == ["bin".to_owned()])
+            .with_context(|| {
+                format!(
+                    "no bin target which `src_path` is `{}` in `{}`",
+                    src_path.display(),
+                    self.name,
+                )
+            })
     }
 
     pub(crate) fn all_bin_targets_sorted(&self) -> Vec<&cm::Target> {
@@ -525,7 +579,9 @@ impl cm::Package {
     }
 }
 
-pub(crate) fn locate_project(cwd: PathBuf) -> anyhow::Result<PathBuf> {
+pub(crate) fn locate_project(cwd: impl AsRef<Path>) -> anyhow::Result<PathBuf> {
+    let cwd = cwd.as_ref();
+
     cwd.ancestors()
         .map(|p| p.join("Cargo.toml"))
         .find(|p| p.exists())

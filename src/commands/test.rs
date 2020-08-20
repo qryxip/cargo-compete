@@ -2,14 +2,26 @@ use crate::{
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
-use anyhow::Context as _;
 use human_size::Size;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
 #[derive(StructOpt, Debug)]
+#[structopt(usage(
+    r"cargo compete test [OPTIONS] <index>
+    cargo compete test [OPTIONS] --src <PATH>",
+))]
 pub struct OptCompeteTest {
+    /// Path to the source code
+    #[structopt(
+        long,
+        value_name("PATH"),
+        required_unless("index"),
+        conflicts_with("index")
+    )]
+    pub src: Option<PathBuf>,
+
     /// Test for only the test cases
     #[structopt(long, value_name("NAME"))]
     pub testcases: Option<Vec<String>>,
@@ -39,19 +51,21 @@ pub struct OptCompeteTest {
     )]
     pub color: ColorChoice,
 
-    /// Problem Index
-    pub problem: String,
+    #[structopt(required_unless("src"))]
+    /// Index for `package.metadata.cargo-compete.bin`
+    pub index: Option<String>,
 }
 
 pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteTest {
+        src,
         testcases,
         display_limit,
         package,
         release,
         manifest_path,
         color,
-        problem,
+        index,
     } = opt;
 
     let crate::Context {
@@ -64,29 +78,33 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
-        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
+        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path)?;
 
     let cargo_compete_config = metadata.read_compete_toml()?;
 
     let member = metadata.query_for_member(package.as_deref())?;
+    let package_metadata = member.read_package_metadata()?;
 
-    let package_metadata_bin = member
-        .read_package_metadata()?
-        .bin
-        .remove(&problem)
-        .with_context(|| {
-            format!(
-                "could not find `{}` in `package.metadata.cargo-compete.bin`",
-                problem
-            )
-        })?;
+    let (bin, target_problem) = if let Some(src) = src {
+        let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
+        let bin = member.bin_target_by_src_path(src)?;
+        let target_problem = &package_metadata.bin_by_bin_name(&bin.name)?.problem;
+        (bin, target_problem)
+    } else if let Some(index) = index {
+        let package_metadata_bin = package_metadata.bin_by_bin_index(index)?;
+        let bin = member.bin_target_by_name(&package_metadata_bin.name)?;
+        (bin, &package_metadata_bin.problem)
+    } else {
+        unreachable!()
+    };
 
     crate::testing::test(crate::testing::Args {
         metadata: &metadata,
         member,
+        bin,
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
-        package_metadata_bin: &package_metadata_bin,
+        target_problem,
         release,
         test_case_names: testcases.map(|ss| ss.into_iter().collect()),
         display_limit,
