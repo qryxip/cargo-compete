@@ -297,7 +297,7 @@ impl ShellOut {
     }
 }
 
-#[derive(EnumString, EnumVariantNames, Clone, Copy, Debug)]
+#[derive(EnumString, EnumVariantNames, strum::Display, Clone, Copy, Debug)]
 #[strum(serialize_all = "kebab-case")]
 pub enum ColorChoice {
     Auto,

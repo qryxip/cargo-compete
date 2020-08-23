@@ -19,7 +19,7 @@ use snowchains_core::web::{
     CookieStorage, Submit, WatchSubmissions, Yukicoder, YukicoderSubmitCredentials,
     YukicoderSubmitTarget,
 };
-use std::{borrow::BorrowMut as _, cell::RefCell, path::PathBuf};
+use std::{borrow::BorrowMut as _, cell::RefCell, env, iter, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
@@ -130,17 +130,20 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     };
 
     if !no_test {
-        crate::testing::test(crate::testing::Args {
-            metadata: &metadata,
-            member,
-            bin,
-            cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
-            target_problem: &package_metadata_bin.problem,
-            release,
-            test_case_names: testcases.map(|ss| ss.into_iter().collect()),
-            display_limit,
-            shell,
-        })?;
+        crate::process::process(env::current_exe()?)
+            .args(&["compete", "t", "--src"])
+            .arg(&bin.src_path)
+            .args(&if let Some(testcases) = testcases {
+                iter::once("--testcases".into()).chain(testcases).collect()
+            } else {
+                vec![]
+            })
+            .args(&["--display-limit", &display_limit.to_string()])
+            .args(if release { &["--release"] } else { &[] })
+            .args(&["--manifest-path".as_ref(), member.manifest_path.as_os_str()])
+            .args(&["--color", &color.to_string()])
+            .cwd(&metadata.workspace_root)
+            .exec_with_shell_status(shell)?;
     }
 
     let code = if let Some(CargoCompeteConfigSubmitViaBinary {
