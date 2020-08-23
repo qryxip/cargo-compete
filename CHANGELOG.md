@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.6] - 2020-08-23Z
 
 ### Fixed
 
-- [`submit`] Added workaround for the issue that <kbd>C-c</kbd> not working in `submit` command.
+- [`submit`] Added workaround for the problem that <kbd>C-c</kbd> does not work. ([#52](https://github.com/qryxip/cargo-compete/pull/52))
+- [`sumibt`, `watch`] Fixed a cosmetic problem. ([qryxip/snowchains#86](https://github.com/qryxip/snowchains/pull/86))
 
 ## [0.4.5] - 2020-08-20Z
 
