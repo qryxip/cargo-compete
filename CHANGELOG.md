@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- [`submit`] Added workaround for the issue that <kbd>C-c</kbd> not working in `submit` command.
+
 ## [0.4.5] - 2020-08-20Z
 
 ### Added
