@@ -19,8 +19,21 @@ pub(crate) fn username_and_password<'a>(
 pub(crate) fn dropbox_access_token() -> anyhow::Result<String> {
     let path = token_path("dropbox.json")?;
 
-    let DropboxJson { access_token } = crate::fs::read_json(&path)
-        .with_context(|| format!("First, save the access token to `{}`", path.display()))?;
+    let DropboxJson { access_token } = crate::fs::read_json(&path).with_context(|| {
+        format!(
+            r#"first, save a JSON to `{}` in the following format.
+```
+{{
+  "access_token": "<Dropbox access token>"
+}}
+```
+The access token must have these permissions.
+- `files.metadata.read`
+- `sharing.read`
+"#,
+            path.display()
+        )
+    })?;
 
     return Ok(access_token);
 
