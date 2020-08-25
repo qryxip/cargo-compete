@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`retrieve testcases`] Enabled downloading all of the test cases on Dropbox. ([qryxip/snowchains#89](https://github.com/qryxip/snowchains/pull/89))
+
 ## [0.4.6] - 2020-08-23Z
 
 ### Fixed
