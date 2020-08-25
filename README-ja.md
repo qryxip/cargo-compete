@@ -89,10 +89,11 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 [`compete.toml`](#設定)の`new-workspace-member`が`"include"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
 クレートを使う場合も初回を除いて"warmup"は不要です。
 
-パッケージが増えすぎたら`"include"`から`"focus"`に変更してください。
+パッケージが増えすぎたら、というより2個以上になった時点で`"include"`から`"focus"`に変更してください。
 `cargo compete new`時に既存のパッケージを`workspace.members`から外して[無効化](https://github.com/rust-lang/cargo/blob/7bce509826e29bd79566f7a33621fea7e7a657f9/src/cargo/core/workspace.rs#L797-L807)します。
 ビルドキャッシュはそのまま使われます。
 その場合`workspace.{member, exclude}`を操作するツールとして[cargo-member](https://github.com/qryxip/cargo-member)というのも作ってあるのでこれを使ってください。
+また有効なパッケージを一つに絞る利点として、`test`, `submit`等の「パッケージを対象に取る」コマンドが"workspace root"から実行できるという点があります。
 
 `"exclude"`の場合独立したワークスペースが作られます。
 こちらは`cargo atcoder new`の挙動に近いです。
@@ -104,15 +105,32 @@ Windows上では一般ユーザーでシンボリックリンクを作れるよ�
 
 テストケースの再取得を行います。
 
-**パッケージを対象に取ります。ワークスペースメンバーが2つ以上ある場合、そのうちの一つに`cd`するか`--manifest-path`または`-p`で指定して実行してください。**
+**パッケージを対象に取ります。**
 
 ![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
+
+プラットフォームが使っているテストケースを公開している場合、`--full`を指定することでそちらをダウンロードすることができます。
+
+AtCoderの場合、[テストケースはDropboxにアップロードされている](https://atcoder.jp/posts/20)のでそちらからダウンロードします。ただし[Dropbox API](https://www.dropbox.com/developers/documentation/http/overview)を使用するため
+
+- `files.metadata.read`
+- `sharing.read`
+
+の2つのパーミッションが有効なアクセストークンが必要です。何らかの方法でアクセストークンを取得し、以下の形式のJSONファイルを<code>[{data local directory}](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)/cargo-compete/tokens/dropbox.json</code>に保存してください。(この辺はなんとかしたいと考えてます)
+
+```
+{
+  "access_token": "<access token>"
+}
+```
+
+![Record](https://user-images.githubusercontent.com/14125495/91205166-14234380-e740-11ea-91e4-52894ca44b36.gif)
 
 ### `cargo compete retrieve submission-summaries`
 
 自分の提出の一覧を取得し、JSONで出力します。
 
-**パッケージを対象に取ります。ワークスペースメンバーが2つ以上ある場合、そのうちの一つに`cd`するか`--manifest-path`または`-p`で指定して実行してください。**
+**パッケージを対象に取ります。**
 
 ![Record](https://user-images.githubusercontent.com/14125495/89495297-f7f04e80-d7f2-11ea-9973-88763993e70a.gif)
 
@@ -127,13 +145,13 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 `new`の`--open`と同様に問題のページをブラウザで、コードとテストファイルをエディタで開きます。
 
-**パッケージを対象に取ります。ワークスペースメンバーが2つ以上ある場合、そのうちの一つに`cd`するか`--manifest-path`または`-p`で指定して実行してください。**
+**パッケージを対象に取ります。**
 
 ### `cargo compete test`
 
 テストを行います。
 
-**パッケージを対象に取ります。ワークスペースメンバーが2つ以上ある場合、そのうちの一つに`cd`するか`--manifest-path`または`-p`で指定して実行してください。**
+**パッケージを対象に取ります。**
 
 `compete.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。
 
@@ -145,7 +163,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 ![Record](https://user-images.githubusercontent.com/14125495/90531691-546b4a80-e1b1-11ea-95c2-c205e5640f72.gif)
 
-**パッケージを対象に取ります。ワークスペースメンバーが2つ以上ある場合、そのうちの一つに`cd`するか`--manifest-path`または`-p`で指定して実行してください。**
+**パッケージを対象に取ります。**
 
 対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。
 
