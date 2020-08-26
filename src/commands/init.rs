@@ -3,6 +3,7 @@ use crate::{
     ATCODER_RUST_VERSION, CODEFORCES_RUST_VERSION, YUKICODER_RUST_VERSION,
 };
 use anyhow::{bail, Context as _};
+use git2::Repository;
 use snowchains_core::web::PlatformKind;
 use std::{
     collections::HashSet,
@@ -37,16 +38,16 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
 
     shell.set_color_choice(color);
 
-    let git_repo_root = cwd.ancestors().find(|p| p.join(".git").is_dir());
+    let git_workdir = Repository::discover(&cwd)
+        .ok()
+        .and_then(|r| r.workdir().map(ToOwned::to_owned));
 
     let path = if let Some(path) = path {
         cwd.join(path.strip_prefix(".").unwrap_or(&path))
     } else {
-        git_repo_root
-            .with_context(|| {
-                "not a Git repository. run `git init` first, or specify a path with CLI arguments"
-            })?
-            .to_owned()
+        git_workdir.clone().with_context(|| {
+            "not a Git repository. run `git init` first, or specify a path with CLI arguments"
+        })?
     };
 
     if let Some(path) = ["atcoder", "codeforces", "yukicoder"]
@@ -99,8 +100,8 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
         }
     }
 
-    if let Some(git_repo_root) = git_repo_root {
-        let gitignore = git_repo_root.join(".gitignore");
+    if let Some(git_workdir) = git_workdir {
+        let gitignore = git_workdir.join(".gitignore");
         if !gitignore.exists() {
             crate::fs::write(
                 &gitignore,
