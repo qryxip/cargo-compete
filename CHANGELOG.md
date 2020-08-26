@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+## Added
+
+- [`new`, `open`] Added `git_workdir` variable.
+
+## Changed
+
+- Updated the default `compete.toml`.
+
 ## [0.4.7] - 2020-08-25Z
 
 ### Added

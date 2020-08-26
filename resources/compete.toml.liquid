@@ -23,7 +23,7 @@ test-suite = "{{ "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml" }}"
 # Open files with the command (`jq` command)
 #
 # VSCode:
-#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", .manifest_dir]'
+#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", ([(.git_workdir | select(.)), .manifest_dir] | first)]'
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 

@@ -10,21 +10,21 @@ Space-delimited numbers (defaults to all): Do you use crates on AtCoder?
 1 No
 2 Yes
 3 Yes, but I submit base64-encoded programs
-Number:        Wrote {{ cwd }}{{ main_path_separator }}.gitignore
-       Wrote {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}Cargo.toml
-       Wrote {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}rust-toolchain
-       Wrote {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}Cargo.lock
-       Wrote {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}compete.toml
-     Created `cargo-compete-template` package at {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}cargo-compete-template
-    Updating {{ cwd }}{{ main_path_separator }}atcoder{{ main_path_separator }}Cargo.lock
-       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}Cargo.toml
-       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}rust-toolchain
-       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}compete.toml
-     Created `cargo-compete-template` package at {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}cargo-compete-template
-    Updating {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}Cargo.lock
-       Wrote {{ cwd }}{{ main_path_separator }}yukicoder{{ main_path_separator }}Cargo.toml
-       Wrote {{ cwd }}{{ main_path_separator }}yukicoder{{ main_path_separator }}rust-toolchain
-       Wrote {{ cwd }}{{ main_path_separator }}yukicoder{{ main_path_separator }}compete.toml
-     Created `cargo-compete-template` package at {{ cwd }}{{ main_path_separator }}yukicoder{{ main_path_separator }}cargo-compete-template
-    Updating {{ cwd }}{{ main_path_separator }}yukicoder{{ main_path_separator }}Cargo.lock
+Number:        Wrote {{ cwd_canonicalized }}.gitignore
+       Wrote {{ cwd_canonicalized }}atcoder{{ main_path_separator }}Cargo.toml
+       Wrote {{ cwd_canonicalized }}atcoder{{ main_path_separator }}rust-toolchain
+       Wrote {{ cwd_canonicalized }}atcoder{{ main_path_separator }}Cargo.lock
+       Wrote {{ cwd_canonicalized }}atcoder{{ main_path_separator }}compete.toml
+     Created `cargo-compete-template` package at {{ cwd_canonicalized }}atcoder{{ main_path_separator }}cargo-compete-template
+    Updating {{ cwd_canonicalized }}atcoder{{ main_path_separator }}Cargo.lock
+       Wrote {{ cwd_canonicalized }}codeforces{{ main_path_separator }}Cargo.toml
+       Wrote {{ cwd_canonicalized }}codeforces{{ main_path_separator }}rust-toolchain
+       Wrote {{ cwd_canonicalized }}codeforces{{ main_path_separator }}compete.toml
+     Created `cargo-compete-template` package at {{ cwd_canonicalized }}codeforces{{ main_path_separator }}cargo-compete-template
+    Updating {{ cwd_canonicalized }}codeforces{{ main_path_separator }}Cargo.lock
+       Wrote {{ cwd_canonicalized }}yukicoder{{ main_path_separator }}Cargo.toml
+       Wrote {{ cwd_canonicalized }}yukicoder{{ main_path_separator }}rust-toolchain
+       Wrote {{ cwd_canonicalized }}yukicoder{{ main_path_separator }}compete.toml
+     Created `cargo-compete-template` package at {{ cwd_canonicalized }}yukicoder{{ main_path_separator }}cargo-compete-template
+    Updating {{ cwd_canonicalized }}yukicoder{{ main_path_separator }}Cargo.lock
 

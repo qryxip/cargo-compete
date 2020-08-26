@@ -1,6 +1,7 @@
 pub mod common;
 
 use duct::cmd;
+use git2::Repository;
 use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
 use std::str;
@@ -38,8 +39,16 @@ fn run(input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
         input.as_bytes(),
         &["", "compete", "i"],
         |workspace_root, output| {
+            let cwd_canonicalized = Repository::open(workspace_root)
+                .unwrap()
+                .workdir()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+
             output
-                .replace(workspace_root.to_str().unwrap(), "{{ cwd }}")
+                .replace(&cwd_canonicalized, "{{ cwd_canonicalized }}")
                 .replace(std::path::MAIN_SEPARATOR, "{{ main_path_separator }}")
         },
         |_| Ok(Override::empty()),
