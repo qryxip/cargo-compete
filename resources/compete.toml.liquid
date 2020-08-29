@@ -1,43 +1,59 @@
-# How to manage new workspace members ("include" | "exclude" | "focus")
-#
-# - `skip`:    Does not modify `[workspace]`
-# - `include`: Adds the package to `workspace.members`
-# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`
-# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`
-new-workspace-member = "include"
-
 # Path to the test file (Liquid template)
 #
 # Variables:
 #
 # - `manifest_dir`: Package directory
 # - `contest`:      Contest ID (e.g. "abc100")
-# - `problem`:      Problem index (e.g. "a", "b")
+# - `problem`:      Problem index (e.g. "A", "B")
 #
 # Additional filters:
 #
 # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
-test-suite = "{{ "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml" }}"
-#test-suite = "{{ "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml" }}"
+test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"{% endraw %}
+#test-suite = {% raw %}"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"{% endraw %}
 
 # Open files with the command (`jq` command)
 #
 # VSCode:
-#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", ([(.git_workdir | select(.)), .manifest_dir] | first)]'
+#open = '["bash", "-c"] + ["code -a " + .manifest_dir + " && code " + (.paths | map([.src, .test_suite]) | flatten | join(" "))]'
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
-[template]
-platform = "{{ template_platform }}"
-manifest = "./cargo-compete-template/Cargo.toml"
-src = "./cargo-compete-template/src/main.rs"
+[new]
+platform = "{{ new_platform }}"
+path = {% raw %}"./{{ package_name }}"{% endraw %}
+
+[new.template]
+{% if new_template_lockfile -%}
+lockfile = "{{ new_template_lockfile }}"
+{%- else -%}
+#lockfile = "/path/to/cargo-lock-template.toml"
+{%- endif %}
+
+[new.template.dependencies]
+kind = "inline"
+content = '''
+{% if new_template_dependencies_content -%}
+{{ new_template_dependencies_content | rstrip }}
+{%- else -%}
+#proconio = { version = "0.3.6", features = ["derive"] }
+{%- endif %}
+'''
+
+[new.template.src]
+kind = "inline"
+content = '''
+fn main() {
+    todo!();
+}
+'''
 
 {% if submit_via_binary == true -%}
   {%- assign comment = "" -%}
 {%- else -%}
   {%- assign comment = "#" -%}
 {%- endif -%}
-{{ comment }}[submit-via-binary]
+{{ comment }}[submit.via-binary]
 {{ comment }}target = "x86_64-unknown-linux-musl"
 {{ comment }}#cross = "cross"
 {{ comment }}strip = "strip"

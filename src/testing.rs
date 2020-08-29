@@ -77,7 +77,11 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         .join(&bin.name)
         .with_extension(env::consts::EXE_EXTENSION);
 
-    ensure!(artifact.exists(), "`{}` does not exist", artifact.display());
+    ensure!(
+        artifact.exists(),
+        "`cargo build` succeeded but `{}` was not produced. probably this is a bug",
+        artifact.display(),
+    );
 
     let outcome = snowchains_core::judge::judge(
         shell.progress_draw_target(),

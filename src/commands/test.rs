@@ -79,12 +79,11 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path)?;
-
-    let cargo_compete_config = metadata.read_compete_toml()?;
-
+    let metadata = crate::project::cargo_metadata(&manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata()?;
+    let cargo_compete_config =
+        crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config)?;
 
     let (bin, target_problem) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));

@@ -1,6 +1,7 @@
 pub(crate) mod init;
 pub(crate) mod login;
 pub(crate) mod migrate_cargo_atcoder;
+pub(crate) mod migrate_v04;
 pub(crate) mod new;
 pub(crate) mod open;
 pub(crate) mod participate;

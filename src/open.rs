@@ -10,7 +10,7 @@ pub(crate) fn open(
     open: Option<impl AsRef<str>>,
     paths: &[(impl AsRef<Path>, impl AsRef<Path>)],
     pkg_manifest_dir: &Path,
-    workspace_root: &Path,
+    process_cwd: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     for url in urls {
@@ -26,7 +26,7 @@ pub(crate) fn open(
         }
 
         let input = json!({
-            "git_workdir": Repository::discover(workspace_root)
+            "git_workdir": Repository::discover(process_cwd)
                 .ok()
                 .and_then(|r| r.workdir().map(|p| ensure_utf8(p).map(ToOwned::to_owned)))
                 .transpose()?,
@@ -45,14 +45,14 @@ pub(crate) fn open(
         })
         .to_string();
 
-        let jq = crate::process::which("jq", workspace_root).with_context(|| {
+        let jq = crate::process::which("jq", process_cwd).with_context(|| {
             "`jq` not found. install `jq` from https://github.com/stedolan/jq/releases"
         })?;
 
         let output = crate::process::process(jq)
             .args(&["-c", open.as_ref()])
             .pipe_input(Some(input))
-            .cwd(workspace_root)
+            .cwd(process_cwd)
             .read_with_shell_status(shell)?;
 
         let args = serde_json::from_str::<Vec<String>>(&output)
@@ -60,7 +60,7 @@ pub(crate) fn open(
 
         ensure!(!args.is_empty(), "empty command");
 
-        crate::process::with_which(&args[0], workspace_root)?
+        crate::process::with_which(&args[0], process_cwd)?
             .args(&args[1..])
             .exec_with_shell_status(shell)?;
     }

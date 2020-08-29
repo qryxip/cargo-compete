@@ -2,7 +2,6 @@ pub mod common;
 
 use ignore::overrides::OverrideBuilder;
 use insta::{assert_json_snapshot, assert_snapshot};
-use liquid::object;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use snowchains_core::web::PlatformKind;
@@ -65,48 +64,55 @@ fn run(
     code: &str,
 ) -> anyhow::Result<(String, serde_json::Value)> {
     common::run(
-        |workspace_root| -> _ {
+        |cwd| -> _ {
             std::fs::write(
-                workspace_root.join("Cargo.toml"),
-                format!(
-                    r#"[workspace]
-members = ["{}"]
+                cwd.join("compete.toml"),
+                r#"test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
+
+[new]
+platform = "atcoder"
+path = "./{{ package_name }}"
+
+[new.template]
+target-dir = "./target"
+
+[new.template.dependencies]
+kind = "inline"
+content = '''
+proconio = "=0.3.6"
+'''
+
+[new.template.src]
+kind = "inline"
+content = '''
+fn main() {
+    todo!();
+}
+'''
 "#,
-                    contest,
-                ),
             )?;
 
+            std::fs::create_dir(cwd.join(".cargo"))?;
+
             std::fs::write(
-                workspace_root.join("compete.toml"),
-                liquid::ParserBuilder::with_stdlib()
-                    .build()?
-                    .parse(include_str!("../resources/compete.toml.liquid"))?
-                    .render(&object!({
-                        "template_platform": platform.to_kebab_case_str(),
-                        "submit_via_binary": false,
-                    }))?,
+                cwd.join(".cargo").join("config.toml"),
+                r#"[build]
+target-dir = "target"
+"#,
             )?;
 
-            std::fs::create_dir_all(workspace_root.join("testcases").join(contest))?;
+            std::fs::create_dir_all(cwd.join(contest).join("src").join("bin"))?;
 
             std::fs::write(
-                workspace_root
-                    .join("testcases")
-                    .join(contest)
-                    .join(problem)
-                    .with_extension("yml"),
-                test_suite,
-            )?;
-
-            std::fs::create_dir_all(workspace_root.join(contest).join("src").join("bin"))?;
-
-            std::fs::write(
-                workspace_root.join(contest).join("Cargo.toml"),
+                cwd.join(contest).join("Cargo.toml"),
                 format!(
                     r#"[package]
 name = "problems"
 version = "0.1.0"
 edition = "2018"
+
+[package.metadata.cargo-compete]
+config = "../compete.toml"
 
 [package.metadata.cargo-compete.bin]
 {problem} = {{ name = "{contest}-{problem}", problem = {{ platform = "{platform}", contest = "{contest}", index = "{problem}" }} }}
@@ -116,7 +122,7 @@ name = "{contest}-{problem}"
 path = "src/bin/{problem}.rs"
 
 [dependencies]
-proconio = "0.3.6"
+proconio = "=0.3.6"
 "#,
                     contest = contest,
                     problem = problem,
@@ -125,13 +131,22 @@ proconio = "0.3.6"
             )?;
 
             std::fs::write(
-                workspace_root
-                    .join(contest)
+                cwd.join(contest)
                     .join("src")
                     .join("bin")
                     .join(problem)
                     .with_extension("rs"),
                 code,
+            )?;
+
+            std::fs::create_dir_all(cwd.join(contest).join("testcases"))?;
+
+            std::fs::write(
+                cwd.join(contest)
+                    .join("testcases")
+                    .join(problem)
+                    .with_extension("yml"),
+                test_suite,
             )?;
             Ok(())
         },
@@ -156,7 +171,7 @@ proconio = "0.3.6"
         },
         |workspace_root| {
             OverrideBuilder::new(workspace_root)
-                .add("!/target")?
+                .add("!/target/")?
                 .build()
         },
     )

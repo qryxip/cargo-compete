@@ -3,10 +3,11 @@ source: tests/new.rs
 expression: tree
 ---
 {
-  "Cargo.lock": "..",
-  "Cargo.toml": "[workspace]\nmembers = [\"abc003\"]\nexclude = []\n",
+  ".cargo": {
+    "config.toml": "[cargo-new]\nname = \"\"\nemail = \"\"\n"
+  },
   "abc003": {
-    "Cargo.toml": "[package]\nname = \"abc003\"\nversion = \"0.1.0\"\nedition = \"2018\"\n\n[package.metadata.cargo-compete.bin]\na = { name = \"abc003-a\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"A\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_1\" } }\nb = { name = \"abc003-b\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"B\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_2\" } }\nc = { name = \"abc003-c\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"C\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_3\" } }\nd = { name = \"abc003-d\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"D\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_4\" } }\n\n[[bin]]\nname = \"abc003-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"abc003-b\"\npath = \"src/bin/b.rs\"\n\n[[bin]]\nname = \"abc003-c\"\npath = \"src/bin/c.rs\"\n\n[[bin]]\nname = \"abc003-d\"\npath = \"src/bin/d.rs\"\n",
+    "Cargo.toml": "[package]\nname = \"abc003\"\nversion = \"0.1.0\"\nauthors = [\"\"]\nedition = \"2018\"\n\n[package.metadata.cargo-compete]\nconfig = \"../compete.toml\"\n\n[package.metadata.cargo-compete.bin]\na = { name = \"abc003-a\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"A\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_1\" } }\nb = { name = \"abc003-b\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"B\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_2\" } }\nc = { name = \"abc003-c\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"C\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_3\" } }\nd = { name = \"abc003-d\", problem = { platform = \"atcoder\", contest = \"abc003\", index = \"D\", url = \"https://atcoder.jp/contests/abc003/tasks/abc003_4\" } }\n\n[[bin]]\nname = \"abc003-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"abc003-b\"\npath = \"src/bin/b.rs\"\n\n[[bin]]\nname = \"abc003-c\"\npath = \"src/bin/c.rs\"\n\n[[bin]]\nname = \"abc003-d\"\npath = \"src/bin/d.rs\"\n[dependencies]\nproconio = \"=0.3.6\"\n",
     "src": {
       "bin": {
         "a.rs": "fn main() {\n    todo!();\n}\n",
@@ -14,17 +15,13 @@ expression: tree
         "c.rs": "fn main() {\n    todo!();\n}\n",
         "d.rs": "fn main() {\n    todo!();\n}\n"
       }
-    }
-  },
-  "compete.toml": "new-workspace-member = \"include\"\ntest-suite = \"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml\"\n\n[template]\nplatform = \"atcoder\"\nmanifest = \"./template-manifest.toml\"\nsrc = \"./template-code.rs\"\n",
-  "template-code.rs": "fn main() {\n    todo!();\n}\n",
-  "template-manifest.toml": "[package]\nname = \"cargo-compete-template\"\nversion = \"0.1.0\"\nedition = \"2018\"\n",
-  "testcases": {
-    "abc003": {
+    },
+    "testcases": {
       "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      6\n    out: |\n      35000\n  - name: sample2\n    in: |\n      91\n    out: |\n      460000\n\nextend: []\n",
       "b.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      ch@ku@ai\n      choku@@i\n    out: |\n      You can win\n  - name: sample2\n    in: |\n      aoki\n      @ok@\n    out: |\n      You will lose\n  - name: sample3\n    in: |\n      arc\n      abc\n    out: |\n      You will lose\n\nextend: []\n",
       "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      2 2\n      1000 1500\n    out: |\n      1000.000000\n  - name: sample2\n    in: |\n      2 1\n      1000 1500\n    out: |\n      750\n  - name: sample3\n    in: |\n      10 5\n      2604 2281 3204 2264 2200 2650 2229 2461 2439 2211\n    out: |\n      2820.031250000\n\nextend: []\n",
       "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3 2\n      2 2\n      2 2\n    out: |\n      12\n  - name: sample2\n    in: |\n      4 5\n      3 1\n      3 0\n    out: |\n      10\n  - name: sample3\n    in: |\n      23 18\n      15 13\n      100 95\n    out: |\n      364527243\n  - name: sample4\n    in: |\n      30 30\n      24 22\n      145 132\n    out: |\n      976668549\n\nextend: []\n"
     }
-  }
+  },
+  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template]\ntarget-dir = \"./target\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n"
 }

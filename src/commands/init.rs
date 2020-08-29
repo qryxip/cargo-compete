@@ -1,16 +1,14 @@
-use crate::{
-    shell::{ColorChoice, Shell},
-    ATCODER_RUST_VERSION, CODEFORCES_RUST_VERSION, YUKICODER_RUST_VERSION,
-};
-use anyhow::{bail, Context as _};
-use git2::Repository;
+use crate::shell::ColorChoice;
 use snowchains_core::web::PlatformKind;
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 use structopt::StructOpt;
 use strum::VariantNames as _;
+
+static TEMPLATE_CARGO_LOCK: &str = "./template-cargo-lock.toml";
+
+static ATCODER_RUST_VERSION: &str = "1.42.0";
+static CODEFORCES_RUST_VERSION: &str = "1.42.0";
+static YUKICODER_RUST_VERSION: &str = "1.44.1";
 
 #[derive(StructOpt, Debug)]
 pub struct OptCompeteInit {
@@ -21,14 +19,23 @@ pub struct OptCompeteInit {
         possible_values(ColorChoice::VARIANTS),
         default_value("auto")
     )]
-    pub color: ColorChoice,
+    color: ColorChoice,
 
-    /// Path to create workspaces. Defaults to the Git repository root
-    pub path: Option<PathBuf>,
+    /// Platform
+    #[structopt(possible_values(PlatformKind::KEBAB_CASE_VARIANTS))]
+    platform: PlatformKind,
+
+    /// Path to create files
+    #[structopt(default_value("."))]
+    path: PathBuf,
 }
 
 pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Result<()> {
-    let OptCompeteInit { color, path } = opt;
+    let OptCompeteInit {
+        color,
+        platform,
+        path,
+    } = opt;
 
     let crate::Context {
         cwd,
@@ -38,202 +45,68 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
 
     shell.set_color_choice(color);
 
-    let git_workdir = Repository::discover(&cwd)
-        .ok()
-        .and_then(|r| r.workdir().map(ToOwned::to_owned));
+    let path = cwd.join(path);
 
-    let path = if let Some(path) = path {
-        cwd.join(path.strip_prefix(".").unwrap_or(&path))
-    } else {
-        git_workdir.clone().with_context(|| {
-            "not a Git repository. run `git init` first, or specify a path with CLI arguments"
-        })?
-    };
-
-    if let Some(path) = ["atcoder", "codeforces", "yukicoder"]
-        .iter()
-        .map(|p| path.join(p))
-        .find(|p| p.exists())
-    {
-        bail!("`{}` already exists. aborting.", path.display());
-    }
-
-    writeln!(shell.err(), "Websites you compete in:")?;
-    writeln!(shell.err(), "1 AtCoder")?;
-    writeln!(shell.err(), "2 Codeforces")?;
-    writeln!(shell.err(), "3 yukicoder")?;
-
-    let platforms = loop {
-        let platforms = shell
-            .read_reply("Space-delimited numbers (defaults to all): ")?
-            .split_whitespace()
-            .map(|s| match s {
-                "1" => Some(PlatformKind::Atcoder),
-                "2" => Some(PlatformKind::Codeforces),
-                "3" => Some(PlatformKind::Yukicoder),
-                _ => None,
-            })
-            .collect::<Option<HashSet<_>>>();
-
-        if let Some(platforms) = platforms {
-            break platforms;
-        }
-
-        writeln!(shell.err(), "invalid number(s)")?;
-    };
-
-    let mut atcoder_crates = AtcoderCrates::None;
-
-    if platforms.is_empty() || platforms.contains(&PlatformKind::Atcoder) {
+    let atcoder_crates = if platform == PlatformKind::Atcoder {
         writeln!(shell.err(), "Do you use crates on AtCoder?")?;
         writeln!(shell.err(), "1 No")?;
         writeln!(shell.err(), "2 Yes")?;
         writeln!(shell.err(), "3 Yes, but I submit base64-encoded programs")?;
 
-        atcoder_crates = loop {
-            match shell.read_reply("Number: ")?.trim() {
+        loop {
+            match shell.read_reply("1..3: ")?.trim() {
                 "1" => break AtcoderCrates::None,
                 "2" => break AtcoderCrates::UseNormally,
                 "3" => break AtcoderCrates::UseViaBinary,
                 _ => writeln!(shell.err(), "Choose 1, 2, or 3.")?,
             }
         }
-    }
+    } else {
+        AtcoderCrates::None
+    };
 
-    if let Some(git_workdir) = git_workdir {
-        let gitignore = git_workdir.join(".gitignore");
-        if !gitignore.exists() {
-            crate::fs::write(
-                &gitignore,
-                include_str!("../../resources/default-gitignore"),
-            )?;
-            shell.status("Wrote", gitignore.display())?;
-        }
-    }
+    let mut write_with_status = |file_name: &str, content: &str| -> anyhow::Result<()> {
+        let path = path.join(file_name);
+        crate::fs::write(&path, content)?;
+        shell.status("Wrote", path.display())?;
+        Ok(())
+    };
 
-    if platforms.is_empty() || platforms.contains(&PlatformKind::Atcoder) {
-        let root_manifest_dir = path.join("atcoder");
-        let root_manifest_path = path.join("atcoder").join("Cargo.toml");
-
-        crate::fs::create_dir_all(&root_manifest_dir)?;
-        let root_manifest = if atcoder_crates == AtcoderCrates::UseViaBinary {
-            r#"[workspace]
-members = ["cargo-compete-template"]
-exclude = []
-
-[profile.release]
-lto = true
-panic = "abort"
-"#
-        } else {
-            r#"[workspace]
-members = ["cargo-compete-template"]
-exclude = []
-"#
-        };
-        crate::fs::write(&root_manifest_path, root_manifest)?;
-        shell.status("Wrote", root_manifest_path.display())?;
-
-        if atcoder_crates != AtcoderCrates::UseViaBinary {
-            let rust_toolchain_path = root_manifest_dir.join("rust-toolchain");
-            let rust_toolchain = format!("{}\n", ATCODER_RUST_VERSION);
-            crate::fs::write(&rust_toolchain_path, rust_toolchain)?;
-            shell.status("Wrote", rust_toolchain_path.display())?;
-        }
-
-        if atcoder_crates == AtcoderCrates::UseNormally {
-            let lock_path = root_manifest_dir.join("Cargo.lock");
-            crate::fs::write(
-                &lock_path,
-                include_str!("../../resources/atcoder-cargo-lock.toml"),
-            )?;
-            shell.status("Wrote", lock_path.display())?;
-        }
-
-        let dependencies = match atcoder_crates {
-            AtcoderCrates::None => None,
-            AtcoderCrates::UseNormally => Some(include_str!("../../resources/atcoder-deps.toml")),
-            AtcoderCrates::UseViaBinary => Some(
-                r#"proconio = { version = "0.4.1", features = ["derive"] }
-"#,
-            ),
-        };
-
-        write_compete_toml(
-            &root_manifest_dir.join("compete.toml"),
-            PlatformKind::Atcoder,
-            atcoder_crates,
-            shell,
-        )?;
-
-        crate::project::new_template_package(
-            &root_manifest_dir,
-            dependencies,
-            if atcoder_crates == AtcoderCrates::None {
-                include_str!("../../resources/template-main.rs")
+    write_with_status(
+        "compete.toml",
+        &crate::config::generate(
+            platform,
+            if atcoder_crates == AtcoderCrates::UseNormally {
+                Some(TEMPLATE_CARGO_LOCK)
             } else {
-                include_str!("../../resources/atcoder-template-main.rs")
+                None
             },
-            shell,
+            if atcoder_crates == AtcoderCrates::UseNormally {
+                Some(include_str!("../../resources/atcoder-deps.toml"))
+            } else {
+                None
+            },
+            atcoder_crates == AtcoderCrates::UseViaBinary,
+        )?,
+    )?;
+
+    if atcoder_crates == AtcoderCrates::UseNormally {
+        write_with_status(
+            TEMPLATE_CARGO_LOCK.strip_prefix("./").unwrap(),
+            include_str!("../../resources/atcoder-cargo-lock.toml"),
         )?;
     }
 
-    for &platform in &[PlatformKind::Codeforces, PlatformKind::Yukicoder] {
-        if platforms.is_empty() || platforms.contains(&platform) {
-            let root_manifest_dir = path.join(platform.to_kebab_case_str());
-            let root_manifest_path = root_manifest_dir.join("Cargo.toml");
+    write_with_status(
+        "rust-toolchain",
+        match platform {
+            PlatformKind::Atcoder => ATCODER_RUST_VERSION,
+            PlatformKind::Codeforces => CODEFORCES_RUST_VERSION,
+            PlatformKind::Yukicoder => YUKICODER_RUST_VERSION,
+        },
+    )?;
 
-            crate::fs::create_dir_all(&root_manifest_dir)?;
-
-            crate::fs::write(
-                &root_manifest_path,
-                r#"[workspace]
-members = ["cargo-compete-template"]
-exclude = []
-"#,
-            )?;
-            shell.status("Wrote", root_manifest_path.display())?;
-
-            let toolchain = match platform {
-                PlatformKind::Atcoder => unreachable!(),
-                PlatformKind::Codeforces => &CODEFORCES_RUST_VERSION,
-                PlatformKind::Yukicoder => &YUKICODER_RUST_VERSION,
-            };
-
-            let rust_toolchain_path = root_manifest_dir.join("rust-toolchain");
-            let rust_toolchain = format!("{}\n", toolchain);
-            crate::fs::write(&rust_toolchain_path, rust_toolchain)?;
-            shell.status("Wrote", rust_toolchain_path.display())?;
-
-            write_compete_toml(
-                &root_manifest_dir.join("compete.toml"),
-                platform,
-                AtcoderCrates::None,
-                shell,
-            )?;
-
-            crate::project::new_template_package(
-                &root_manifest_dir,
-                None,
-                include_str!("../../resources/template-main.rs"),
-                shell,
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-fn write_compete_toml(
-    path: &Path,
-    platform: PlatformKind,
-    atcoder_crates: AtcoderCrates,
-    shell: &mut Shell,
-) -> anyhow::Result<()> {
-    let content =
-        crate::project::gen_compete_toml(platform, atcoder_crates == AtcoderCrates::UseViaBinary)?;
-    crate::fs::write(path, content)?;
-    shell.status("Wrote", path.display())?;
+    crate::project::set_cargo_config_build_target_dir(&path, shell)?;
     Ok(())
 }
 

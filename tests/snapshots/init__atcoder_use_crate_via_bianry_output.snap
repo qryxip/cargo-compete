@@ -1,0 +1,12 @@
+---
+source: tests/init.rs
+expression: output
+---
+Do you use crates on AtCoder?
+1 No
+2 Yes
+3 Yes, but I submit base64-encoded programs
+1..3:        Wrote {{ cwd }}{{ main_path_separator }}.{{ main_path_separator }}compete.toml
+       Wrote {{ cwd }}{{ main_path_separator }}.{{ main_path_separator }}rust-toolchain
+       Wrote {{ cwd }}{{ main_path_separator }}.{{ main_path_separator }}.cargo{{ main_path_separator }}config.toml
+

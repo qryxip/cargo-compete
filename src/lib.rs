@@ -2,6 +2,7 @@
 #![warn(rust_2018_idioms)]
 
 mod commands;
+mod config;
 mod fs;
 mod open;
 mod process;
@@ -13,31 +14,16 @@ mod web;
 use crate::{
     commands::{
         init::OptCompeteInit, login::OptCompeteLogin,
-        migrate_cargo_atcoder::OptCompeteMigrateCargoAtcoder, new::OptCompeteNew,
-        open::OptCompeteOpen, participate::OptCompeteParticipate,
+        migrate_cargo_atcoder::OptCompeteMigrateCargoAtcoder, migrate_v04::OptCompeteMigrateV04,
+        new::OptCompeteNew, open::OptCompeteOpen, participate::OptCompeteParticipate,
         retrieve_submission_summaries::OptCompeteRetrieveSubmissionSummaries,
         retrieve_testcases::OptCompeteRetrieveTestcases, submit::OptCompeteSubmit,
         test::OptCompeteTest, watch_submissions::OptCompeteWatchSubmissions,
     },
     shell::Shell,
 };
-use semver::Version;
 use std::path::PathBuf;
 use structopt::{clap::AppSettings, StructOpt};
-
-static ATCODER_RUST_VERSION: Version = semver(1, 42, 0);
-static CODEFORCES_RUST_VERSION: Version = semver(1, 42, 0);
-static YUKICODER_RUST_VERSION: Version = semver(1, 44, 1);
-
-const fn semver(major: u64, minor: u64, patch: u64) -> Version {
-    Version {
-        major,
-        minor,
-        patch,
-        pre: vec![],
-        build: vec![],
-    }
-}
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -53,7 +39,7 @@ pub enum Opt {
 
 #[derive(StructOpt, Debug)]
 pub enum OptCompete {
-    /// Create workspaces in a repository
+    /// Create `compete.toml` and some files
     #[structopt(author, visible_alias("i"))]
     Init(OptCompeteInit),
 
@@ -103,6 +89,10 @@ pub enum OptCompeteMigrate {
     /// Migrate existing packages
     #[structopt(author, visible_alias("c"))]
     CargoAtcoder(OptCompeteMigrateCargoAtcoder),
+
+    /// Migrate existing workspace created by `cargo-compete` v0.4
+    #[structopt(author)]
+    V04(OptCompeteMigrateV04),
 }
 
 #[derive(StructOpt, Debug)]
@@ -135,6 +125,7 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Migrate(OptCompeteMigrate::CargoAtcoder(opt)) => {
             commands::migrate_cargo_atcoder::run(opt, ctx)
         }
+        OptCompete::Migrate(OptCompeteMigrate::V04(opt)) => commands::migrate_v04::run(opt, ctx),
         OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
         OptCompete::New(opt) => commands::new::run(opt, ctx),

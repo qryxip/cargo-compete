@@ -56,19 +56,18 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
-        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path)?;
-    let cargo_compete_config = metadata.read_compete_toml()?;
-
-    let member = metadata.query_for_member(package)?;
-
-    let mut package_metadata_bin = member.read_package_metadata()?.bin;
+        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+    let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
+    let member = metadata.query_for_member(package.as_deref())?;
+    let package_metadata = member.read_package_metadata()?;
+    let cargo_compete_config =
+        crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config)?;
 
     let mut urls = vec![];
     let mut file_paths = vec![];
     let mut missing = hashset!();
 
-    for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata_bin {
+    for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata.bin {
         if problems.as_ref().map_or(true, |ps| ps.contains(index)) {
             urls.extend(problem.url().cloned());
 
@@ -92,7 +91,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
         crate::web::retrieve_testcases::dl_for_existing_package(
             &member,
-            &mut package_metadata_bin,
+            &mut { package_metadata.bin },
             Some(&missing),
             full,
             &metadata.workspace_root,
