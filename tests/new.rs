@@ -42,41 +42,44 @@ fn run(
     contest: &str,
 ) -> anyhow::Result<(String, serde_json::Value)> {
     common::run(
-        |workspace_root| -> _ {
+        |cwd| -> _ {
             std::fs::write(
-                workspace_root.join("Cargo.toml"),
-                r#"[workspace]
-"#,
-            )?;
+                cwd.join("compete.toml"),
+                r#"test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
 
-            std::fs::write(
-                workspace_root.join("compete.toml"),
-                r#"new-workspace-member = "include"
-test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
-
-[template]
+[new]
 platform = "atcoder"
-manifest = "./template-manifest.toml"
-src = "./template-code.rs"
-"#,
-            )?;
+path = "./{{ package_name }}"
 
-            std::fs::write(
-                workspace_root.join("template-manifest.toml"),
-                r#"[package]
-name = "cargo-compete-template"
-version = "0.1.0"
-edition = "2018"
-"#,
-            )?;
+[new.template]
+target-dir = "./target"
 
-            std::fs::write(
-                workspace_root.join("template-code.rs"),
-                r#"fn main() {
+[new.template.dependencies]
+kind = "inline"
+content = '''
+proconio = "=0.3.6"
+'''
+
+[new.template.src]
+kind = "inline"
+content = '''
+fn main() {
     todo!();
 }
+'''
 "#,
             )?;
+
+            std::fs::create_dir(cwd.join(".cargo"))?;
+
+            std::fs::write(
+                cwd.join(".cargo").join("config.toml"),
+                r#"[cargo-new]
+name = ""
+email = ""
+"#,
+            )?;
+
             Ok(())
         },
         input,

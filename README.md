@@ -13,13 +13,11 @@ A Cargo subcommand for competitive programming.
 
 Supports AtCoder, Codeforces, and yukicoder.
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/91646306-b7e65980-ea88-11ea-8f0c-f11080b914ed.png)
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89712134-d5fcf480-d9c9-11ea-9124-bcd0caabb545.png)
+![Record](https://user-images.githubusercontent.com/14125495/91647287-1b29b900-ea94-11ea-9053-43e25c77706f.gif)
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/90397677-2ca5b500-e0d3-11ea-94f1-c246bc11621a.png)
-
-![Record](https://user-images.githubusercontent.com/14125495/90531691-546b4a80-e1b1-11ea-95c2-c205e5640f72.gif)
+![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
 
 ## License
 

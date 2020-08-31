@@ -2,13 +2,15 @@ use crate::{
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
-use anyhow::Context as _;
+use anyhow::{anyhow, Context as _};
 use if_chain::if_chain;
 use ignore::{overrides::OverrideBuilder, WalkBuilder};
 use itertools::Itertools as _;
-use krates::cm;
 use snowchains_core::web::PlatformKind;
-use std::{iter, path::PathBuf};
+use std::{
+    iter,
+    path::{Path, PathBuf},
+};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use termcolor::Color;
@@ -22,6 +24,9 @@ pub struct OptCompeteMigrateCargoAtcoder {
     /// Include or exclude manifest paths. For more detail, see the help of ripgrep
     #[structopt(short, long, value_name("GLOB"))]
     pub glob: Vec<String>,
+
+    /// Path to `cargo-atcoder.toml`
+    pub cargo_atcoder_config: Option<PathBuf>,
 
     /// Coloring
     #[structopt(
@@ -43,6 +48,7 @@ pub(crate) fn run(
     let OptCompeteMigrateCargoAtcoder {
         glob_case_insensitive,
         glob,
+        cargo_atcoder_config,
         color,
         path,
     } = opt;
@@ -81,16 +87,16 @@ pub(crate) fn run(
         .flat_map(Result::transpose)
         .collect::<Result<Vec<_>, ignore::Error>>()?;
 
-    let mut include = vec![];
+    let mut packages = vec![];
 
     for manifest_path in manifest_paths.into_iter().sorted() {
-        let metadata = crate::project::cargo_metadata_no_deps_frozen(&manifest_path)?;
+        let metadata = crate::project::cargo_metadata_no_deps(&manifest_path, &cwd)?;
         if_chain! {
             if let [package] = *metadata.all_members();
             if package.manifest_path == manifest_path;
             then {
                 shell.status("Found", format_args!("`{}`", manifest_path.display()))?;
-                include.push(package.clone());
+                packages.push(package.clone());
             } else {
                 shell.status_with_color(
                     "Ignoring",
@@ -101,7 +107,7 @@ pub(crate) fn run(
         }
     }
 
-    for package in &include {
+    for package in &packages {
         let mut manifest =
             crate::fs::read_to_string(&package.manifest_path)?.parse::<toml_edit::Document>()?;
 
@@ -112,6 +118,21 @@ pub(crate) fn run(
         if manifest["package"]["metadata"]["cargo-compete"].is_none() {
             manifest["package"]["metadata"] = implicit_table();
             manifest["package"]["metadata"]["cargo-compete"] = implicit_table();
+            manifest["package"]["metadata"]["cargo-compete"]["config"] = toml_edit::value({
+                let manifest_dir = package.manifest_path.with_file_name("");
+                if let Ok(rel_manifest_dir) = manifest_dir.strip_prefix(&path) {
+                    rel_manifest_dir
+                        .iter()
+                        .map(|_| "..")
+                        .chain(iter::once("compete.toml"))
+                        .join(&std::path::MAIN_SEPARATOR.to_string())
+                } else {
+                    manifest_dir
+                        .into_os_string()
+                        .into_string()
+                        .map_err(|s| anyhow!("invalid utf-8 path: {:?}", s))?
+                }
+            });
             manifest["package"]["metadata"]["cargo-compete"]["bin"] = toml_edit::Item::Table({
                 let mut tbl = toml_edit::Table::new();
                 for bin in &bins {
@@ -139,92 +160,91 @@ pub(crate) fn run(
         }
 
         crate::fs::write(&package.manifest_path, manifest.to_string())?;
-        shell.status("Wrote", package.manifest_path.display())?;
+        shell.status("Modified", package.manifest_path.display())?;
     }
 
-    for package in &include {
+    for package in &packages {
         let lock_path = package.manifest_path.with_file_name("Cargo.lock");
-        if lock_path.exists() {
-            crate::fs::remove_file(&lock_path)?;
-            shell.status("Removed", lock_path.display())?;
+        shell.status("Updating", lock_path.display())?;
+        if let Err(err) = crate::project::cargo_metadata(&package.manifest_path, &cwd) {
+            shell.warn(format!("broke `{}`!!!!!: {}", lock_path.display(), err))?;
         }
     }
 
-    crate::project::new_template_package(
-        &path,
-        None,
-        include_str!("../../resources/template-main.rs"),
-        shell,
-    )?;
+    crate::fs::create_dir_all(path.join(".cargo"))?;
+    let cargo_config_path = path.join(".cargo").join("config.toml");
+    let mut cargo_config = if cargo_config_path.exists() {
+        crate::fs::read_to_string(&cargo_config_path)?
+    } else {
+        r#"[build]
+target-dir = ""
+"#
+        .to_owned()
+    }
+    .parse::<toml_edit::Document>()
+    .with_context(|| {
+        format!(
+            "could not parse the TOML file at `{}`",
+            cargo_config_path.display(),
+        )
+    })?;
+    if cargo_config["build"]["target-dir"].is_none() {
+        cargo_config["build"]["target-dir"] = toml_edit::value("../target");
+        crate::fs::write(
+            &cargo_config_path,
+            cargo_config.to_string_in_original_order(),
+        )?;
+        shell.status("Wrote", cargo_config_path.display())?;
+    }
 
     let cargo_atcoder_config = (|| -> _ {
-        let path = dirs::config_dir()?.join("cargo-atcoder.toml");
-        crate::fs::read_to_string(path)
-            .ok()?
-            .parse::<toml_edit::Document>()
-            .ok()
-    })();
+        fn parse(path: &Path) -> anyhow::Result<toml_edit::Document> {
+            crate::fs::read_to_string(path)?.parse().with_context(|| {
+                format!(
+                    "could not parse the cargo-atcoder config at `{}`",
+                    path.display()
+                )
+            })
+        }
+
+        if let Some(cargo_atcoder_config) = cargo_atcoder_config {
+            let cargo_atcoder_config = cwd.join(cargo_atcoder_config);
+            if cargo_atcoder_config.exists() {
+                return parse(&cargo_atcoder_config).map(Some);
+            }
+        }
+
+        if let Some(config_dir) = dirs::config_dir() {
+            let cargo_atcoder_config = config_dir.join("cargo-atcoder.toml");
+            if cargo_atcoder_config.exists() {
+                return parse(&cargo_atcoder_config).map(Some);
+            }
+        }
+
+        Ok(None)
+    })()?;
 
     let submit_via_binary = matches!(
         &cargo_atcoder_config,
         Some(c) if c["atcoder"]["submit_via_binary"].as_bool() == Some(true)
     );
 
-    let mut root_manifest = r#"[workspace]
-members = []
-exclude = []
-"#
-    .parse::<toml_edit::Document>()
-    .unwrap();
-
-    if submit_via_binary {
-        if let Some(profile_release) = (|| -> _ {
-            let path = dirs::config_dir()?.join("cargo-atcoder.toml");
-            let config = crate::fs::read_to_string(path)
-                .ok()?
-                .parse::<toml_edit::Document>()
-                .ok()?;
-            Some(config["profile"]["release"].clone())
-        })() {
-            root_manifest["profile"] = implicit_table();
-            root_manifest["profile"]["release"] = profile_release;
-        }
-    }
-
-    let root_manifest_path = path.join("Cargo.toml");
-    crate::fs::write(&root_manifest_path, root_manifest.to_string())?;
-    shell.status("Wrote", root_manifest_path.display())?;
-
-    shell.status("Adding", format!("{} + 1 packages", include.len()))?;
-
-    cargo_member::Include::new(
-        &path,
-        include
-            .iter()
-            .map(|cm::Package { manifest_path, .. }| manifest_path.with_file_name(""))
-            .chain(iter::once(path.join("cargo-compete-template"))),
-    )
-    .stderr(shell.err())
-    .exec()
-    .with_context(|| {
-        "could not migrate. Run `git clean -f && git restore .`, and this command again with \
-         `--glob` option"
-    })?;
-
     let compete_toml_path = path.join("compete.toml");
-    let compete_toml = crate::project::gen_compete_toml(PlatformKind::Atcoder, submit_via_binary)?;
+    let compete_toml = crate::config::generate(
+        PlatformKind::Atcoder,
+        None,
+        cargo_atcoder_config
+            .as_ref()
+            .and_then(|c| c["dependencies"].as_table())
+            .map(|t| t.to_string())
+            .as_deref(),
+        submit_via_binary,
+    )?;
+
     crate::fs::write(&compete_toml_path, compete_toml)?;
     shell.status("Wrote", compete_toml_path.display())?;
 
     shell.status("Finished", "migrating")?;
-
-    if include.len() >= 100 {
-        shell.warn(
-            "too many packages. install `cargo-member` and run `cargo member focus`, and set \
-             `new-workspace-member` in the `compete.toml` to `focus`.",
-        )?;
-    }
-
     Ok(())
 }
 

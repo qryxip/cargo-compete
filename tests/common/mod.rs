@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use cargo_compete::{shell::Shell, Opt};
 use ignore::{overrides::Override, WalkBuilder};
 use serde_json::json;
@@ -73,7 +74,7 @@ fn tree(path: &Path, walk_override: Override) -> anyhow::Result<serde_json::Valu
     let mut tree = serde_json::Map::new();
 
     for entry in WalkBuilder::new(path)
-        .git_ignore(false)
+        .standard_filters(false)
         .overrides(walk_override)
         .sort_by_file_name(Ord::cmp)
         .build()
@@ -107,7 +108,12 @@ fn tree(path: &Path, walk_override: Override) -> anyhow::Result<serde_json::Valu
             enter!(components);
             tree.insert(
                 (*file_name).to_owned(),
-                json!(std::fs::read_to_string(entry.path())?),
+                json!(
+                    std::fs::read_to_string(entry.path()).with_context(|| format!(
+                        "invalid utf-8 content at `{}`",
+                        entry.path().display(),
+                    ))?
+                ),
             );
         } else {
             panic!();

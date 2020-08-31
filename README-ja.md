@@ -46,21 +46,40 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 ### `cargo compete init`
 
-Gitリポジトリ下に、各サイトに対する[ワークスペース](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html)を作ります。
+他のコマンドのためにいくつかのファイルを生成します。最初に実行してください。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89305770-04b55b00-d6aa-11ea-9a08-d1a4f0631d06.png)
+- [`compete.toml`](#設定)
+
+    他のコマンドに必要です。cargo-atcoderのように自動で生成しません。
+
+- [`rust-toolchain`](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
+
+    `cargo`と`rustc`のバージョンを指定するテキストファイルまたはTOMLファイルです。
+    AtCoder用なら`1.42.0`と書けば、`rust-toolchain`を置いたディレクトリ下で`~/.cargo/bin/cargo(.exe)`を起動したときに1.42.0のものが呼ばれるようになります。
+
+- [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html)
+
+    `build/target-dir`を設定し、`target`ディレクトリを共有するようにします。
+
+- `.template-cargo-lock.toml`
+
+    [`cargo compete new`](#cargo-compete-new)に使う`Cargo.lock`のテンプレートです。
+    質問に「AtCoderでクレートを使用するがバイナリ提出はしない」と回答した場合のみ生成されます。
+    生成された場合、`compete.toml`の`new.template.lockfile`にこのファイルへのパスが追加されます。
+
+![Screenshot](https://user-images.githubusercontent.com/14125495/91646306-b7e65980-ea88-11ea-8f0c-f11080b914ed.png)
 
 ### `cargo compete migrate cargo-atcoder`
 
-`cargo-atcoder`で作ったパッケージを、ワークスペースにまとめて`cargo-compete`用にマイグレートします。
+`cargo-atcoder`で作ったパッケージをそれぞれ`cargo-compete`用にマイグレートし、`compete.toml`等のファイルも追加します。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89726038-1489c200-da51-11ea-93ae-d317a13f04e9.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/91646437-2a0b6e00-ea8a-11ea-8374-14a2564ed6d3.png)
 
 ### `cargo compete login`
 
 サイトにログインします。
 
-**ワークスペースやパッケージは対象に取りません。** 引数で与えられた`platform`に対してログインします。
+**パッケージを対象に取りません。** 引数で与えられた`platform`に対してログインします。
 
 ただし`new`コマンド等ではログインが必要になった場合でも認証情報を聞いてログインし、続行するため事前にこのコマンドを実行しなくてもよいです。
 
@@ -68,7 +87,7 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 コンテストに参加登録します。
 
-**ワークスペースやパッケージは対象に取りません。** 引数で与えられた`platform`と`contest`に対して参加登録します。
+**パッケージを対象に取りません。** 引数で与えられた`platform`と`contest`に対して参加登録します。
 
 同様に、`new`コマンド等で自動で参加登録するため事前にこのコマンドを実行しなくてもよいです。
 
@@ -76,38 +95,26 @@ Gitリポジトリ下に、各サイトに対する[ワークスペース](https
 
 テストケースを取得し、コンテストに応じたパッケージを作ります。
 
-**ワークスペースを対象に取ります。**
+**[`compete.toml`](#設定)を起点とします。**
+最初に[`cargo compete init`](#cargo-compete-init)で生成してください。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89712134-d5fcf480-d9c9-11ea-9124-bcd0caabb545.png)
+`--open`で問題のページをブラウザで開きます。
+また`compete.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをエディタで開くことができます。
+`--open`を付け忘れた場合は生成されたパッケージに`cd`した後に[`cargo compete open`](#cargo-compete-open)で開いてください。
 
-`--open`で問題のページをブラウザで開きます。また`compete.toml`の`open`を設定することで、ソースコードとテストケースのYAMLをエディタで開くことができます。
-
-![Screenshot](https://user-images.githubusercontent.com/14125495/90397677-2ca5b500-e0d3-11ea-94f1-c246bc11621a.png)
-
-`--open`を付け忘れた場合は[`cargo compete open`](#cargo-compete-open)で開いてください。
+![Record](https://user-images.githubusercontent.com/14125495/91647287-1b29b900-ea94-11ea-9053-43e25c77706f.gif)
 
 [`compete.toml`](#設定)の`new-workspace-member`が`"include"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
 クレートを使う場合も初回を除いて"warmup"は不要です。
-
-パッケージが増えすぎたら、というより2個以上になった時点で`"include"`から`"focus"`に変更してください。
-`cargo compete new`時に既存のパッケージを`workspace.members`から外して[無効化](https://github.com/rust-lang/cargo/blob/7bce509826e29bd79566f7a33621fea7e7a657f9/src/cargo/core/workspace.rs#L797-L807)します。
-ビルドキャッシュはそのまま使われます。
-その場合`workspace.{member, exclude}`を操作するツールとして[cargo-member](https://github.com/qryxip/cargo-member)というのも作ってあるのでこれを使ってください。
-また有効なパッケージを一つに絞る利点として、`test`, `submit`等の「パッケージを対象に取る」コマンドが"workspace root"から実行できるという点があります。
-
-`"exclude"`の場合独立したワークスペースが作られます。
-こちらは`cargo atcoder new`の挙動に近いです。
-クレートを一切使わない場合はこちらに設定するといいでしょう。
-ただし`cargo compete submit`等のコマンドのために`compete.toml`のシンボリックリンクが作られます。
-Windows上では一般ユーザーでシンボリックリンクを作れるようにしてください。
 
 ### `cargo compete retrieve testcases` / `cargo compete download`
 
 テストケースの再取得を行います。
 
 **パッケージを対象に取ります。**
+パッケージに`cd`して実行してください。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/89116606-04ae3300-d4d1-11ea-9306-0c3fed6a2797.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/91647644-06e7bb00-ea98-11ea-8bc6-cd57714e4c84.png)
 
 プラットフォームが使っているテストケースを公開している場合、`--full`を指定することでそちらをダウンロードすることができます。
 
@@ -116,23 +123,26 @@ AtCoderの場合、[テストケースはDropboxにアップロードされて�
 - `files.metadata.read`
 - `sharing.read`
 
-の2つのパーミッションが有効なアクセストークンが必要です。何らかの方法でアクセストークンを取得し、以下の形式のJSONファイルを<code>[{data local directory}](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)/cargo-compete/tokens/dropbox.json</code>に保存してください。(この辺はなんとかしたいと考えてます)
+の2つのパーミッションが有効なアクセストークンが必要です。
+何らかの方法でアクセストークンを取得し、以下の形式のJSONファイルを<code>[{data local directory}](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)/cargo-compete/tokens/dropbox.json</code>に保存してください。
+(この辺はなんとかしたいと考えてます)
 
-```
+```json
 {
   "access_token": "<access token>"
 }
 ```
 
-![Record](https://user-images.githubusercontent.com/14125495/91205166-14234380-e740-11ea-91e4-52894ca44b36.gif)
+![Record](https://user-images.githubusercontent.com/14125495/91647905-c722d280-ea9b-11ea-88e8-e8c81b3ce555.gif)
 
 ### `cargo compete retrieve submission-summaries`
 
 自分の提出の一覧を取得し、JSONで出力します。
 
 **パッケージを対象に取ります。**
+パッケージに`cd`して実行してください。
 
-![Record](https://user-images.githubusercontent.com/14125495/89495297-f7f04e80-d7f2-11ea-9973-88763993e70a.gif)
+![Record](https://user-images.githubusercontent.com/14125495/91647691-765daa80-ea98-11ea-8378-b8631f8f3752.gif)
 
 例えばAtCoderであれば(AtCoderしか実装してませんが)`| jq -r '.summaries[0].detail`とすることで「最新の提出の詳細ページのURL」が得られます。
 
@@ -146,12 +156,14 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 `new`の`--open`と同様に問題のページをブラウザで、コードとテストファイルをエディタで開きます。
 
 **パッケージを対象に取ります。**
+パッケージに`cd`して実行してください。
 
 ### `cargo compete test`
 
 テストを行います。
 
 **パッケージを対象に取ります。**
+パッケージに`cd`して実行してください。
 
 `compete.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。
 
@@ -161,11 +173,12 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 提出を行います。
 
-![Record](https://user-images.githubusercontent.com/14125495/90531691-546b4a80-e1b1-11ea-95c2-c205e5640f72.gif)
-
 **パッケージを対象に取ります。**
+パッケージに`cd`して実行してください。
 
 対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。
+
+![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
 
 ## 設定
 
@@ -173,45 +186,53 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 バイナリ提出関連の設定もこちらです。
 
 ```toml
-# How to manage new workspace members ("include" | "exclude" | "focus")
-#
-# - `skip`:    Does not modify `[workspace]`
-# - `include`: Adds the package to `workspace.members`
-# - `exclude`: Adds the package to `workspace.exclude` and create a symlink to the `compete.toml`
-# - `focus`:   Adds the package to `workspace.members` and remove the other from both of `workspace.{members, exclude}`
-new-workspace-member = "include"
-
 # Path to the test file (Liquid template)
 #
 # Variables:
 #
 # - `manifest_dir`: Package directory
 # - `contest`:      Contest ID (e.g. "abc100")
-# - `problem`:      Problem index (e.g. "a", "b")
+# - `problem`:      Problem index (e.g. "A", "B")
 #
 # Additional filters:
 #
 # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
-test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
-#test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
+test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
+#test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
 
 # Open files with the command (`jq` command)
 #
 # VSCode:
-#open = '["code"] + (.paths | map([.src, .test_suite]) | flatten) + ["-a", .manifest_dir]'
+open = '["bash", "-c"] + ["code -a " + .manifest_dir + " && code " + (.paths | map([.src, .test_suite]) | flatten | join(" "))]'
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
-[template]
+[new]
 platform = "atcoder"
-manifest = "./cargo-compete-template/Cargo.toml"
-src = "./cargo-compete-template/src/main.rs"
+path = "./{{ package_name }}"
 
-[submit-via-binary]
-target = "x86_64-unknown-linux-musl"
-#cross = "cross"
-strip = "strip"
-#upx = "upx"
+[new.template]
+lockfile = "./template-cargo-lock.toml"
+
+[new.template.dependencies]
+kind = "inline"
+content = '''
+#proconio = { version = "=0.3.6", features = ["derive"] }
+'''
+
+[new.template.src]
+kind = "inline"
+content = '''
+fn main() {
+    todo!();
+}
+'''
+
+#[submit.via-binary]
+#target = "x86_64-unknown-linux-musl"
+##cross = "cross"
+#strip = "strip"
+##upx = "upx"
 ```
 
 各`bin` targetに紐付くサイト上の問題は、パッケージの`Cargo.toml`の`[package.metadata]`に記述されます。
@@ -220,8 +241,11 @@ strip = "strip"
 [package]
 name = "practice"
 version = "0.1.0"
+authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
-publish = false
+
+[package.metadata.cargo-compete]
+config = "../compete.toml"
 
 [package.metadata.cargo-compete.bin]
 a = { name = "practice-a", problem = { platform = "atcoder", contest = "practice", index = "A", url = "https://atcoder.jp/contests/practice/tasks/practice_1" } }
@@ -234,6 +258,46 @@ path = "src/bin/a.rs"
 [[bin]]
 name = "practice-b"
 path = "src/bin/b.rs"
+[dependencies]
+num = "=0.2.1"
+num-bigint = "=0.2.6"
+num-complex = "=0.2.4"
+num-integer = "=0.1.42"
+num-iter = "=0.1.40"
+num-rational = "=0.2.4"
+num-traits = "=0.2.11"
+num-derive = "=0.3.0"
+ndarray = "=0.13.0"
+nalgebra = "=0.20.0"
+alga = "=0.9.3"
+libm = "=0.2.1"
+rand = { version = "=0.7.3", features = ["small_rng"] }
+getrandom = "=0.1.14"
+rand_chacha = "=0.2.2"
+rand_core = "=0.5.1"
+rand_hc = "=0.2.0"
+rand_pcg = "=0.2.1"
+rand_distr = "=0.2.2"
+petgraph = "=0.5.0"
+indexmap = "=1.3.2"
+regex = "=1.3.6"
+lazy_static = "=1.4.0"
+ordered-float = "=1.0.2"
+ascii = "=1.0.0"
+permutohedron = "=0.2.4"
+superslice = "=1.0.0"
+itertools = "=0.9.0"
+itertools-num = "=0.1.3"
+maplit = "=1.0.2"
+either = "=1.5.3"
+im-rc = "=14.3.0"
+fixedbitset = "=0.2.0"
+bitset-fixed = "=0.1.0"
+proconio = { version = "=0.3.6", features = ["derive"] }
+text_io = "=0.1.8"
+whiteread = "=0.5.0"
+rustc-hash = "=1.1.0"
+smallvec = "=1.2.0"
 ```
 
 ## cargo-atcoderとの対応
@@ -242,13 +306,11 @@ path = "src/bin/b.rs"
 
 [`cargo compete new`](#cargo-compete-new)でパッケージを作成します。
 
-[`compete.toml`](#設定)があるワークスペースから実行する必要があります。
-[`cargo compete init`](#cargo-compete-init)でワークスペースを作成するか、[`cargo compete migrate cargo-atcoder`](#cargo-compete-migrate-cargo-atcoder)でパッケージ達をマイグレートしてください。
-
-クレートを使っているか、パッケージの数が多いか等に応じて[`compete.toml`](#設定)の`new-workspace-member`を適切に設定してください。
+[`compete.toml`](#設定)を起点とします。
+[`cargo compete init`](#cargo-compete-init)か[`cargo compete migrate cargo-atcoder`](#cargo-compete-migrate-cargo-atcoder)で作成してください。
 
 なお、開始前のコンテストには使えません。
-ビルドキャッシュを共有する限り"warmup"が不要なためです。
+`target`ディレクトリを共有する限り"warmup"が不要なためです。
 ブラウザとエディタを開くのも`--open`で自動で行えます。
 
 ### `cargo atcoder submit`
@@ -263,7 +325,7 @@ path = "src/bin/b.rs"
 
 [`cargo compete test`](#cargo-compete-test)でテストを実行します。
 
-他のコマンドと同様に、ワークスペース下に[`compete.toml`](#設定)がある必要があります。
+cargo-atcoderと同様にパッケージを対象に取ります。
 
 一部のテストのみを実行する場合は、`<case-num>...`の代わりに`--testcases <NAME>...`で`"sample1"`等の「名前」で絞ります。
 
@@ -273,18 +335,18 @@ path = "src/bin/b.rs"
 
 ### `cargo atcoder status`
 
-`cargo compete watch submissions`で提出一覧をwatchします。
+[`cargo compete watch submission-summaries`](#cargo-compete-watch-submission-summaries)で提出一覧をwatchします。
 
 注意として、cargo-competeの方はブラウザ上の表示に近い挙動をします。
 実行時点で「ジャッジ待ち」/「ジャッジ中」のものが無い場合、直近20件を表示だけして終了します。
 
 ### `cargo atcoder result`
 
-今のところありません。 [`cargo compete retrieve submissions`](#cargo-compete-retrieve-submissions)の出力を`| jq -r ".summaries[$nth].detail"`して得たURLをブラウザで開いてください。
+今のところありません。 [`cargo compete watch submission-summaries`](#cargo-compete-watch-submission-summaries)の出力を`| jq -r ".summaries[$nth].detail"`して得たURLをブラウザで開いてください。
 
 ### `cargo atcoder clear-session`
 
-今のところありません。 [local data directory](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)下の`cargo-compete`を削除してください。
+今のところありません。 [data local directory](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)下の`cargo-compete`を削除してください。
 
 ### `cargo atcoder info`
 
@@ -297,7 +359,7 @@ path = "src/bin/b.rs"
 ### `cargo atcoder gen-binary`
 
 今のところありません。
-`cargo compete submit`で作られるコードはファイルシステムに置かれません。
+[`cargo compete submit`](#cargo-compete-submit)で作られるコードはファイルシステムに置かれません。
 このリポジトリの[`resources/exec-base64-encoded-binary.rs.liquid`](https://github.com/qryxip/cargo-compete/blob/master/resources/exec-base64-encoded-binary.rs.liquid)に、`source_code`と`base64`のパラメータを与えたものが提出されます。
 
 ## ライセンス

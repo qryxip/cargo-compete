@@ -57,11 +57,11 @@ pub(crate) fn run(
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
-        .unwrap_or_else(|| crate::project::locate_project(cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path)?;
-
-    let member = metadata.query_for_member(package)?;
+        .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
+    let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
+    let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata()?;
+    crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config)?;
 
     let mut atcoder_targets = indexset!();
 

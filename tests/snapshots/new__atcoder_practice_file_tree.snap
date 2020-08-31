@@ -3,22 +3,19 @@ source: tests/new.rs
 expression: tree
 ---
 {
-  "Cargo.lock": "..",
-  "Cargo.toml": "[workspace]\nmembers = [\"practice\"]\nexclude = []\n",
-  "compete.toml": "new-workspace-member = \"include\"\ntest-suite = \"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml\"\n\n[template]\nplatform = \"atcoder\"\nmanifest = \"./template-manifest.toml\"\nsrc = \"./template-code.rs\"\n",
+  ".cargo": {
+    "config.toml": "[cargo-new]\nname = \"\"\nemail = \"\"\n"
+  },
+  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template]\ntarget-dir = \"./target\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n",
   "practice": {
-    "Cargo.toml": "[package]\nname = \"practice\"\nversion = \"0.1.0\"\nedition = \"2018\"\n\n[package.metadata.cargo-compete.bin]\na = { name = \"practice-a\", problem = { platform = \"atcoder\", contest = \"practice\", index = \"A\", url = \"https://atcoder.jp/contests/practice/tasks/practice_1\" } }\nb = { name = \"practice-b\", problem = { platform = \"atcoder\", contest = \"practice\", index = \"B\", url = \"https://atcoder.jp/contests/practice/tasks/practice_2\" } }\n\n[[bin]]\nname = \"practice-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"practice-b\"\npath = \"src/bin/b.rs\"\n",
+    "Cargo.toml": "[package]\nname = \"practice\"\nversion = \"0.1.0\"\nauthors = [\"\"]\nedition = \"2018\"\n\n[package.metadata.cargo-compete]\nconfig = \"../compete.toml\"\n\n[package.metadata.cargo-compete.bin]\na = { name = \"practice-a\", problem = { platform = \"atcoder\", contest = \"practice\", index = \"A\", url = \"https://atcoder.jp/contests/practice/tasks/practice_1\" } }\nb = { name = \"practice-b\", problem = { platform = \"atcoder\", contest = \"practice\", index = \"B\", url = \"https://atcoder.jp/contests/practice/tasks/practice_2\" } }\n\n[[bin]]\nname = \"practice-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"practice-b\"\npath = \"src/bin/b.rs\"\n[dependencies]\nproconio = \"=0.3.6\"\n",
     "src": {
       "bin": {
         "a.rs": "fn main() {\n    todo!();\n}\n",
         "b.rs": "fn main() {\n    todo!();\n}\n"
       }
-    }
-  },
-  "template-code.rs": "fn main() {\n    todo!();\n}\n",
-  "template-manifest.toml": "[package]\nname = \"cargo-compete-template\"\nversion = \"0.1.0\"\nedition = \"2018\"\n",
-  "testcases": {
-    "practice": {
+    },
+    "testcases": {
       "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      1\n      2 3\n      test\n    out: |\n      6 test\n  - name: sample2\n    in: |\n      72\n      128 256\n      myonmyon\n    out: |\n      456 myonmyon\n\nextend: []\n",
       "b.yml": "---\ntype: Interactive\ntimelimit: 2s"
     }

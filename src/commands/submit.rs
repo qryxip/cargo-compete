@@ -1,8 +1,6 @@
 use crate::{
-    project::{
-        CargoCompeteConfigSubmitViaBinary, MetadataExt as _, PackageExt as _, TargetProblem,
-        TargetProblemYukicoder,
-    },
+    config::CargoCompeteConfigSubmitViaBinary,
+    project::{MetadataExt as _, PackageExt as _, TargetProblem, TargetProblemYukicoder},
     shell::ColorChoice,
     web::credentials,
 };
@@ -109,12 +107,11 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path)?;
-
-    let cargo_compete_config = metadata.read_compete_toml()?;
-
+    let metadata = crate::project::cargo_metadata(&manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata()?;
+    let cargo_compete_config =
+        crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config)?;
 
     let (bin, package_metadata_bin) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
@@ -151,7 +148,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         cross,
         strip,
         upx,
-    }) = &cargo_compete_config.submit_via_binary
+    }) = &cargo_compete_config.submit.via_bianry
     {
         let original_source_code = crate::fs::read_to_string(&bin.src_path)?;
 

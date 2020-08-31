@@ -4,11 +4,13 @@
 
 ## Added
 
-- [`new`, `open`] Added `git_workdir` variable.
+- [`migrate`] Added `migrate v04` command.
+- [`new`, `open`] Added `git_workdir` variable for `open` in `compete.toml`.
 
 ## Changed
 
-- Updated the default `compete.toml`.
+- `cargo-compete` no longer manage workspaces. Instead, each package will just share the same `target` directory. Run `cargo compete migrate v04` to migrate packages.
+- Changed the format of `compet.toml`.
 
 ## [0.4.7] - 2020-08-25Z
 

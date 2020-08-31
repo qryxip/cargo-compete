@@ -1,54 +1,49 @@
 pub mod common;
 
-use duct::cmd;
-use git2::Repository;
 use ignore::overrides::Override;
 use insta::{assert_json_snapshot, assert_snapshot};
 use std::str;
 
 #[test]
-fn no_crate() -> anyhow::Result<()> {
-    let (output, tree) = run("\n1\n")?;
-    assert_snapshot!("no_crate_output", output);
-    assert_json_snapshot!("no_crate_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+fn atcoder_no_crate() -> anyhow::Result<()> {
+    let (output, tree) = run("atcoder", "1\n")?;
+    assert_snapshot!("atcoder_no_crate_output", output);
+    assert_json_snapshot!("atcoder_no_crate_file_tree", tree);
     Ok(())
 }
 
 #[test]
-fn use_crate() -> anyhow::Result<()> {
-    let (output, tree) = run("\n2\n")?;
-    assert_snapshot!("use_crate_output", output);
-    assert_json_snapshot!("use_crate_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+fn atcoder_use_crate() -> anyhow::Result<()> {
+    let (output, tree) = run("atcoder", "2\n")?;
+    assert_snapshot!("atcoder_use_crate_output", output);
+    assert_json_snapshot!("atcoder_use_crate_file_tree", tree);
     Ok(())
 }
 
 #[test]
-fn use_crate_via_bianry() -> anyhow::Result<()> {
-    let (output, tree) = run("\n3\n")?;
-    assert_snapshot!("use_crate_via_bianry_output", output);
-    assert_json_snapshot!("use_crate_via_bianry_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+fn atcoder_use_crate_via_bianry() -> anyhow::Result<()> {
+    let (output, tree) = run("atcoder", "3\n")?;
+    assert_snapshot!("atcoder_use_crate_via_bianry_output", output);
+    assert_json_snapshot!("atcoder_use_crate_via_bianry_file_tree", tree);
     Ok(())
 }
 
-fn run(input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
+#[test]
+fn codeforces() -> anyhow::Result<()> {
+    let (output, tree) = run("codeforces", "")?;
+    assert_snapshot!("codeforces_output", output);
+    assert_json_snapshot!("codeforces_file_tree", tree);
+    Ok(())
+}
+
+fn run(platform: &str, input: &'static str) -> anyhow::Result<(String, serde_json::Value)> {
     common::run(
-        |workspace_root| -> _ {
-            println!("{}", cmd!("git", "init", workspace_root).read()?);
-            Ok(())
-        },
+        |_| Ok(()),
         input.as_bytes(),
-        &["", "compete", "i"],
-        |workspace_root, output| {
-            let cwd_canonicalized = Repository::open(workspace_root)
-                .unwrap()
-                .workdir()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_owned();
-
+        &["", "compete", "i", platform, "."],
+        |cwd, output| {
             output
-                .replace(&cwd_canonicalized, "{{ cwd_canonicalized }}")
+                .replace(&*cwd.to_string_lossy(), "{{ cwd }}")
                 .replace(std::path::MAIN_SEPARATOR, "{{ main_path_separator }}")
         },
         |_| Ok(Override::empty()),
