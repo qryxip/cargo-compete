@@ -1,16 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2020-08-31Z
 
 ## Added
 
-- [`migrate`] Added `migrate v04` command.
-- [`new`, `open`] Added `git_workdir` variable for `open` in `compete.toml`.
+- [`migrate`] Added `migrate v04` command. ([#58](https://github.com/qryxip/cargo-compete/pull/58))
+- [`new`, `open`] Added `git_workdir` variable for `open` in `compete.toml`. ([#56](https://github.com/qryxip/cargo-compete/pull/56))
 
 ## Changed
 
-- `cargo-compete` no longer manage workspaces. Instead, each package will just share the same `target` directory. Run `cargo compete migrate v04` to migrate packages.
-- Changed the format of `compet.toml`.
+- `cargo-compete` no longer manage workspaces. Instead, each package will just share the same `target` directory. Run `cargo compete migrate v04` to migrate packages. ([#58](https://github.com/qryxip/cargo-compete/pull/58))
+- Changed the format of `compet.toml`. ([#58](https://github.com/qryxip/cargo-compete/pull/58))
 
 ## [0.4.7] - 2020-08-25Z
 
