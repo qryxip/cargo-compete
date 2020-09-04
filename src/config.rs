@@ -137,7 +137,20 @@ pub(crate) enum CargoCompeteConfigNewTemplateSrc {
 #[derive(Deserialize, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigSubmit {
+    pub(crate) transpile: Option<CargoCompeteConfigSubmitTranspile>,
     pub(crate) via_bianry: Option<CargoCompeteConfigSubmitViaBinary>,
+}
+
+#[derive(Deserialize, Derivative)]
+#[serde(rename_all = "kebab-case", tag = "kind")]
+#[derivative(Debug)]
+pub(crate) enum CargoCompeteConfigSubmitTranspile {
+    Command {
+        #[serde(deserialize_with = "deserialize_liquid_templates")]
+        #[derivative(Debug = "ignore")]
+        args: Vec<liquid::Template>,
+        language_id: Option<String>,
+    },
 }
 
 #[derive(Deserialize, Debug)]
@@ -147,6 +160,23 @@ pub(crate) struct CargoCompeteConfigSubmitViaBinary {
     pub(crate) cross: Option<PathBuf>,
     pub(crate) strip: Option<PathBuf>,
     pub(crate) upx: Option<PathBuf>,
+}
+
+fn deserialize_liquid_templates<'de, D>(deserializer: D) -> Result<Vec<liquid::Template>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use liquid::ParserBuilder;
+
+    let parser = ParserBuilder::with_stdlib()
+        .build()
+        .map_err(D::Error::custom)?;
+
+    Vec::<String>::deserialize(deserializer)?
+        .iter()
+        .map(|s| parser.parse(s))
+        .collect::<Result<_, _>>()
+        .map_err(D::Error::custom)
 }
 
 fn deserialize_liquid_template_with_custom_filter<'de, D>(

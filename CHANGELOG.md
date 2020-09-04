@@ -1,13 +1,28 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`submit`] Added `submit.transpile` field.
+
+    You will be able to convert Rust code before submitting.
+
+    ```toml
+    [submit.transpile]
+    kind = "command"
+    args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+    #language_id = ""
+    ```
+
 ## [0.5.0] - 2020-08-31Z
 
-## Added
+### Added
 
 - [`migrate`] Added `migrate v04` command. ([#58](https://github.com/qryxip/cargo-compete/pull/58))
 - [`new`, `open`] Added `git_workdir` variable for `open` in `compete.toml`. ([#56](https://github.com/qryxip/cargo-compete/pull/56))
 
-## Changed
+### Changed
 
 - `cargo-compete` no longer manage workspaces. Instead, each package will just share the same `target` directory. Run `cargo compete migrate v04` to migrate packages. ([#58](https://github.com/qryxip/cargo-compete/pull/58))
 - Changed the format of `compet.toml`. ([#58](https://github.com/qryxip/cargo-compete/pull/58))

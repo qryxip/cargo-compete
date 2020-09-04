@@ -1,9 +1,10 @@
 use crate::{
-    config::CargoCompeteConfigSubmitViaBinary,
+    config::{CargoCompeteConfigSubmitTranspile, CargoCompeteConfigSubmitViaBinary},
     project::{MetadataExt as _, PackageExt as _, TargetProblem, TargetProblemYukicoder},
     shell::ColorChoice,
     web::credentials,
 };
+use anyhow::{bail, Context as _};
 use human_size::Size;
 use liquid::object;
 use prettytable::{
@@ -143,85 +144,115 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             .exec_with_shell_status(shell)?;
     }
 
-    let code = if let Some(CargoCompeteConfigSubmitViaBinary {
+    let language_id = match &cargo_compete_config.submit.transpile {
+        Some(CargoCompeteConfigSubmitTranspile::Command {
+            language_id: Some(language_id),
+            ..
+        }) => language_id,
+        _ => match package_metadata_bin.problem {
+            TargetProblem::Atcoder { .. } => ATCODER_RUST_LANG_ID,
+            TargetProblem::Codeforces { .. } => CODEFORCES_RUST_LANG_ID,
+            TargetProblem::Yukicoder(_) => YUKICODER_RUST_LANG_ID,
+        },
+    };
+
+    let mut code = crate::fs::read_to_string(&bin.src_path)?;
+
+    if let Some(CargoCompeteConfigSubmitTranspile::Command { args, .. }) =
+        &cargo_compete_config.submit.transpile
+    {
+        code = {
+            if args.is_empty() {
+                bail!("`submit.transpile.args` is empty");
+            }
+
+            let vars = object!({ "bin_name": &bin.name });
+
+            let args = args
+                .iter()
+                .map(|t| t.render(&vars))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            crate::process::with_which(&args[0], &metadata.workspace_root)?
+                .args(&args[1..])
+                .read_with_shell_status(shell)
+                .with_context(|| "could not transpile the code")?
+        };
+    }
+
+    if let Some(CargoCompeteConfigSubmitViaBinary {
         target,
         cross,
         strip,
         upx,
     }) = &cargo_compete_config.submit.via_bianry
     {
-        let original_source_code = crate::fs::read_to_string(&bin.src_path)?;
+        code = {
+            let original_source_code = code;
 
-        let program = if let Some(cross) = cross {
-            cross.clone()
-        } else {
-            crate::process::cargo_exe()?
+            let program = if let Some(cross) = cross {
+                cross.clone()
+            } else {
+                crate::process::cargo_exe()?
+            };
+
+            crate::process::with_which(program, &metadata.workspace_root)?
+                .args(&[
+                    "build",
+                    "--bin",
+                    &bin.name,
+                    "--release",
+                    "--target",
+                    &target,
+                ])
+                .cwd(member.manifest_path.parent().unwrap())
+                .display_cwd()
+                .exec_with_shell_status(shell)?;
+
+            let orig_artifact = metadata
+                .target_directory
+                .join(&target)
+                .join("release")
+                .join(&bin.name);
+
+            let artifact = tempfile::Builder::new()
+                .prefix("cargo-compete-exec-base64-encoded-binary-")
+                .tempfile()?
+                .into_temp_path();
+
+            std::fs::copy(orig_artifact, &artifact)?;
+
+            if let Some(strip) = strip {
+                crate::process::with_which(strip, &metadata.workspace_root)?
+                    .arg("-s")
+                    .arg(&artifact)
+                    .exec_with_shell_status(shell)?;
+            }
+
+            if let Some(upx) = upx {
+                crate::process::with_which(upx, &metadata.workspace_root)?
+                    .arg("--best")
+                    .arg(&artifact)
+                    .exec_with_shell_status(shell)?;
+            }
+
+            let artifact_binary = crate::fs::read(&artifact)?;
+
+            artifact.close()?;
+
+            liquid::ParserBuilder::with_stdlib()
+                .build()?
+                .parse(include_str!(
+                    "../../resources/exec-base64-encoded-binary.rs.liquid"
+                ))?
+                .render(&object!({
+                    "source_code": original_source_code,
+                    "base64": base64::encode(artifact_binary),
+                }))?
         };
-
-        crate::process::with_which(program, &metadata.workspace_root)?
-            .args(&[
-                "build",
-                "--bin",
-                &bin.name,
-                "--release",
-                "--target",
-                &target,
-            ])
-            .cwd(member.manifest_path.parent().unwrap())
-            .display_cwd()
-            .exec_with_shell_status(shell)?;
-
-        let orig_artifact = metadata
-            .target_directory
-            .join(&target)
-            .join("release")
-            .join(&bin.name);
-
-        let artifact = tempfile::Builder::new()
-            .prefix("cargo-compete-exec-base64-encoded-binary-")
-            .tempfile()?
-            .into_temp_path();
-
-        std::fs::copy(orig_artifact, &artifact)?;
-
-        if let Some(strip) = strip {
-            crate::process::with_which(strip, &metadata.workspace_root)?
-                .arg("-s")
-                .arg(&artifact)
-                .exec_with_shell_status(shell)?;
-        }
-
-        if let Some(upx) = upx {
-            crate::process::with_which(upx, &metadata.workspace_root)?
-                .arg("--best")
-                .arg(&artifact)
-                .exec_with_shell_status(shell)?;
-        }
-
-        let artifact_binary = crate::fs::read(&artifact)?;
-
-        artifact.close()?;
-
-        liquid::ParserBuilder::with_stdlib()
-            .build()?
-            .parse(include_str!(
-                "../../resources/exec-base64-encoded-binary.rs.liquid"
-            ))?
-            .render(&object!({
-                "source_code": original_source_code,
-                "base64": base64::encode(artifact_binary),
-            }))?
-    } else {
-        crate::fs::read_to_string(&bin.src_path)?
     };
 
     let source_code_len = code.len();
-
-    let language_id = match package_metadata_bin.problem {
-        TargetProblem::Atcoder { .. } => ATCODER_RUST_LANG_ID,
-        TargetProblem::Codeforces { .. } => CODEFORCES_RUST_LANG_ID,
-        TargetProblem::Yukicoder(_) => YUKICODER_RUST_LANG_ID,
-    };
 
     let cookie_storage = CookieStorage::with_jsonl(&cookies_path)?;
     let timeout = crate::web::TIMEOUT;
@@ -244,7 +275,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                     problem: index.clone(),
                 },
                 credentials,
-                language_id: ATCODER_RUST_LANG_ID.to_owned(),
+                language_id: language_id.to_owned(),
                 code,
                 watch_submission: false,
                 cookie_storage,
@@ -273,7 +304,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                     problem: index.clone(),
                 },
                 credentials,
-                language_id: CODEFORCES_RUST_LANG_ID.to_owned(),
+                language_id: language_id.to_owned(),
                 code,
                 watch_submission: false,
                 cookie_storage,
@@ -296,7 +327,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                     }
                 },
                 credentials,
-                language_id: YUKICODER_RUST_LANG_ID.to_owned(),
+                language_id: language_id.to_owned(),
                 code,
                 watch_submission: false,
                 cookie_storage: (),

@@ -48,6 +48,11 @@ fn main() {
 }
 '''
 
+#[submit.transpile]
+#kind = "command"
+#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+#language_id = ""
+
 {% if submit_via_binary == true -%}
   {%- assign comment = "" -%}
 {%- else -%}

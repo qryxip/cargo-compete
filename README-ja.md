@@ -180,6 +180,15 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 ![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
 
+[`compete.toml`](#設定)の`submit.transpile`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)等のコード変換ツールを使って提出するコードを変換できます。
+
+```toml
+[submit.transpile]
+kind = "command"
+args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+#language_id = ""
+```
+
 ## 設定
 
 設定は各ワークスペース下にある`compete.toml`にあります。
@@ -227,6 +236,11 @@ fn main() {
     todo!();
 }
 '''
+
+#[submit.transpile]
+#kind = "command"
+#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+#language_id = ""
 
 #[submit.via-binary]
 #target = "x86_64-unknown-linux-musl"
