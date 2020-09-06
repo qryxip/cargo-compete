@@ -1,0 +1,12 @@
+---
+source: tests/new.rs
+expression: output
+---
+     Created `contest100` package at {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}191.yml
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}192.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}193.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}194.yml
+       Saved 4 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}195.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}contest100{{ slash_or_backslash }}testcases{{ slash_or_backslash }}196.yml
+

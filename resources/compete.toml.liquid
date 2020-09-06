@@ -20,8 +20,23 @@ test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.ym
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
 [new]
+# Platform
+#
+# - atcoder
+# - codeforces
+# - yukicoder
 platform = "{{ new_platform }}"
-path = {% raw %}"./{{ package_name }}"{% endraw %}
+# Path (Liquid template)
+#
+# Variables:
+#
+# - `contest`:      Contest ID. **May be nil**
+# - `package_name`: Package name
+{% if new_platform == "yukicoder" -%}
+path = {% raw %}"./{{ contest | default: 'problems' }}"{% endraw %}
+{%- else -%}
+path = {% raw %}"./{{ contest }}"{% endraw %}
+{%- endif %}
 
 [new.template]
 {% if new_template_lockfile -%}
