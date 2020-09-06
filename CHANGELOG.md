@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`new`] Added `contest` variable to `new.path`.
+
+### Changed
+
+- [`new`] Package names will be `"contest{}"` to adapt to [rust-lang/cargo#7959](https://github.com/rust-lang/cargo/pull/7959).
+
+    Modify `new.path` as following.
+
+    ```diff
+    -path = "./{{ package_name }}"
+    +path = "./{{ contest }}"
+    ```
+
+### Fixed
+
+- [`new`] `new.path` will work correctly.
+- [`new`] `new` command for yukicoder will work properly.
+
 ## [0.5.1] - 2020-09-04Z
 
 ### Added
