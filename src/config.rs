@@ -138,7 +138,7 @@ pub(crate) enum CargoCompeteConfigNewTemplateSrc {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigSubmit {
     pub(crate) transpile: Option<CargoCompeteConfigSubmitTranspile>,
-    pub(crate) via_bianry: Option<CargoCompeteConfigSubmitViaBinary>,
+    pub(crate) via_binary: Option<CargoCompeteConfigSubmitViaBinary>,
 }
 
 #[derive(Deserialize, Derivative)]
