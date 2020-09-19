@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- [`submit`] `submit.via-binary` will be correctly recognized. Previously, `cargo-compete` tried to read `submit.via-bianry`.
+
 ## [0.6.0] - 2020-09-06Z
 
 ### Added

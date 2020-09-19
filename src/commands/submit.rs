@@ -185,7 +185,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         cross,
         strip,
         upx,
-    }) = &cargo_compete_config.submit.via_bianry
+    }) = &cargo_compete_config.submit.via_binary
     {
         code = {
             let original_source_code = code;
