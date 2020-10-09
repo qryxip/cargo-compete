@@ -1,10 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.2] - 2020-10-09Z
 
 ### Fixed
 
-- Supports "小数誤差許容問題" in yukicoder. ([qryxip/snowchains#96](https://github.com/qryxip/snowchains/pull/96))
+- Updated the dependencies.
+    - Now it supports "小数誤差許容問題" in yukicoder. ([qryxip/snowchains#96](https://github.com/qryxip/snowchains/pull/96))
 
 ## [0.6.1] - 2020-09-20Z
 
