@@ -1,5 +1,5 @@
 use crate::shell::Shell;
-use anyhow::{ensure, Context as _};
+use anyhow::{bail, Context as _};
 use git2::Repository;
 use serde_json::json;
 use std::{borrow::Borrow, path::Path};
@@ -55,14 +55,21 @@ pub(crate) fn open(
             .cwd(process_cwd)
             .read_with_shell_status(shell)?;
 
-        let args = serde_json::from_str::<Vec<String>>(&output)
-            .with_context(|| "expected string array")?;
+        let commands = if let Ok(commands) = serde_json::from_str::<Vec<Vec<String>>>(&output) {
+            commands
+        } else if let Ok(command) = serde_json::from_str(&output) {
+            vec![command]
+        } else {
+            bail!("expected `string[] | string[][]`");
+        };
 
-        ensure!(!args.is_empty(), "empty command");
-
-        crate::process::with_which(&args[0], process_cwd)?
-            .args(&args[1..])
-            .exec_with_shell_status(shell)?;
+        for command in commands {
+            if let [program, args @ ..] = &*command {
+                crate::process::with_which(program, process_cwd)?
+                    .args(args)
+                    .exec_with_shell_status(shell)?;
+            }
+        }
     }
     Ok(())
 }

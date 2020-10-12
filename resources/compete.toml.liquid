@@ -12,10 +12,10 @@
 test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"{% endraw %}
 #test-suite = {% raw %}"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"{% endraw %}
 
-# Open files with the command (`jq` command)
+# Open files with the command (`jq` command that outputs `string[] | string[][]`)
 #
 # VSCode:
-#open = '["bash", "-c"] + ["code -a " + .manifest_dir + " && code " + (.paths | map([.src, .test_suite]) | flatten | join(" "))]'
+#open = '[["code", "-a", .manifest_dir], ["code"] + (.paths | map([.src, .test_suite]) | flatten)]'
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 

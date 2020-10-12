@@ -209,10 +209,10 @@ args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", 
 test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
 #test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
 
-# Open files with the command (`jq` command)
+# Open files with the command (`jq` command that outputs `string[] | string[][]`)
 #
 # VSCode:
-open = '["bash", "-c"] + ["code -a " + .manifest_dir + " && code " + (.paths | map([.src, .test_suite]) | flatten | join(" "))]'
+#open = '[["code", "-a", .manifest_dir], ["code"] + (.paths | map([.src, .test_suite]) | flatten)]'
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 

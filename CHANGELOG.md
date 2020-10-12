@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [`open`] Now supports `stirng[][]` output for the `open` configuration.
+
+    ```toml
+    # Open files with the command (`jq` command that outputs `string[] | string[][]`)
+    open = '[["code", "-a", .manifest_dir], ["code"] + (.paths | map([.src, .test_suite]) | flatten)]'
+    ```
+
 ## [0.6.2] - 2020-10-09Z
 
 ### Fixed
