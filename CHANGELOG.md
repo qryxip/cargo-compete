@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Problem indexes for yukicoder contests will be alphabets. ([qryxip/snowchains/#102](https://github.com/qryxip/snowchains/pull/102))
+    Previously, "problem no"s were set.
+
 ## [0.6.3] - 2020-10-12Z
 
 ### Added
