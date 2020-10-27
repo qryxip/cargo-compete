@@ -15,7 +15,7 @@ fn main() {
     let result = (|| -> _ {
         let cwd = env::current_dir().with_context(|| "could not get the current directory")?;
 
-        let cookies_path = dirs::data_local_dir()
+        let cookies_path = dirs_next::data_local_dir()
             .with_context(|| "could not find the local data directory")?
             .join("cargo-compete")
             .join("cookies.jsonl");
