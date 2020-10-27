@@ -86,7 +86,7 @@ pub(crate) fn codeforces_api_key_and_secret(shell: &mut Shell) -> anyhow::Result
 
 fn token_path(file_name: &str) -> anyhow::Result<PathBuf> {
     let data_local_dir =
-        dirs::data_local_dir().with_context(|| "could not find the local data directory")?;
+        dirs_next::data_local_dir().with_context(|| "could not find the local data directory")?;
 
     Ok(data_local_dir
         .join("cargo-compete")

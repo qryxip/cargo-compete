@@ -214,7 +214,7 @@ target-dir = ""
             }
         }
 
-        if let Some(config_dir) = dirs::config_dir() {
+        if let Some(config_dir) = dirs_next::config_dir() {
             let cargo_atcoder_config = config_dir.join("cargo-atcoder.toml");
             if cargo_atcoder_config.exists() {
                 return parse(&cargo_atcoder_config).map(Some);
