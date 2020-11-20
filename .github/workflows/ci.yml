@@ -40,6 +40,44 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+  cargo-udeps:
+    name: cargo-udeps
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
+          key: cargo-udeps-${{ hashFiles('./Cargo.*') }}
+
+      - name: Install `nightly-x86_64-unknown-linux-gnu`
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-x86_64-unknown-linux-gnu
+          default: true
+
+      - name: Install cargo-udeps
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-udeps
+          version: ^0.1
+          use-tool-cache: true
+
+      - name: cargo-udeps
+        uses: actions-rs/cargo@v1
+        with:
+          command: udeps
+          args: --all-targets
+
   grcov:
     name: grcov
     runs-on: ubuntu-18.04
@@ -191,8 +229,7 @@ jobs:
             ~/.rustup
             ~/.cargo/registry
             ~/.cargo/git
-            ./target
-          key: upload-${{ matrix.target-triple }}-${{ hashFiles('./Cargo.*') }}
+          key: upload-${{ matrix.target-triple }} }}
 
       - name: 'Setup `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
