@@ -21,6 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.rustup
+          key: rustfmt
+
       - name: Setup `stable-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
@@ -42,6 +48,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
+          key: grcov-${{ hashFiles('./Cargo.*') }}
 
       - name: Install `nightly-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
@@ -95,6 +111,16 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
+          key: build-${{ matrix.name }}-${{ hashFiles('./Cargo.*') }}
 
       - name: 'Setup `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
@@ -157,6 +183,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.rustup
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
+          key: upload-${{ matrix.target-triple }}-${{ hashFiles('./Cargo.*') }}
 
       - name: 'Setup `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
