@@ -191,8 +191,7 @@ jobs:
             ~/.rustup
             ~/.cargo/registry
             ~/.cargo/git
-            ./target
-          key: upload-${{ matrix.target-triple }}-${{ hashFiles('./Cargo.*') }}
+          key: upload-${{ matrix.target-triple }} }}
 
       - name: 'Setup `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
