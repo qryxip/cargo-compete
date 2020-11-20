@@ -21,12 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.rustup
-          key: rustfmt
-
       - name: Setup `stable-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
@@ -49,34 +43,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache
-        uses: actions/cache@v2
+      - name: Install `stable-x86_64-unknown-linux-gnu`
+        id: install-stable
+        uses: actions-rs/toolchain@v1
         with:
-          path: |
-            ~/.rustup
-            ~/.cargo/registry
-            ~/.cargo/git
-            ./target
-          key: cargo-udeps-${{ hashFiles('./Cargo.*') }}
+          toolchain: stable-x86_64-unknown-linux-gnu
+          default: true
 
       - name: Install `nightly-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-x86_64-unknown-linux-gnu
-          default: true
+
+      - name: Get the "Cargo home"
+        id: get-cargo-home
+        run: echo "::set-output name=cargo-home::${CARGO_HOME:-$HOME/.cargo}"
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.get-cargo-home.outputs.cargo-home }}/.crates.toml
+            ${{ steps.get-cargo-home.outputs.cargo-home }}/.crates2.json
+            ${{ steps.get-cargo-home.outputs.cargo-home }}/bin/cargo-udeps
+            ./target
+          key: cargo-udeps-${{ steps.install-stable.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: Install cargo-udeps
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-udeps
           version: ^0.1
-          use-tool-cache: true
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
         with:
           command: udeps
           args: --all-targets
+          toolchain: nightly-x86_64-unknown-linux-gnu
 
   grcov:
     name: grcov
@@ -86,16 +90,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup
-            ~/.cargo/registry
-            ~/.cargo/git
-            ./target
-          key: grcov-${{ hashFiles('./Cargo.*') }}
 
       - name: Install `nightly-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
@@ -150,17 +144,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup
-            ~/.cargo/registry
-            ~/.cargo/git
-            ./target
-          key: build-${{ matrix.name }}-${{ hashFiles('./Cargo.*') }}
-
       - name: 'Setup `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
+        id: install-toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.channel }}-${{ matrix.host-triple }}
@@ -168,6 +153,12 @@ jobs:
           default: true
           profile: minimal
           components: clippy
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ./target
+          key: build-${{ steps.install-toolchain.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: '`cargo clippy --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
         uses: actions-rs/cargo@v1
@@ -221,15 +212,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.rustup
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: upload-${{ matrix.target-triple }} }}
 
       - name: 'Setup `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
