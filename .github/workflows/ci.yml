@@ -144,6 +144,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      # Workaround for https://github.com/actions/cache/issues/403
+      - name: Install GNU tar
+        run: |
+          brew install gnu-tar
+          echo "PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
+        if: matrix.os == 'macos-10.15'
+
       - name: 'Setup `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         id: install-toolchain
         uses: actions-rs/toolchain@v1
