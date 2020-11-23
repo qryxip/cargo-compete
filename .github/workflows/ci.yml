@@ -60,10 +60,6 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Get the "Cargo home"
-        id: get-cargo-home
-        run: echo "::set-output name=cargo-home::${CARGO_HOME:-$HOME/.cargo}"
-
       - name: Get the maximum version of cargo-udeps ^0.1
         id: get-max-version-of-cargo-udeps
         run: |
@@ -92,16 +88,19 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ${{ steps.get-cargo-home.outputs.cargo-home }}/.crates.toml
-            ${{ steps.get-cargo-home.outputs.cargo-home }}/.crates2.json
-            ${{ steps.get-cargo-home.outputs.cargo-home }}/bin/cargo-udeps
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/cargo-udeps
           key: cargo-udeps-installed-crates-${{ steps.get-max-version-of-cargo-udeps.outputs.version }}
 
       - name: Cache for the target directory
         uses: actions/cache@v2
         with:
-          path: ./target
-          key: cargo-udeps-target-${{ steps.install-stable.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            ./target
+          key: cargo-udeps-build-${{ steps.install-stable.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: Install cargo-udeps
         uses: actions-rs/install@v0.1
@@ -198,7 +197,10 @@ jobs:
       - name: Cache
         uses: actions/cache@v2
         with:
-          path: ./target
+          path: |
+            ~/.cargo/git
+            ~/.cargo/registry
+            ./target
           key: build-${{ steps.install-toolchain.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: '`cargo clippy --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
