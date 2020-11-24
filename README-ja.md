@@ -185,7 +185,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 ```toml
 [submit.transpile]
 kind = "command"
-args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
 #language_id = ""
 ```
 
@@ -246,8 +246,8 @@ fn main() {
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
-#language_id = ""
+#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+##language_id = ""
 
 #[submit.via-binary]
 #target = "x86_64-unknown-linux-musl"

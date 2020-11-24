@@ -72,8 +72,8 @@ fn main() {
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
-#language_id = ""
+#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+##language_id = ""
 
 {% if submit_via_binary == true -%}
   {%- assign comment = "" -%}
