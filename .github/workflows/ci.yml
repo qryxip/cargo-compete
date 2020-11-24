@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup `stable-x86_64-unknown-linux-gnu`
+      - name: Set up `stable-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable-x86_64-unknown-linux-gnu
@@ -29,7 +29,7 @@ jobs:
           profile: minimal
           components: rustfmt
 
-      - name: '`cargo fmt --all -- --check`'
+      - name: cargo-fmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -43,13 +43,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install `stable-x86_64-unknown-linux-gnu`
+      - name: Set up `stable-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable-x86_64-unknown-linux-gnu
           default: true
 
-      - name: Install `nightly-2020-11-24-x86_64-unknown-linux-gnu`
+      - name: Set up `nightly-2020-11-24-x86_64-unknown-linux-gnu`
         id: install-nightly
         uses: actions-rs/toolchain@v1
         with:
@@ -60,7 +60,7 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Resolve cargo-udeps ^0.1
+      - name: Resolve `cargo-udeps ^0.1`
         id: resolve-version-of-cargo-udeps
         run: |
           import json
@@ -93,7 +93,7 @@ jobs:
             ~/.cargo/bin/cargo-udeps
           key: cargo-udeps-installed-crates-${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
 
-      - name: Cache for the build cache
+      - name: Cache for build cache
         uses: actions/cache@v2
         with:
           path: |
@@ -124,13 +124,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install `nightly-x86_64-unknown-linux-gnu`
+      - name: Set up `nightly-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
 
-      - name: '`cargo test --no-fail-fast --features __test_with_credentials`'
+      - name: cargo-test
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -170,7 +170,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: '`git config --global core.autocrlf false`'
+      - name: Disable `core.autocrlf`
         run: git config --global core.autocrlf false
         if: matrix.os == 'windows-2019'
 
@@ -184,7 +184,7 @@ jobs:
           echo "PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
         if: matrix.os == 'macos-10.15'
 
-      - name: 'Setup `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
+      - name: 'Set up `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         id: install-toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -203,13 +203,13 @@ jobs:
             ./target
           key: build-${{ matrix.name }}-${{ steps.install-toolchain.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
-      - name: '`cargo clippy --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
+      - name: cargo-clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --all-targets --target ${{ matrix.target-triple }} -- -D warnings
 
-      - name: '`cargo clippy --all-targets --features __test_with_credentials --target ${{ matrix.target-triple }} -- -D warnings`'
+      - name: cargo-clippy (with `__test_with_credentials`)
         uses: actions-rs/cargo@v1
         with:
           command: clippy
@@ -225,7 +225,7 @@ jobs:
           fi
         shell: bash
 
-      - name: '`cargo test --no-fail-fast ${{ steps.cargo-test-features.outputs.features }} --target ${{ matrix.target-triple }}`'
+      - name: cargo-test
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -256,7 +256,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: 'Setup `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
+      - name: 'Set up `stable-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable-${{ matrix.host-triple }}
@@ -264,13 +264,13 @@ jobs:
           default: true
           profile: minimal
 
-      - name: '`cargo install --path . --target ${{ matrix.target-triple }} -v --locked`'
+      - name: cargo-install
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: --path . --target ${{ matrix.target-triple }} -v --locked
 
-      - name: '`cargo build --release --target ${{ matrix.target-triple }}`'
+      - name: cargo-build
         uses: actions-rs/cargo@v1
         with:
           command: build
