@@ -201,7 +201,7 @@ jobs:
             ~/.cargo/git
             ~/.cargo/registry
             ./target
-          key: build-${{ steps.install-toolchain.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
+          key: build-${{ matrix.name }}-${{ steps.install-toolchain.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: '`cargo clippy --all-targets --target ${{ matrix.target-triple }} -- -D warnings`'
         uses: actions-rs/cargo@v1
