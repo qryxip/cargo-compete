@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.4] - 2020-11-24Z
 
 ### Added
 
@@ -23,7 +23,10 @@
 ### Fixed
 
 - Problem indexes for yukicoder contests will be alphabets. ([qryxip/snowchains/#102](https://github.com/qryxip/snowchains/pull/102))
+
     Previously, "problem no"s were set.
+
+- Stopped asking username and password when you have already logged in AtCoder. ([qryxip/snowchains/#106](https://github.com/qryxip/snowchains/pull/106))
 
 ## [0.6.3] - 2020-10-12Z
 
