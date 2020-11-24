@@ -44,24 +44,24 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install `stable-x86_64-unknown-linux-gnu`
-        id: install-stable
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable-x86_64-unknown-linux-gnu
           default: true
 
-      - name: Install `nightly-x86_64-unknown-linux-gnu`
+      - name: Install `nightly-2020-11-24-x86_64-unknown-linux-gnu`
+        id: install-nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-x86_64-unknown-linux-gnu
+          toolchain: nightly-2020-11-24-x86_64-unknown-linux-gnu
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
 
-      - name: Get the maximum version of cargo-udeps ^0.1
-        id: get-max-version-of-cargo-udeps
+      - name: Resolve cargo-udeps ^0.1
+        id: resolve-version-of-cargo-udeps
         run: |
           import json
           import urllib.request
@@ -91,22 +91,22 @@ jobs:
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
             ~/.cargo/bin/cargo-udeps
-          key: cargo-udeps-installed-crates-${{ steps.get-max-version-of-cargo-udeps.outputs.version }}
+          key: cargo-udeps-installed-crates-${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
 
-      - name: Cache for the target directory
+      - name: Cache for the build cache
         uses: actions/cache@v2
         with:
           path: |
             ~/.cargo/git
             ~/.cargo/registry
             ./target
-          key: cargo-udeps-build-${{ steps.install-stable.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
+          key: cargo-udeps-build-${{ steps.install-nightly.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
-      - name: Install cargo-udeps
+      - name: Install cargo-udeps v${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-udeps
-          version: ^0.1
+          version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
