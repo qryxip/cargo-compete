@@ -41,9 +41,16 @@ path = {% raw %}"./{{ contest }}"{% endraw %}
 [new.template]
 {% if new_template_lockfile -%}
 lockfile = "{{ new_template_lockfile }}"
-{%- else -%}
+{% else -%}
 #lockfile = "/path/to/cargo-lock-template.toml"
-{%- endif %}
+{% endif -%}
+# `profile` for `Cargo.toml`.
+#
+# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
 
 [new.template.dependencies]
 kind = "inline"
@@ -65,8 +72,8 @@ fn main() {
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
-#language_id = ""
+#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+##language_id = ""
 
 {% if submit_via_binary == true -%}
   {%- assign comment = "" -%}

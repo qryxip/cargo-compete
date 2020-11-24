@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Added
+
+- [`new`] Added `new.template.profile`.
+
+    ```toml
+    [new.template]
+    lockfile = "./template-cargo-lock.toml"
+    # `profile` for `Cargo.toml`.
+    #
+    # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
+    profile = '''
+    [dev]
+    opt-level = 3
+    '''
+    ```
+
+    [Profiles - The Cargo Book](https://doc.rust-lang.org/cargo/reference/profiles.html)
+
 ### Fixed
 
 - Problem indexes for yukicoder contests will be alphabets. ([qryxip/snowchains/#102](https://github.com/qryxip/snowchains/pull/102))

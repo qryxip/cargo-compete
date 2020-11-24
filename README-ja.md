@@ -185,7 +185,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 ```toml
 [submit.transpile]
 kind = "command"
-args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
 #language_id = ""
 ```
 
@@ -222,6 +222,13 @@ path = "./{{ package_name }}"
 
 [new.template]
 lockfile = "./template-cargo-lock.toml"
+# `profile` for `Cargo.toml`.
+#
+# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
 
 [new.template.dependencies]
 kind = "inline"
@@ -239,8 +246,8 @@ fn main() {
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--oneline", "mods", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
-#language_id = ""
+#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+##language_id = ""
 
 #[submit.via-binary]
 #target = "x86_64-unknown-linux-musl"

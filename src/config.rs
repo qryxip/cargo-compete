@@ -5,8 +5,9 @@ use liquid::object;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
+    fmt,
     path::{Path, PathBuf},
-    str,
+    str::{self, FromStr},
 };
 
 pub(crate) fn generate(
@@ -116,8 +117,21 @@ where
 pub(crate) struct CargoCompeteConfigNewTemplate {
     pub(crate) toolchain: Option<String>,
     pub(crate) lockfile: Option<PathBuf>,
+    #[serde(default, deserialize_with = "deserialize_option_from_str")]
+    pub(crate) profile: Option<toml_edit::Document>,
     pub(crate) dependencies: CargoCompeteConfigNewTemplateDependencies,
     pub(crate) src: CargoCompeteConfigNewTemplateSrc,
+}
+
+fn deserialize_option_from_str<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    T: FromStr,
+    T::Err: fmt::Display,
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| s.parse().map_err(D::Error::custom))
+        .transpose()
 }
 
 #[derive(Deserialize, Debug)]

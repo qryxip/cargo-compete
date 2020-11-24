@@ -436,6 +436,14 @@ fn create_new_package(
     }
     let mut manifest = manifest.parse::<toml_edit::Document>()?;
 
+    if let Some(profile) = &cargo_compete_config.new.template.profile {
+        let mut profile = profile.clone();
+        profile.as_table_mut().set_implicit(true);
+        let mut head = toml_edit::Document::new();
+        head["profile"] = profile.root;
+        manifest = format!("{}\n{}", head, manifest).parse()?;
+    }
+
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]["bin"]);
