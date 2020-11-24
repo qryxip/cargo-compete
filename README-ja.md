@@ -222,6 +222,10 @@ path = "./{{ package_name }}"
 
 [new.template]
 lockfile = "./template-cargo-lock.toml"
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
 
 [new.template.dependencies]
 kind = "inline"

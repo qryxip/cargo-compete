@@ -41,9 +41,13 @@ path = {% raw %}"./{{ contest }}"{% endraw %}
 [new.template]
 {% if new_template_lockfile -%}
 lockfile = "{{ new_template_lockfile }}"
-{%- else -%}
+{% else -%}
 #lockfile = "/path/to/cargo-lock-template.toml"
-{%- endif %}
+{% endif -%}
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
 
 [new.template.dependencies]
 kind = "inline"
