@@ -9,13 +9,16 @@
     ```toml
     [new.template]
     lockfile = "./template-cargo-lock.toml"
+    # `profile` for `Cargo.toml`.
+    #
+    # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
     profile = '''
     [dev]
     opt-level = 3
     '''
     ```
 
-    Now you can run `cargo compete test` with <code>[opt-level](https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level)=3</code> while enabling [`debug-assertions`](https://doc.rust-lang.org/cargo/reference/profiles.html#debug-assertions) and [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks).
+    [Profiles - The Cargo Book](https://doc.rust-lang.org/cargo/reference/profiles.html)
 
 ### Fixed
 

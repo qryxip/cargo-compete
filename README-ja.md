@@ -222,6 +222,9 @@ path = "./{{ package_name }}"
 
 [new.template]
 lockfile = "./template-cargo-lock.toml"
+# `profile` for `Cargo.toml`.
+#
+# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
 #profile = '''
 #[dev]
 #opt-level = 3
