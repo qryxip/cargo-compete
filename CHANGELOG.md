@@ -4,14 +4,37 @@
 
 ### Added
 
-- Introduced [`serde_ignored` crate](https://docs.rs/serde_ignored) for `compete.toml`.
+- Introduced [`serde_ignored` crate](https://docs.rs/serde_ignored).
 
-    Now cargo-compete warns for unused keys in `compete.toml` as Cargo does for `Cargo.toml`.
+    As Cargo does, cargo-compete warns for unused keys in `compete.toml` and in `package.metadata`.
 
     ```console
     ❯ cargo compete o
     warning: unused key in compete.toml: oepn
     ```
+
+- [`test`, `submit`] Added `test.profile` option.
+
+    Now you can test your programs with release mode by default.
+
+    ```toml
+    [new.template]
+    profile = '''
+    [release]
+    debug-assertions = true
+    overflow-checks = true
+    '''
+
+    # ...
+
+    [test]
+    # Profile for `cargo build`. ("dev" | "release")
+    #
+    # Defaults to `"dev"`.
+    profile = "release"
+    ```
+
+    [Profiles - The Cargo Book](https://doc.rust-lang.org/cargo/reference/profiles.html)
 
 ## [0.6.4] - 2020-11-24Z
 

@@ -2,8 +2,8 @@ use crate::shell::Shell;
 use anyhow::Context as _;
 use derivative::Derivative;
 use heck::KebabCase as _;
+use indexmap::indexset;
 use liquid::object;
-use maplit::btreeset;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
@@ -61,7 +61,7 @@ pub(crate) fn load(
 ) -> anyhow::Result<CargoCompeteConfig> {
     let path = path.as_ref();
 
-    let unused = &mut btreeset!();
+    let unused = &mut indexset!();
     let config = serde_ignored::deserialize(
         &mut toml::Deserializer::new(&crate::fs::read_to_string(path)?),
         |path| {
@@ -94,6 +94,8 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
     pub(crate) new: CargoCompeteConfigNew,
+    #[serde(default)]
+    pub(crate) test: CargoCompeteConfigTest,
     #[serde(default)]
     pub(crate) submit: CargoCompeteConfigSubmit,
 }
@@ -165,6 +167,26 @@ pub(crate) enum CargoCompeteConfigNewTemplateDependencies {
 pub(crate) enum CargoCompeteConfigNewTemplateSrc {
     Inline { content: String },
     File { path: PathBuf },
+}
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CargoCompeteConfigTest {
+    #[serde(default)]
+    pub(crate) profile: CargoCompeteConfigTestProfile,
+}
+
+#[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum CargoCompeteConfigTestProfile {
+    Dev,
+    Release,
+}
+
+impl Default for CargoCompeteConfigTestProfile {
+    fn default() -> Self {
+        Self::Dev
+    }
 }
 
 #[derive(Deserialize, Default, Debug)]

@@ -1,10 +1,10 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
 use easy_ext::ext;
-use indexmap::IndexMap;
+use indexmap::{indexset, IndexMap};
 use itertools::Itertools as _;
 use krates::cm;
-use serde::Deserialize;
+use serde::{de::IntoDeserializer, Deserialize};
 use std::{
     path::{Path, PathBuf},
     str,
@@ -169,32 +169,32 @@ impl cm::Package {
             .expect("this is from JSON string")
     }
 
-    pub(crate) fn read_package_metadata(&self) -> anyhow::Result<PackageMetadataCargoCompete> {
-        let CargoToml {
-            package:
-                CargoTomlPackage {
-                    metadata: CargoTomlPackageMetadata { cargo_compete },
-                },
-        } = crate::fs::read_toml(&self.manifest_path)?;
-        return Ok(cargo_compete);
+    pub(crate) fn read_package_metadata(
+        &self,
+        shell: &mut Shell,
+    ) -> anyhow::Result<PackageMetadataCargoCompete> {
+        let unused = &mut indexset!();
 
-        #[derive(Deserialize)]
-        #[serde(rename_all = "kebab-case")]
-        struct CargoToml {
-            package: CargoTomlPackage,
+        let deserializer = self
+            .metadata
+            .get("cargo-compete")
+            .with_context(|| "missing `package.metadata.cargo-compete`")?
+            .clone()
+            .into_deserializer();
+
+        let ret = serde_ignored::deserialize(deserializer, |path| {
+            unused.insert(path.to_string());
+        })
+        .with_context(|| "could not parse `package.metadata.cargo-compete`")?;
+
+        for unused in &*unused {
+            shell.warn(format!(
+                "unused key in `package.metadata.cargo-compete`: {}",
+                unused,
+            ))?;
         }
 
-        #[derive(Deserialize)]
-        #[serde(rename_all = "kebab-case")]
-        struct CargoTomlPackage {
-            metadata: CargoTomlPackageMetadata,
-        }
-
-        #[derive(Deserialize)]
-        #[serde(rename_all = "kebab-case")]
-        struct CargoTomlPackageMetadata {
-            cargo_compete: PackageMetadataCargoCompete,
-        }
+        Ok(ret)
     }
 
     pub(crate) fn bin_target_by_name(&self, name: impl AsRef<str>) -> anyhow::Result<&cm::Target> {

@@ -1,4 +1,5 @@
 use crate::{
+    config::CargoCompeteConfigTestProfile,
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
@@ -34,7 +35,11 @@ pub struct OptCompeteTest {
     #[structopt(short, long, value_name("SPEC"))]
     pub package: Option<String>,
 
-    /// Build the artifact in release mode, with optimizations
+    /// Build in debug mode. Overrides `test.profile` in compete.toml
+    #[structopt(long, conflicts_with("release"))]
+    pub debug: bool,
+
+    /// Build in release mode. Overrides `test.profile` in compete.toml
     #[structopt(long)]
     pub release: bool,
 
@@ -62,6 +67,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         testcases,
         display_limit,
         package,
+        debug,
         release,
         manifest_path,
         color,
@@ -81,7 +87,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
-    let package_metadata = member.read_package_metadata()?;
+    let package_metadata = member.read_package_metadata(shell)?;
     let cargo_compete_config =
         crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config, shell)?;
 
@@ -104,7 +110,13 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         bin,
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
         target_problem,
-        release,
+        release: if debug {
+            false
+        } else if release {
+            true
+        } else {
+            cargo_compete_config.test.profile == CargoCompeteConfigTestProfile::Release
+        },
         test_case_names: testcases.map(|ss| ss.into_iter().collect()),
         display_limit,
         shell,
