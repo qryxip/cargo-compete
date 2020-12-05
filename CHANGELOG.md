@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Introduced [`serde_ignored` crate](https://docs.rs/serde_ignored) for `compete.toml`.
+
+    Now cargo-compete warns for unused keys in `compete.toml` as Cargo does for `Cargo.toml`.
+
+    ```console
+    ❯ cargo compete o
+    warning: unused key in compete.toml: oepn
+    ```
+
 ## [0.6.4] - 2020-11-24Z
 
 ### Added

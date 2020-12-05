@@ -66,9 +66,6 @@ fn run(
 platform = "{}"
 path = "./{{{{ package_name }}}}"
 
-[new.template]
-target-dir = "./target"
-
 [new.template.dependencies]
 kind = "inline"
 content = '''

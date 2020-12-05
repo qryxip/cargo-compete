@@ -1,7 +1,9 @@
+use crate::shell::Shell;
 use anyhow::Context as _;
 use derivative::Derivative;
 use heck::KebabCase as _;
 use liquid::object;
+use maplit::btreeset;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
@@ -53,17 +55,34 @@ pub(crate) fn locate(
     }
 }
 
-pub(crate) fn load(path: impl AsRef<Path>) -> anyhow::Result<CargoCompeteConfig> {
+pub(crate) fn load(
+    path: impl AsRef<Path>,
+    shell: &mut Shell,
+) -> anyhow::Result<CargoCompeteConfig> {
     let path = path.as_ref();
-    toml::from_str(&crate::fs::read_to_string(path)?)
-        .with_context(|| format!("could not parse the config file at `{}`", path.display()))
+
+    let unused = &mut btreeset!();
+    let config = serde_ignored::deserialize(
+        &mut toml::Deserializer::new(&crate::fs::read_to_string(path)?),
+        |path| {
+            unused.insert(path.to_string());
+        },
+    )
+    .with_context(|| format!("could not read a TOML file at `{}`", path.display()))?;
+
+    for unused in &*unused {
+        shell.warn(format!("unused key in compete.toml: {}", unused))?;
+    }
+
+    Ok(config)
 }
 
 pub(crate) fn load_from_rel_path(
     manifest_path: &Path,
     rel_path: impl AsRef<Path>,
+    shell: &mut Shell,
 ) -> anyhow::Result<CargoCompeteConfig> {
-    load(manifest_path.with_file_name("").join(rel_path))
+    load(manifest_path.with_file_name("").join(rel_path), shell)
 }
 
 #[derive(Deserialize, Derivative)]

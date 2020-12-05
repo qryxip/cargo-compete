@@ -23,5 +23,5 @@ expression: tree
       "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      1 9\n    out: |\n      2\n  - name: sample2\n    in: |\n      40 49\n    out: |\n      10\n  - name: sample3\n    in: |\n      1 1000\n    out: |\n      488\n  - name: sample4\n    in: |\n      1 1000000000000000000\n    out: |\n      981985601490518016\n\nextend: []\n"
     }
   },
-  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template]\ntarget-dir = \"./target\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n"
+  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n"
 }

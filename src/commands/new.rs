@@ -73,7 +73,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
     let cargo_compete_config_path = crate::config::locate(cwd, config)?;
     let cargo_compete_dir = cargo_compete_config_path.with_file_name("");
-    let cargo_compete_config = crate::config::load(&cargo_compete_config_path)?;
+    let cargo_compete_config = crate::config::load(&cargo_compete_config_path, shell)?;
 
     match cargo_compete_config.new.platform {
         PlatformKind::Atcoder => {

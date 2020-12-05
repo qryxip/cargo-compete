@@ -6,7 +6,7 @@ expression: tree
   ".cargo": {
     "config.toml": "[build]\ntarget-dir = \"target\"\n"
   },
-  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template]\ntarget-dir = \"./target\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n",
+  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n",
   "practice": {
     "Cargo.lock": "..",
     "Cargo.toml": "[package]\nname = \"problems\"\nversion = \"0.1.0\"\nedition = \"2018\"\n\n[package.metadata.cargo-compete]\nconfig = \"../compete.toml\"\n\n[package.metadata.cargo-compete.bin]\na = { name = \"practice-a\", problem = { platform = \"atcoder\", contest = \"practice\", index = \"a\" } }\n\n[[bin]]\nname = \"practice-a\"\npath = \"src/bin/a.rs\"\n\n[dependencies]\nproconio = \"=0.3.6\"\n",

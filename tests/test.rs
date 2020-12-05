@@ -73,9 +73,6 @@ fn run(
 platform = "atcoder"
 path = "./{{ package_name }}"
 
-[new.template]
-target-dir = "./target"
-
 [new.template.dependencies]
 kind = "inline"
 content = '''
