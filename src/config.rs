@@ -95,6 +95,8 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) open: Option<String>,
     pub(crate) new: CargoCompeteConfigNew,
     #[serde(default)]
+    pub(crate) test: CargoCompeteConfigTest,
+    #[serde(default)]
     pub(crate) submit: CargoCompeteConfigSubmit,
 }
 
@@ -165,6 +167,26 @@ pub(crate) enum CargoCompeteConfigNewTemplateDependencies {
 pub(crate) enum CargoCompeteConfigNewTemplateSrc {
     Inline { content: String },
     File { path: PathBuf },
+}
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CargoCompeteConfigTest {
+    #[serde(default)]
+    pub(crate) profile: CargoCompeteConfigTestProfile,
+}
+
+#[derive(Deserialize, Debug, Copy, Clone, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum CargoCompeteConfigTestProfile {
+    Dev,
+    Release,
+}
+
+impl Default for CargoCompeteConfigTestProfile {
+    fn default() -> Self {
+        Self::Dev
+    }
 }
 
 #[derive(Deserialize, Default, Debug)]

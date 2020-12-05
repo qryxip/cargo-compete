@@ -244,6 +244,12 @@ fn main() {
 }
 '''
 
+[test]
+# Profile for `cargo build`. ("dev" | "release")
+#
+# Defaults to `"dev"`.
+#profile = "dev"
+
 #[submit.transpile]
 #kind = "command"
 #args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]

@@ -61,7 +61,11 @@ pub struct OptCompeteSubmit {
     #[structopt(short, long, value_name("SPEC"))]
     pub package: Option<String>,
 
-    /// When testing, build the artifact in release mode, with optimizations
+    /// When testing, build in debug mode. Overrides `test.profile` in compete.toml
+    #[structopt(long, conflicts_with("release"))]
+    pub debug: bool,
+
+    /// When testing, build in release mode. Overrides `test.profile` in compete.toml
     #[structopt(long)]
     pub release: bool,
 
@@ -91,6 +95,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         testcases,
         display_limit,
         package,
+        debug,
         release,
         manifest_path,
         color,
@@ -137,7 +142,13 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 vec![]
             })
             .args(&["--display-limit", &display_limit.to_string()])
-            .args(if release { &["--release"] } else { &[] })
+            .args(if debug {
+                &["--debug"]
+            } else if release {
+                &["--release"]
+            } else {
+                &[]
+            })
             .args(&["--manifest-path".as_ref(), member.manifest_path.as_os_str()])
             .args(&["--color", &color.to_string()])
             .cwd(&metadata.workspace_root)

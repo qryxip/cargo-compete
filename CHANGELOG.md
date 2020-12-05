@@ -13,6 +13,29 @@
     warning: unused key in compete.toml: oepn
     ```
 
+- [`test`, `submit`] Added `test.profile` option.
+
+    Now you can test your programs with release mode by default.
+
+    ```toml
+    [new.template]
+    profile = '''
+    [release]
+    debug-assertions = true
+    overflow-checks = true
+    '''
+
+    # ...
+
+    [test]
+    # Profile for `cargo build`. ("dev" | "release")
+    #
+    # Defaults to `"dev"`.
+    profile = "release"
+    ```
+
+    [Profiles - The Cargo Book](https://doc.rust-lang.org/cargo/reference/profiles.html)
+
 ## [0.6.4] - 2020-11-24Z
 
 ### Added
