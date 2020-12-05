@@ -2,8 +2,8 @@ use crate::shell::Shell;
 use anyhow::Context as _;
 use derivative::Derivative;
 use heck::KebabCase as _;
+use indexmap::indexset;
 use liquid::object;
-use maplit::btreeset;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
@@ -61,7 +61,7 @@ pub(crate) fn load(
 ) -> anyhow::Result<CargoCompeteConfig> {
     let path = path.as_ref();
 
-    let unused = &mut btreeset!();
+    let unused = &mut indexset!();
     let config = serde_ignored::deserialize(
         &mut toml::Deserializer::new(&crate::fs::read_to_string(path)?),
         |path| {

@@ -110,7 +110,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
     let metadata = crate::project::cargo_metadata(&manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
-    let package_metadata = member.read_package_metadata()?;
+    let package_metadata = member.read_package_metadata(shell)?;
     let cargo_compete_config =
         crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config, shell)?;
 

@@ -4,9 +4,9 @@
 
 ### Added
 
-- Introduced [`serde_ignored` crate](https://docs.rs/serde_ignored) for `compete.toml`.
+- Introduced [`serde_ignored` crate](https://docs.rs/serde_ignored).
 
-    Now cargo-compete warns for unused keys in `compete.toml` as Cargo does for `Cargo.toml`.
+    As Cargo does, cargo-compete warns for unused keys in `compete.toml` and in `package.metadata`.
 
     ```console
     ❯ cargo compete o
