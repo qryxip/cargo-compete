@@ -73,6 +73,8 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 `cargo-atcoder`で作ったパッケージをそれぞれ`cargo-compete`用にマイグレートし、`compete.toml`等のファイルも追加します。
 
+TODO: ↓のスクショをアップデート。今`package.metadata.cargo-compete.bin.*.problem`はURLの文字列です。
+
 ![Screenshot](https://user-images.githubusercontent.com/14125495/91646437-2a0b6e00-ea8a-11ea-8374-14a2564ed6d3.png)
 
 ### `cargo compete login`
@@ -95,7 +97,7 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 テストケースを取得し、コンテストに応じたパッケージを作ります。
 
-**[`compete.toml`](#設定)を起点とします。**
+**[`compete.toml`](#設定)が必要です。**
 最初に[`cargo compete init`](#cargo-compete-init)で生成してください。
 
 `--open`で問題のページをブラウザで開きます。
@@ -104,8 +106,7 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 ![Record](https://user-images.githubusercontent.com/14125495/91647287-1b29b900-ea94-11ea-9053-43e25c77706f.gif)
 
-[`compete.toml`](#設定)の`new-workspace-member`が`"include"`の場合、他の既存のパッケージとビルドキャッシュを共有します。
-クレートを使う場合も初回を除いて"warmup"は不要です。
+`.cargo/config.toml`によりtarget directoryが共有されるので、クレートを使う場合も初回を除いて"warmup"は不要です。
 
 ### `cargo compete retrieve testcases` / `cargo compete download`
 
@@ -124,7 +125,7 @@ AtCoderの場合、[テストケースはDropboxにアップロードされて�
 - `sharing.read`
 
 の2つのパーミッションが有効なアクセストークンが必要です。
-何らかの方法でアクセストークンを取得し、以下の形式のJSONファイルを<code>[{data local directory}](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)/cargo-compete/tokens/dropbox.json</code>に保存してください。
+何らかの方法でアクセストークンを取得し、以下の形式のJSONファイルを<code>[{local data directory}](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.data_local_dir.html)/cargo-compete/tokens/dropbox.json</code>に保存してください。
 (この辺はなんとかしたいと考えてます)
 
 ```json
@@ -197,17 +198,16 @@ args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "lib
 ```toml
 # Path to the test file (Liquid template)
 #
-# Variables:
-#
 # - `manifest_dir`: Package directory
 # - `contest`:      Contest ID (e.g. "abc100")
-# - `problem`:      Problem index (e.g. "A", "B")
+# - `bin_name`:     Name of a `bin` target (e.g. "abc100-a")
+# - `bin_alias`:    "Alias" for a `bin` target defined in `pacakge.metadata.cargo-compete` (e.g. "a")
+# - `problem`:      Alias for `bin_alias` (deprecated)
 #
 # Additional filters:
 #
 # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
-test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
-#test-suite = "./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"
+test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
 
 # Open files with the command (`jq` command that outputs `string[] | string[][]`)
 #
@@ -275,8 +275,8 @@ edition = "2018"
 config = "../compete.toml"
 
 [package.metadata.cargo-compete.bin]
-a = { name = "practice-a", problem = { platform = "atcoder", contest = "practice", index = "A", url = "https://atcoder.jp/contests/practice/tasks/practice_1" } }
-b = { name = "practice-b", problem = { platform = "atcoder", contest = "practice", index = "B", url = "https://atcoder.jp/contests/practice/tasks/practice_2" } }
+a = { name = "practice-a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+b = { name = "practice-b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
 
 [[bin]]
 name = "practice-a"
@@ -364,8 +364,7 @@ cargo-atcoderと同様にパッケージを対象に取ります。
 
 [`cargo compete watch submission-summaries`](#cargo-compete-watch-submission-summaries)で提出一覧をwatchします。
 
-注意として、cargo-competeの方はブラウザ上の表示に近い挙動をします。
-実行時点で「ジャッジ待ち」/「ジャッジ中」のものが無い場合、直近20件を表示だけして終了します。
+cargo-competeの方はブラウザ上の表示に近い挙動をするため、実行時点で「ジャッジ待ち」/「ジャッジ中」のものが無い場合には直近20件を表示だけして終了します。
 
 ### `cargo atcoder result`
 

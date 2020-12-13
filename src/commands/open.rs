@@ -69,13 +69,16 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata.bin {
         if problems.as_ref().map_or(true, |ps| ps.contains(index)) {
-            urls.extend(problem.url().cloned());
+            urls.push(problem.clone());
 
             let test_suite_path = crate::testing::test_suite_path(
                 &metadata.workspace_root,
                 member.manifest_dir_utf8(),
                 &cargo_compete_config.test_suite,
+                name,
+                index,
                 &problem,
+                shell,
             )?;
 
             if !test_suite_path.exists() {
@@ -91,7 +94,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
         crate::web::retrieve_testcases::dl_for_existing_package(
             &member,
-            &mut { package_metadata.bin },
+            &package_metadata.bin,
             Some(&missing),
             full,
             &metadata.workspace_root,

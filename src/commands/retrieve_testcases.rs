@@ -68,13 +68,16 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
     for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata.bin {
         if problems.map_or(true, |ps| ps.contains(index)) {
-            urls.extend(problem.url());
+            urls.push(problem);
 
             let test_suite_path = crate::testing::test_suite_path(
                 &metadata.workspace_root,
                 member.manifest_dir_utf8(),
                 &cargo_compete_config.test_suite,
-                &problem,
+                name,
+                index,
+                problem,
+                shell,
             )?;
 
             file_paths.push((&member.bin_target_by_name(name)?.src_path, test_suite_path));
@@ -83,7 +86,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
     crate::web::retrieve_testcases::dl_for_existing_package(
         &member,
-        &mut { package_metadata.bin },
+        &package_metadata.bin,
         problems,
         full,
         &metadata.workspace_root,

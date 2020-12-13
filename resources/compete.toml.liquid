@@ -4,13 +4,14 @@
 #
 # - `manifest_dir`: Package directory
 # - `contest`:      Contest ID (e.g. "abc100")
-# - `problem`:      Problem index (e.g. "A", "B")
+# - `bin_name`:     Name of a `bin` target (e.g. "abc100-a")
+# - `bin_alias`:    "Alias" for a `bin` target defined in `pacakge.metadata.cargo-compete` (e.g. "a")
+# - `problem`:      Alias for `bin_alias` (deprecated)
 #
 # Additional filters:
 #
 # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
-test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"{% endraw %}
-#test-suite = {% raw %}"./testcases/{{ contest }}/{{ problem | kebabcase }}.yml"{% endraw %}
+test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"{% endraw %}
 
 # Open files with the command (`jq` command that outputs `string[] | string[][]`)
 #

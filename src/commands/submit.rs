@@ -1,6 +1,6 @@
 use crate::{
     config::{CargoCompeteConfigSubmitTranspile, CargoCompeteConfigSubmitViaBinary},
-    project::{MetadataExt as _, PackageExt as _, TargetProblem, TargetProblemYukicoder},
+    project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
     web::credentials,
 };
@@ -13,10 +13,10 @@ use prettytable::{
     row, Table,
 };
 use snowchains_core::web::{
-    Atcoder, AtcoderSubmitCredentials, AtcoderSubmitTarget, AtcoderWatchSubmissionsCredentials,
-    AtcoderWatchSubmissionsTarget, Codeforces, CodeforcesSubmitCredentials, CodeforcesSubmitTarget,
-    CookieStorage, Submit, WatchSubmissions, Yukicoder, YukicoderSubmitCredentials,
-    YukicoderSubmitTarget,
+    Atcoder, AtcoderSubmitCredentials, AtcoderWatchSubmissionsCredentials,
+    AtcoderWatchSubmissionsTarget, Codeforces, CodeforcesSubmitCredentials, CookieStorage,
+    PlatformKind, ProblemInContest, Submit, WatchSubmissions, Yukicoder,
+    YukicoderSubmitCredentials, YukicoderSubmitTarget,
 };
 use std::{borrow::BorrowMut as _, cell::RefCell, env, iter, path::PathBuf};
 use structopt::StructOpt;
@@ -122,7 +122,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let (bin, package_metadata_bin) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
         let bin = member.bin_target_by_src_path(src)?;
-        let package_metadata_bin = package_metadata.bin_by_bin_name(&bin.name)?;
+        let (_, package_metadata_bin) = package_metadata.bin_by_bin_name(&bin.name)?;
         (bin, package_metadata_bin)
     } else if let Some(index) = index {
         let package_metadata_bin = package_metadata.bin_by_bin_index(index)?;
@@ -160,10 +160,10 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             language_id: Some(language_id),
             ..
         }) => language_id,
-        _ => match package_metadata_bin.problem {
-            TargetProblem::Atcoder { .. } => ATCODER_RUST_LANG_ID,
-            TargetProblem::Codeforces { .. } => CODEFORCES_RUST_LANG_ID,
-            TargetProblem::Yukicoder(_) => YUKICODER_RUST_LANG_ID,
+        _ => match PlatformKind::from_url(&package_metadata_bin.problem)? {
+            PlatformKind::Atcoder => ATCODER_RUST_LANG_ID,
+            PlatformKind::Codeforces => CODEFORCES_RUST_LANG_ID,
+            PlatformKind::Yukicoder => YUKICODER_RUST_LANG_ID,
         },
     };
 
@@ -268,8 +268,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let cookie_storage = CookieStorage::with_jsonl(&cookies_path)?;
     let timeout = crate::web::TIMEOUT;
 
-    let outcome = match &package_metadata_bin.problem {
-        TargetProblem::Atcoder { contest, index, .. } => {
+    let outcome = match PlatformKind::from_url(&package_metadata_bin.problem)? {
+        PlatformKind::Atcoder => {
             let shell = RefCell::new(shell.borrow_mut());
 
             let credentials = AtcoderSubmitCredentials {
@@ -281,9 +281,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             };
 
             Atcoder::exec(Submit {
-                target: AtcoderSubmitTarget {
-                    contest: contest.clone(),
-                    problem: index.clone(),
+                target: ProblemInContest::Url {
+                    url: package_metadata_bin.problem.clone(),
                 },
                 credentials,
                 language_id: language_id.to_owned(),
@@ -294,7 +293,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 shell: &shell,
             })?
         }
-        TargetProblem::Codeforces { contest, index, .. } => {
+        PlatformKind::Codeforces => {
             let (api_key, api_secret) = credentials::codeforces_api_key_and_secret(shell)?;
 
             let shell = RefCell::new(shell.borrow_mut());
@@ -310,9 +309,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             };
 
             Codeforces::exec(Submit {
-                target: CodeforcesSubmitTarget {
-                    contest: contest.clone(),
-                    problem: index.clone(),
+                target: ProblemInContest::Url {
+                    url: package_metadata_bin.problem.clone(),
                 },
                 credentials,
                 language_id: language_id.to_owned(),
@@ -323,20 +321,13 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 shell: &shell,
             })?
         }
-        TargetProblem::Yukicoder(target_problem) => {
+        PlatformKind::Yukicoder => {
             let credentials = YukicoderSubmitCredentials {
                 api_key: credentials::yukicoder_api_key(shell)?,
             };
 
             Yukicoder::exec(Submit {
-                target: match target_problem {
-                    TargetProblemYukicoder::Contest { contest, index, .. } => {
-                        YukicoderSubmitTarget::Contest(contest.clone(), index.clone())
-                    }
-                    TargetProblemYukicoder::Problem { no, .. } => {
-                        YukicoderSubmitTarget::ProblemNo(no.to_string())
-                    }
-                },
+                target: YukicoderSubmitTarget::Url(package_metadata_bin.problem.clone()),
                 credentials,
                 language_id: language_id.to_owned(),
                 code,
@@ -374,8 +365,11 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
         let timeout = crate::web::TIMEOUT;
 
-        match &package_metadata_bin.problem {
-            TargetProblem::Atcoder { contest, .. } => {
+        match PlatformKind::from_url(&package_metadata_bin.problem)? {
+            PlatformKind::Atcoder => {
+                let contest =
+                    snowchains_core::web::atcoder_contest_id(&package_metadata_bin.problem)?;
+
                 let shell = RefCell::new(shell);
 
                 let credentials = AtcoderWatchSubmissionsCredentials {
@@ -387,19 +381,17 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 };
 
                 Atcoder::exec(WatchSubmissions {
-                    target: AtcoderWatchSubmissionsTarget {
-                        contest: contest.clone(),
-                    },
+                    target: AtcoderWatchSubmissionsTarget { contest },
                     credentials,
                     cookie_storage,
                     timeout,
                     shell: &shell,
                 })?;
             }
-            TargetProblem::Codeforces { .. } => {
+            PlatformKind::Codeforces => {
                 shell.warn("watching submissions for Codeforces is not implemented")?;
             }
-            TargetProblem::Yukicoder(_) => {
+            PlatformKind::Yukicoder => {
                 shell.warn("watching submissions for yukicoder is not implemented")?;
             }
         }
