@@ -91,15 +91,15 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     let cargo_compete_config =
         crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config, shell)?;
 
-    let (bin, target_problem) = if let Some(src) = src {
+    let (bin, bin_alias, problem_url) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
         let bin = member.bin_target_by_src_path(src)?;
-        let target_problem = &package_metadata.bin_by_bin_name(&bin.name)?.problem;
-        (bin, target_problem)
-    } else if let Some(index) = index {
+        let (bin_alias, pkg_md) = &package_metadata.bin_by_bin_name(&bin.name)?;
+        (bin, *bin_alias, &pkg_md.problem)
+    } else if let Some(index) = &index {
         let package_metadata_bin = package_metadata.bin_by_bin_index(index)?;
         let bin = member.bin_target_by_name(&package_metadata_bin.name)?;
-        (bin, &package_metadata_bin.problem)
+        (bin, &**index, &package_metadata_bin.problem)
     } else {
         unreachable!()
     };
@@ -108,8 +108,9 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         metadata: &metadata,
         member,
         bin,
+        bin_alias,
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
-        target_problem,
+        problem_url,
         release: if debug {
             false
         } else if release {

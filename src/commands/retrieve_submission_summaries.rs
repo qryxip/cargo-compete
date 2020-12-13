@@ -1,5 +1,5 @@
 use crate::{
-    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin, TargetProblem},
+    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
     shell::ColorChoice,
     web::credentials,
 };
@@ -7,7 +7,8 @@ use anyhow::bail;
 use indexmap::indexset;
 use snowchains_core::web::{
     Atcoder, AtcoderRetrieveSubmissionSummariesCredentials,
-    AtcoderRetrieveSubmissionSummariesTarget, CookieStorage, RetrieveSubmissionSummaries,
+    AtcoderRetrieveSubmissionSummariesTarget, CookieStorage, PlatformKind,
+    RetrieveSubmissionSummaries,
 };
 use std::{borrow::BorrowMut as _, cell::RefCell, path::PathBuf};
 use structopt::StructOpt;
@@ -65,22 +66,16 @@ pub(crate) fn run(
 
     let mut atcoder_targets = indexset!();
 
-    for (
-        bin_index,
-        PackageMetadataCargoCompeteBin {
-            problem: target, ..
-        },
-    ) in &package_metadata.bin
-    {
+    for (bin_index, PackageMetadataCargoCompeteBin { problem: url, .. }) in &package_metadata.bin {
         if problem.as_ref().map_or(true, |p| p == bin_index) {
-            match target {
-                TargetProblem::Atcoder { contest, .. } => {
-                    atcoder_targets.insert(contest.clone());
+            match PlatformKind::from_url(url)? {
+                PlatformKind::Atcoder => {
+                    atcoder_targets.insert(snowchains_core::web::atcoder_contest_id(&url)?);
                 }
-                TargetProblem::Codeforces { .. } => {
+                PlatformKind::Codeforces => {
                     todo!("`retrieve submission-summaries` for Codeforces is not implemented");
                 }
-                TargetProblem::Yukicoder(_) => {
+                PlatformKind::Yukicoder => {
                     todo!("`retrieve submission-summaries` for yukicoder is not implemented");
                 }
             }

@@ -4,15 +4,14 @@ use ignore::overrides::OverrideBuilder;
 use insta::{assert_json_snapshot, assert_snapshot};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use snowchains_core::web::PlatformKind;
 use std::io;
 
 #[test]
 fn atcoder_practice_a() -> anyhow::Result<()> {
     let (output, tree) = run(
-        PlatformKind::Atcoder,
         "practice",
         "a",
+        "https://atcoder.jp/contests/practice/tasks/practice_1",
         r#"---
 type: Batch
 timelimit: 2s
@@ -57,9 +56,9 @@ fn main() {
 }
 
 fn run(
-    platform: PlatformKind,
     contest: &str,
     problem: &str,
+    url: &str,
     test_suite: &str,
     code: &str,
 ) -> anyhow::Result<(String, serde_json::Value)> {
@@ -67,7 +66,7 @@ fn run(
         |cwd| -> _ {
             std::fs::write(
                 cwd.join("compete.toml"),
-                r#"test-suite = "{{ manifest_dir }}/testcases/{{ problem | kebabcase }}.yml"
+                r#"test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml"
 
 [new]
 platform = "atcoder"
@@ -112,7 +111,7 @@ edition = "2018"
 config = "../compete.toml"
 
 [package.metadata.cargo-compete.bin]
-{problem} = {{ name = "{contest}-{problem}", problem = {{ platform = "{platform}", contest = "{contest}", index = "{problem}" }} }}
+{problem} = {{ name = "{contest}-{problem}", problem = "{url}" }}
 
 [[bin]]
 name = "{contest}-{problem}"
@@ -123,7 +122,7 @@ proconio = "=0.3.6"
 "#,
                     contest = contest,
                     problem = problem,
-                    platform = platform.to_kebab_case_str(),
+                    url = url,
                 ),
             )?;
 

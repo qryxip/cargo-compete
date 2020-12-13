@@ -4,7 +4,10 @@ use easy_ext::ext;
 use indexmap::{indexset, IndexMap};
 use itertools::Itertools as _;
 use krates::cm;
-use serde::{de::IntoDeserializer, Deserialize};
+use serde::{
+    de::{Deserializer, Error as _, IntoDeserializer},
+    Deserialize,
+};
 use std::{
     path::{Path, PathBuf},
     str,
@@ -36,12 +39,13 @@ impl PackageMetadataCargoCompete {
     pub(crate) fn bin_by_bin_name(
         &self,
         bin_name: impl AsRef<str>,
-    ) -> anyhow::Result<&PackageMetadataCargoCompeteBin> {
+    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBin)> {
         let bin_name = bin_name.as_ref();
 
         self.bin
-            .values()
-            .find(|PackageMetadataCargoCompeteBin { name, .. }| name == bin_name)
+            .iter()
+            .find(|(_, PackageMetadataCargoCompeteBin { name, .. })| name == bin_name)
+            .map(|(k, v)| (&**k, v))
             .with_context(|| {
                 format!(
                     "could not find metadata in `package.metadata.cargo-compete.bin` which points \
@@ -56,48 +60,25 @@ impl PackageMetadataCargoCompete {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompeteBin {
     pub(crate) name: String,
-    pub(crate) problem: TargetProblem,
+    #[serde(deserialize_with = "deserialize_bin_problem")]
+    pub(crate) problem: Url,
 }
 
-#[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case", tag = "platform")]
-pub(crate) enum TargetProblem {
-    Atcoder {
-        contest: String,
-        index: String,
-        url: Option<Url>,
-    },
-    Codeforces {
-        contest: String,
-        index: String,
-        url: Option<Url>,
-    },
-    Yukicoder(TargetProblemYukicoder),
-}
+fn deserialize_bin_problem<'de, D>(deserializer: D) -> Result<Url, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    return match Repr::deserialize(deserializer) {
+        Ok(Repr::V1 { url }) | Ok(Repr::V2(url)) => Ok(url),
+        Err(_) => Err(D::Error::custom(r#"expected `"<url>" | { url: "<url>" }`"#)),
+    };
 
-impl TargetProblem {
-    pub(crate) fn url(&self) -> Option<&Url> {
-        match self {
-            Self::Atcoder { url, .. }
-            | Self::Codeforces { url, .. }
-            | Self::Yukicoder(TargetProblemYukicoder::Problem { url, .. })
-            | Self::Yukicoder(TargetProblemYukicoder::Contest { url, .. }) => url.as_ref(),
-        }
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Repr {
+        V1 { url: Url },
+        V2(Url),
     }
-}
-
-#[derive(Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case", tag = "kind")]
-pub(crate) enum TargetProblemYukicoder {
-    Problem {
-        no: u64,
-        url: Option<Url>,
-    },
-    Contest {
-        contest: String,
-        index: String,
-        url: Option<Url>,
-    },
 }
 
 #[ext(MetadataExt)]

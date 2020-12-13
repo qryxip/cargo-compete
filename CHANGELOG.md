@@ -1,5 +1,59 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `bin_name` and `bin_alias` variables for `test-suite`.
+
+### Changed
+
+- Simplified `package.metadata.cargo-compete.bin.*.problem`.
+
+    - Removed `package.metadata.cargo-compete.bin.*.problem.{platform, contest, index}`.
+    - URLs are required.
+    - `problem = { url = ".." }` is still supported.
+    - `contest` in `test-suite` for yukicoder will be always `null`.
+
+    ```diff
+     [package.metadata.cargo-compete.bin]
+    -a = { name = "arc110-a", problem = { platform = "atcoder", contest = "arc110", index = "A", url = "https://atcoder.jp/contests/arc110/tasks/arc110_a" } }
+    -b = { name = "arc110-b", problem = { platform = "atcoder", contest = "arc110", index = "B", url = "https://atcoder.jp/contests/arc110/tasks/arc110_b" } }
+    -c = { name = "arc110-c", problem = { platform = "atcoder", contest = "arc110", index = "C", url = "https://atcoder.jp/contests/arc110/tasks/arc110_c" } }
+    -d = { name = "arc110-d", problem = { platform = "atcoder", contest = "arc110", index = "D", url = "https://atcoder.jp/contests/arc110/tasks/arc110_d" } }
+    -e = { name = "arc110-e", problem = { platform = "atcoder", contest = "arc110", index = "E", url = "https://atcoder.jp/contests/arc110/tasks/arc110_e" } }
+    -f = { name = "arc110-f", problem = { platform = "atcoder", contest = "arc110", index = "F", url = "https://atcoder.jp/contests/arc110/tasks/arc110_f" } }
+    +a = { name = "arc110-a", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_a" }
+    +b = { name = "arc110-b", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_b" }
+    +c = { name = "arc110-c", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_c" }
+    +d = { name = "arc110-d", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_d" }
+    +e = { name = "arc110-e", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_e" }
+    +f = { name = "arc110-f", problem = "https://atcoder.jp/contests/arc110/tasks/arc110_f" }
+    ```
+
+### Deprecated
+
+- Deprecated `problem` variable for `test-suite`.
+
+    Use `bin_alias` instead.
+
+    ```toml
+    # Path to the test file (Liquid template)
+    #
+    # Variables:
+    #
+    # - `manifest_dir`: Package directory
+    # - `contest`:      Contest ID (e.g. "abc100")
+    # - `bin_name`:     Name of a `bin` target (e.g. "abc100-a")
+    # - `bin_alias`:    "Alias" for a `bin` target defined in `pacakge.metadata.cargo-compete` (e.g. "a")
+    # - `problem`:      Alias for `bin_alias` (deprecated)
+    #
+    # Additional filters:
+    #
+    # - `kebabcase`: Convert to kebab case (by using the `heck` crate)
+    test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
+    ```
+
 ## [0.6.5] - 2020-12-05Z
 
 ### Added

@@ -111,8 +111,6 @@ pub(crate) fn run(
         let mut manifest =
             crate::fs::read_to_string(&package.manifest_path)?.parse::<toml_edit::Document>()?;
 
-        manifest["profile"] = toml_edit::Item::None;
-
         let bins = package.all_bin_targets_sorted();
 
         if manifest["package"]["metadata"]["cargo-compete"].is_none() {
@@ -138,9 +136,10 @@ pub(crate) fn run(
                 for bin in &bins {
                     tbl[&bin.name]["name"] =
                         toml_edit::value(format!("{}-{}", package.name, bin.name));
-                    tbl[&bin.name]["problem"]["platform"] = toml_edit::value("atcoder");
-                    tbl[&bin.name]["problem"]["contest"] = toml_edit::value(&*package.name);
-                    tbl[&bin.name]["problem"]["index"] = toml_edit::value(bin.name.to_uppercase());
+                    tbl[&bin.name]["problem"] = toml_edit::value(format!(
+                        "https://atcoder.jp/contests/{}/<FIXME: screen name of the problem>",
+                        package.name,
+                    ));
                 }
                 tbl
             });

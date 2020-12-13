@@ -10,8 +10,8 @@ use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
 use snowchains_core::web::{
-    PlatformKind, RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeContest,
-    RetrieveTestCasesOutcomeProblem,
+    PlatformKind, ProblemsInContest, RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeProblem,
+    YukicoderRetrieveTestCasesTargets,
 };
 use std::{
     collections::BTreeMap,
@@ -81,19 +81,19 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let problems = problems.map(|ps| ps.into_iter().collect());
 
             let outcome = crate::web::retrieve_testcases::dl_from_atcoder(
-                &contest,
-                problems,
+                ProblemsInContest::Indexes { contest, problems },
                 full,
                 &cookies_path,
                 shell,
             )?;
 
             let contest = outcome
-                .contest
-                .as_ref()
-                .map(|RetrieveTestCasesOutcomeContest { id, .. }| id)
-                .unwrap_or(&contest);
-
+                .problems
+                .get(0)
+                .and_then(|p| p.contest.as_ref())
+                .with_context(|| "empty result")?
+                .id
+                .clone();
             let group = Group::Atcoder(contest);
 
             let problems = outcome
@@ -107,7 +107,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let (manifest_dir, src_paths) = create_new_package(
                 &cargo_compete_config_path,
                 &cargo_compete_config,
-                group,
+                &group,
                 &problems,
                 shell,
             )?;
@@ -119,6 +119,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     manifest_dir.to_str().with_context(|| "invalid utf-8")?,
                     &cargo_compete_config.test_suite,
                     outcome,
+                    |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
+                    |_, index| vec![index.to_kebab_case()],
                     shell,
                 )?,
             )
@@ -140,18 +142,18 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let problems = problems.map(|ps| ps.into_iter().collect());
 
             let outcome = crate::web::retrieve_testcases::dl_from_codeforces(
-                &contest,
-                problems,
+                ProblemsInContest::Indexes { contest, problems },
                 &cookies_path,
                 shell,
             )?;
 
             let contest = outcome
-                .contest
-                .as_ref()
-                .map(|RetrieveTestCasesOutcomeContest { id, .. }| id)
-                .unwrap_or(&contest);
-
+                .problems
+                .get(0)
+                .and_then(|p| p.contest.as_ref())
+                .with_context(|| "empty result")?
+                .id
+                .clone();
             let group = Group::Codeforces(contest);
 
             let problems = outcome
@@ -165,7 +167,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let (manifest_dir, src_paths) = create_new_package(
                 &cargo_compete_config_path,
                 &cargo_compete_config,
-                group,
+                &group,
                 &problems,
                 shell,
             )?;
@@ -177,6 +179,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     manifest_dir.to_str().with_context(|| "invalid utf-8")?,
                     &cargo_compete_config.test_suite,
                     outcome,
+                    |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
+                    |_, index| vec![index.to_kebab_case()],
                     shell,
                 )?,
             )
@@ -197,14 +201,23 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let contest = contest.as_deref();
             let problems = problems.map(|ps| ps.into_iter().collect());
 
-            let outcome =
-                crate::web::retrieve_testcases::dl_from_yukicoder(contest, problems, full, shell)?;
+            let outcome = crate::web::retrieve_testcases::dl_from_yukicoder(
+                if let Some(contest) = contest {
+                    YukicoderRetrieveTestCasesTargets::Contest(contest.to_owned(), problems)
+                } else if let Some(problems) = problems {
+                    YukicoderRetrieveTestCasesTargets::ProblemNos(problems)
+                } else {
+                    bail!("either of `<contest>` or `--problems` required for yukicoder");
+                },
+                full,
+                shell,
+            )?;
 
             let contest = outcome
-                .contest
-                .as_ref()
-                .map(|RetrieveTestCasesOutcomeContest { id, .. }| &**id)
-                .or(contest);
+                .problems
+                .get(0)
+                .and_then(|p| p.contest.as_ref())
+                .map(|c| c.id.clone());
 
             let group = match contest {
                 None => Group::YukicoderProblems,
@@ -222,7 +235,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let (manifest_dir, src_paths) = create_new_package(
                 &cargo_compete_config_path,
                 &cargo_compete_config,
-                group,
+                &group,
                 &problems,
                 shell,
             )?;
@@ -234,6 +247,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     manifest_dir.to_str().with_context(|| "invalid utf-8")?,
                     &cargo_compete_config.test_suite,
                     outcome,
+                    |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
+                    |_, index| vec![index.to_kebab_case()],
                     shell,
                 )?,
             )
@@ -258,16 +273,16 @@ fn urls(outcome: &RetrieveTestCasesOutcome) -> Vec<Url> {
     outcome.problems.iter().map(|p| p.url.clone()).collect()
 }
 
-#[derive(Copy, Clone, Debug)]
-enum Group<'a> {
-    Atcoder(&'a str),
-    Codeforces(&'a str),
+#[derive(Clone, Debug)]
+enum Group {
+    Atcoder(String),
+    Codeforces(String),
     YukicoderProblems,
-    YukicoderContest(&'a str),
+    YukicoderContest(String),
 }
 
-impl<'a> Group<'a> {
-    fn contest(self) -> Option<&'a str> {
+impl Group {
+    fn contest(&self) -> Option<&str> {
         match self {
             Self::Atcoder(contest)
             | Self::Codeforces(contest)
@@ -276,9 +291,9 @@ impl<'a> Group<'a> {
         }
     }
 
-    fn package_name(self) -> String {
+    fn package_name(&self) -> String {
         match self {
-            Self::Atcoder(contest) => contest.to_owned(),
+            Self::Atcoder(contest) => contest.clone(),
             Self::Codeforces(contest) | Self::YukicoderContest(contest) => {
                 format!("contest{}", contest)
             }
@@ -290,7 +305,7 @@ impl<'a> Group<'a> {
 fn create_new_package(
     cargo_compete_config_path: &Path,
     cargo_compete_config: &CargoCompeteConfig,
-    group: Group<'_>,
+    group: &Group,
     problems: &BTreeMap<&str, &Url>,
     shell: &mut Shell,
 ) -> anyhow::Result<(PathBuf, Vec<PathBuf>)> {
@@ -329,20 +344,9 @@ fn create_new_package(
         .keys()
         .map(|problem_index| {
             format!(
-                r#"{} = {{ name = "", problem = {{ {} }} }}
+                r#"{} = {{ name = "", problem = "" }}
 "#,
                 escape_key(&problem_index.to_kebab_case()),
-                match group {
-                    Group::Atcoder(_) | Group::Codeforces(_) => {
-                        r#"platform = "", contest = "", index = "", url = """#
-                    }
-                    Group::YukicoderProblems => {
-                        r#"platform = "", kind = "problem", no = 0, url = """#
-                    }
-                    Group::YukicoderContest(_) => {
-                        r#"platform = "", kind = "contest", contest = "", index = "", url = """#
-                    }
-                }
             )
         })
         .join("")
@@ -356,34 +360,8 @@ fn create_new_package(
                 problem_index.to_kebab_case(),
             ));
 
-        let tbl =
-            &mut package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["problem"];
-
-        match group {
-            Group::Atcoder(contest) => {
-                tbl["platform"] = toml_edit::value("atcoder");
-                tbl["contest"] = toml_edit::value(contest);
-                tbl["index"] = toml_edit::value(&**problem_index);
-                tbl["url"] = toml_edit::value(problem_url.as_str());
-            }
-            Group::Codeforces(contest) => {
-                tbl["platform"] = toml_edit::value("codeforces");
-                tbl["contest"] = toml_edit::value(contest);
-                tbl["index"] = toml_edit::value(&**problem_index);
-                tbl["url"] = toml_edit::value(problem_url.as_str());
-            }
-            Group::YukicoderProblems => {
-                tbl["platform"] = toml_edit::value("yukicoder");
-                tbl["no"] = toml_edit::value(problem_index.parse::<i64>()?);
-                tbl["url"] = toml_edit::value(problem_url.as_str());
-            }
-            Group::YukicoderContest(contest) => {
-                tbl["platform"] = toml_edit::value("yukicoder");
-                tbl["contest"] = toml_edit::value(contest);
-                tbl["index"] = toml_edit::value(&**problem_index);
-                tbl["url"] = toml_edit::value(problem_url.as_str());
-            }
-        }
+        package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["problem"] =
+            toml_edit::value(problem_url.as_str());
     }
 
     let bin = toml_edit::Item::ArrayOfTables({
@@ -473,7 +451,7 @@ fn create_new_package(
 
     if let Ok(new_manifest) = manifest
         .to_string()
-        .replace("\"} }", "\" } }")
+        .replace("\"}", "\" }")
         .parse::<toml_edit::Document>()
     {
         manifest = new_manifest;

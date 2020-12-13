@@ -60,7 +60,7 @@ fn run(
             std::fs::write(
                 cwd.join("compete.toml"),
                 format!(
-                    r#"test-suite = "{{{{ manifest_dir }}}}/testcases/{{{{ problem | kebabcase }}}}.yml"
+                    r#"test-suite = "{{{{ manifest_dir }}}}/testcases/{{{{ bin_alias | kebabcase }}}}.yml"
 
 [new]
 platform = "{}"
