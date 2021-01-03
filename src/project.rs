@@ -90,10 +90,10 @@ impl cm::Metadata {
             .collect()
     }
 
-    pub(crate) fn query_for_member<'a, S: AsRef<str>>(
-        &'a self,
+    pub(crate) fn query_for_member<S: AsRef<str>>(
+        &self,
         spec: Option<S>,
-    ) -> anyhow::Result<&'a cm::Package> {
+    ) -> anyhow::Result<&cm::Package> {
         if let Some(spec_str) = spec {
             let spec_str = spec_str.as_ref();
             let spec = spec_str.parse::<krates::PkgSpec>()?;
