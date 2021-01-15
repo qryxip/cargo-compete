@@ -3,7 +3,7 @@ use crate::{
     shell::ColorChoice,
     web::credentials,
 };
-use anyhow::bail;
+use anyhow::{bail, Context as _};
 use indexmap::indexset;
 use snowchains_core::web::{
     Atcoder, AtcoderRetrieveSubmissionSummariesCredentials,
@@ -68,7 +68,7 @@ pub(crate) fn run(
 
     for (bin_index, PackageMetadataCargoCompeteBin { problem: url, .. }) in &package_metadata.bin {
         if problem.as_ref().map_or(true, |p| p == bin_index) {
-            match PlatformKind::from_url(url)? {
+            match PlatformKind::from_url(url).with_context(|| "unsupported platform")? {
                 PlatformKind::Atcoder => {
                     atcoder_targets.insert(snowchains_core::web::atcoder_contest_id(&url)?);
                 }

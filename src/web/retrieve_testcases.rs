@@ -1,28 +1,30 @@
 use crate::{
+    oj_api,
     project::{PackageExt as _, PackageMetadataCargoCompeteBin},
     shell::Shell,
     web::credentials,
 };
-use heck::KebabCase as _;
-use indexmap::IndexMap;
+use anyhow::Context;
+use indexmap::{indexmap, IndexMap};
 use krates::cm;
 use maplit::btreemap;
 use snowchains_core::{
-    testsuite::{Additional, BatchTestSuite, TestSuite},
+    testsuite::{Additional, BatchTestSuite, Match, PartialBatchTestCase, TestSuite},
     web::{
         Atcoder, AtcoderRetrieveFullTestCasesCredentials,
         AtcoderRetrieveSampleTestCasesCredentials, Codeforces,
         CodeforcesRetrieveSampleTestCasesCredentials, CookieStorage, PlatformKind,
         ProblemsInContest, RetrieveFullTestCases, RetrieveTestCases, RetrieveTestCasesOutcome,
-        RetrieveTestCasesOutcomeProblemTextFiles, Yukicoder,
-        YukicoderRetrieveFullTestCasesCredentials, YukicoderRetrieveTestCasesTargets,
+        Yukicoder, YukicoderRetrieveFullTestCasesCredentials, YukicoderRetrieveTestCasesTargets,
     },
 };
 use std::{
     borrow::BorrowMut as _,
     cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashSet},
+    iter,
     path::{Path, PathBuf},
+    time::Duration,
 };
 use url::Url;
 
@@ -37,7 +39,8 @@ pub(crate) fn dl_for_existing_package(
     cookies_path: &Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
-    let mut targets: BTreeMap<_, BTreeMap<_, BTreeSet<_>>> = btreemap!();
+    let mut snowchains_targets: BTreeMap<_, BTreeMap<_, BTreeSet<_>>> = btreemap!();
+    let mut oj_targets: BTreeMap<_, BTreeSet<_>> = btreemap!();
     let mut bin_indexes = bin_indexes.cloned();
 
     for (bin_index, PackageMetadataCargoCompeteBin { name, problem, .. }) in package_metadata_bin {
@@ -45,12 +48,19 @@ pub(crate) fn dl_for_existing_package(
             .as_mut()
             .map_or(true, |bin_indexes| bin_indexes.remove(bin_index))
         {
-            targets
-                .entry(PlatformKind::from_url(problem)?)
-                .or_default()
-                .entry(problem)
-                .or_default()
-                .insert((name, bin_index));
+            if let Ok(platform) = PlatformKind::from_url(problem) {
+                snowchains_targets
+                    .entry(platform)
+                    .or_default()
+                    .entry(problem)
+                    .or_default()
+                    .insert((name, bin_index));
+            } else {
+                oj_targets
+                    .entry(problem)
+                    .or_default()
+                    .insert((name, bin_index));
+            }
         }
     }
 
@@ -58,51 +68,60 @@ pub(crate) fn dl_for_existing_package(
         shell.warn(format!("no such index: {}", bin_index))?;
     }
 
-    let mut outcomes = vec![];
+    let mut outcome = vec![];
 
-    if let Some(targets) = targets.remove(&PlatformKind::Atcoder) {
+    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Atcoder) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = ProblemsInContest::Urls { urls };
-        outcomes.push(dl_from_atcoder(targets, full, cookies_path, shell)?);
+        outcome.extend(dl_from_atcoder(targets, full, cookies_path, shell)?);
     }
 
-    if let Some(targets) = targets.remove(&PlatformKind::Codeforces) {
+    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Codeforces) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = ProblemsInContest::Urls { urls };
-        outcomes.push(dl_from_codeforces(targets, cookies_path, shell)?);
+        outcome.extend(dl_from_codeforces(targets, cookies_path, shell)?);
     }
 
-    if let Some(targets) = targets.remove(&PlatformKind::Yukicoder) {
+    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Yukicoder) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = YukicoderRetrieveTestCasesTargets::Urls(urls);
-        outcomes.push(dl_from_yukicoder(targets, full, shell)?);
+        outcome.extend(dl_from_yukicoder(targets, full, shell)?);
     }
 
-    for outcome in outcomes {
-        save_test_cases(
-            workspace_root,
-            package.manifest_dir_utf8(),
-            test_suite_path,
-            outcome,
-            |url, _| {
-                targets
-                    .values()
-                    .flat_map(|m| m.get(url))
-                    .flatten()
-                    .map(|&(bin_name, _)| bin_name.clone())
-                    .collect()
-            },
-            |url, _| {
-                targets
-                    .values()
-                    .flat_map(|m| m.get(url))
-                    .flatten()
-                    .map(|&(_, bin_alias)| bin_alias.clone())
-                    .collect()
-            },
-            shell,
-        )?;
+    let mut outcome = outcome.into_iter().map(Into::into).collect::<Vec<_>>();
+
+    for url in oj_targets.keys() {
+        outcome.push(Problem::from_oj_api(
+            oj_api::get_problem(url, full, workspace_root, shell)?,
+            full,
+        ));
     }
+
+    save_test_cases(
+        workspace_root,
+        package.manifest_dir_utf8(),
+        test_suite_path,
+        outcome,
+        |url, _| {
+            snowchains_targets
+                .values()
+                .chain(iter::once(&oj_targets))
+                .flat_map(|m| m.get(url))
+                .flatten()
+                .map(|&(bin_name, _)| bin_name.clone())
+                .collect()
+        },
+        |url, _| {
+            snowchains_targets
+                .values()
+                .chain(iter::once(&oj_targets))
+                .flat_map(|m| m.get(url))
+                .flatten()
+                .map(|&(_, bin_alias)| bin_alias.clone())
+                .collect()
+        },
+        shell,
+    )?;
     Ok(())
 }
 
@@ -111,7 +130,7 @@ pub(crate) fn dl_from_atcoder(
     full: bool,
     cookies_path: &Path,
     shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
+) -> anyhow::Result<Vec<Problem<String>>> {
     let shell = RefCell::new(shell.borrow_mut());
 
     let credentials = AtcoderRetrieveSampleTestCasesCredentials {
@@ -142,13 +161,14 @@ pub(crate) fn dl_from_atcoder(
         timeout: crate::web::TIMEOUT,
         shell: &shell,
     })
+    .map(|RetrieveTestCasesOutcome { problems, .. }| problems.into_iter().map(Into::into).collect())
 }
 
 pub(crate) fn dl_from_codeforces(
     targets: ProblemsInContest,
     cookies_path: &Path,
     shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
+) -> anyhow::Result<Vec<Problem<String>>> {
     let shell = RefCell::new(shell.borrow_mut());
 
     let credentials = CodeforcesRetrieveSampleTestCasesCredentials {
@@ -169,13 +189,14 @@ pub(crate) fn dl_from_codeforces(
         timeout: crate::web::TIMEOUT,
         shell: &shell,
     })
+    .map(|RetrieveTestCasesOutcome { problems, .. }| problems.into_iter().map(Into::into).collect())
 }
 
 pub(crate) fn dl_from_yukicoder(
     targets: YukicoderRetrieveTestCasesTargets,
     full: bool,
     shell: &mut Shell,
-) -> anyhow::Result<RetrieveTestCasesOutcome> {
+) -> anyhow::Result<Vec<Problem<String>>> {
     let full = if full {
         Some(RetrieveFullTestCases {
             credentials: YukicoderRetrieveFullTestCasesCredentials {
@@ -196,26 +217,27 @@ pub(crate) fn dl_from_yukicoder(
         timeout: crate::web::TIMEOUT,
         shell: &shell,
     })
+    .map(|RetrieveTestCasesOutcome { problems, .. }| problems.into_iter().map(Into::into).collect())
 }
 
-pub(crate) fn save_test_cases(
+pub(crate) fn save_test_cases<I>(
     workspace_root: &Path,
     pkg_manifest_dir: &str,
     path: &liquid::Template,
-    outcome: RetrieveTestCasesOutcome,
-    bin_names: impl Fn(&Url, &str) -> Vec<String>,
-    bin_aliases: impl Fn(&Url, &str) -> Vec<String>,
+    problems: Vec<Problem<I>>,
+    bin_names: impl Fn(&Url, &I) -> Vec<String>,
+    bin_aliases: impl Fn(&Url, &I) -> Vec<String>,
     shell: &mut Shell,
 ) -> anyhow::Result<Vec<PathBuf>> {
     let mut acc = vec![];
 
-    for snowchains_core::web::RetrieveTestCasesOutcomeProblem {
+    for Problem {
         index,
         url,
         mut test_suite,
         text_files,
         ..
-    } in outcome.problems
+    } in problems
     {
         for (bin_name, bin_alias) in bin_names(&url, &index).into_iter().flat_map(|bin_name| {
             bin_aliases(&url, &index)
@@ -235,17 +257,17 @@ pub(crate) fn save_test_cases(
             acc.push(path.clone());
 
             let txt_path = |dir_file_name: &str, txt_file_name: &str| -> _ {
-                path.with_file_name(index.to_kebab_case())
+                path.with_file_name(&bin_alias)
                     .join(dir_file_name)
                     .join(txt_file_name)
                     .with_extension("txt")
             };
 
-            for (name, RetrieveTestCasesOutcomeProblemTextFiles { r#in, out }) in &text_files {
+            for (name, (input, output)) in &text_files {
                 let in_path = txt_path("in", name);
                 crate::fs::create_dir_all(in_path.parent().unwrap())?;
-                crate::fs::write(in_path, &r#in)?;
-                if let Some(out) = out {
+                crate::fs::write(in_path, input)?;
+                if let Some(out) = output {
                     let out_path = txt_path("out", name);
                     crate::fs::create_dir_all(out_path.parent().unwrap())?;
                     crate::fs::write(out_path, &r#out)?;
@@ -257,7 +279,7 @@ pub(crate) fn save_test_cases(
                     cases.clear();
 
                     extend.push(Additional::Text {
-                        path: format!("./{}", index.to_kebab_case()),
+                        path: format!("./{}", bin_alias),
                         r#in: "/in/*.txt".to_owned(),
                         out: "/out/*.txt".to_owned(),
                         timelimit: None,
@@ -291,11 +313,8 @@ pub(crate) fn save_test_cases(
                     } else {
                         format!(
                             "{}",
-                            path.with_file_name(format!(
-                                "{{{index}.yml, {index}/}}",
-                                index = index.to_kebab_case(),
-                            ))
-                            .display(),
+                            path.with_file_name(format!("{{{0}.yml, {0}/}}", bin_alias))
+                                .display(),
                         )
                     },
                 ),
@@ -304,4 +323,130 @@ pub(crate) fn save_test_cases(
     }
 
     Ok(acc)
+}
+
+pub(crate) struct Problem<I> {
+    pub(crate) index: I,
+    pub(crate) url: Url,
+    pub(crate) test_suite: TestSuite,
+    pub(crate) text_files: IndexMap<String, (String, Option<String>)>,
+    pub(crate) contest_url: Option<Url>,
+}
+
+impl Problem<Option<String>> {
+    fn from_oj_api(problem: oj_api::Problem, system: bool) -> Self {
+        let (cases, text_files) = if system {
+            let num_digits = problem.tests.len().to_string().len();
+            let zero_pad = |n: usize| -> String {
+                let n = n.to_string();
+                itertools::repeat_n('0', num_digits - n.len())
+                    .chain(n.chars())
+                    .collect()
+            };
+            let text_files = problem
+                .tests
+                .into_iter()
+                .enumerate()
+                .map(
+                    |(
+                        nth,
+                        oj_api::ProblemTest {
+                            name,
+                            input,
+                            output,
+                        },
+                    )| {
+                        (name.unwrap_or_else(|| zero_pad(nth)), (input, Some(output)))
+                    },
+                )
+                .collect();
+            (vec![], text_files)
+        } else {
+            let cases = problem
+                .tests
+                .into_iter()
+                .map(
+                    |oj_api::ProblemTest {
+                         name,
+                         input,
+                         output,
+                     }| PartialBatchTestCase {
+                        name,
+                        r#in: input.into(),
+                        out: Some(output.into()),
+                        timelimit: None,
+                        r#match: None,
+                    },
+                )
+                .collect();
+            (cases, indexmap!())
+        };
+
+        Self {
+            index: problem.context.alphabet,
+            url: problem.url,
+            test_suite: TestSuite::Batch(BatchTestSuite {
+                timelimit: problem.time_limit.map(Duration::from_millis),
+                r#match: Match::Exact,
+                cases,
+                extend: vec![],
+            }),
+            text_files,
+            contest_url: problem.context.contest.as_ref().and_then(|c| c.url.clone()),
+        }
+    }
+}
+
+impl Problem<String> {
+    pub(crate) fn from_oj_api_with_alphabet(
+        problem: oj_api::Problem,
+        system: bool,
+    ) -> anyhow::Result<Self> {
+        let Problem {
+            index,
+            url,
+            test_suite,
+            text_files,
+            contest_url,
+        } = Problem::<Option<String>>::from_oj_api(problem, system);
+
+        let index =
+            index.with_context(|| "`context.alphabet` is required for the `new` command")?;
+
+        Ok(Self {
+            index,
+            url,
+            test_suite,
+            text_files,
+            contest_url,
+        })
+    }
+}
+
+impl From<Problem<String>> for Problem<Option<String>> {
+    fn from(problem: Problem<String>) -> Self {
+        Self {
+            index: Some(problem.index),
+            url: problem.url,
+            test_suite: problem.test_suite,
+            text_files: problem.text_files,
+            contest_url: problem.contest_url,
+        }
+    }
+}
+
+impl From<snowchains_core::web::RetrieveTestCasesOutcomeProblem> for Problem<String> {
+    fn from(problem: snowchains_core::web::RetrieveTestCasesOutcomeProblem) -> Self {
+        Self {
+            index: problem.index,
+            url: problem.url,
+            test_suite: problem.test_suite,
+            text_files: problem
+                .text_files
+                .into_iter()
+                .map(|(k, v)| (k, (v.r#in, v.out)))
+                .collect(),
+            contest_url: problem.contest.map(|c| c.url),
+        }
+    }
 }
