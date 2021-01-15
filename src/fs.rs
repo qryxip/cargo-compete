@@ -18,21 +18,6 @@ pub(crate) fn read_json<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow:
         .with_context(|| format!("could not parse the JSON file at `{}`", path.display()))
 }
 
-pub(crate) fn read_toml<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow::Result<T> {
-    let path = path.as_ref();
-    toml::from_str(&read_to_string(path)?).with_context(|| {
-        format!(
-            "could not parse the {} at `{}`",
-            if path.file_name() == Some("Cargo.toml".as_ref()) {
-                "manifest"
-            } else {
-                "TOML file"
-            },
-            path.display()
-        )
-    })
-}
-
 pub(crate) fn read_yaml<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> anyhow::Result<T> {
     let path = path.as_ref();
     serde_yaml::from_str(&read_to_string(path)?)
