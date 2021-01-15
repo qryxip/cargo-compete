@@ -4,6 +4,7 @@
 mod commands;
 mod config;
 mod fs;
+mod oj_api;
 mod open;
 mod process;
 mod project;

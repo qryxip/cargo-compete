@@ -21,6 +21,7 @@ test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"{% endra
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
 [new]
+kind = "cargo-compete"
 # Platform
 #
 # - atcoder
@@ -38,6 +39,11 @@ path = {% raw %}"./{{ contest | default: 'problems' }}"{% endraw %}
 {%- else -%}
 path = {% raw %}"./{{ contest }}"{% endraw %}
 {%- endif %}
+
+#[new]
+#kind = "oj-api"
+#url = {% raw %}"https://atcoder.jp/contests/{{ id }}"{% endraw %}
+#path = {% raw %}"./{{ contest }}"{% endraw %}
 
 [new.template]
 {% if new_template_lockfile -%}

@@ -1,7 +1,8 @@
 use crate::{
     config::{CargoCompeteConfigSubmitTranspile, CargoCompeteConfigSubmitViaBinary},
+    oj_api,
     project::{MetadataExt as _, PackageExt as _},
-    shell::ColorChoice,
+    shell::{ColorChoice, Shell},
     web::credentials,
 };
 use anyhow::{bail, Context as _};
@@ -10,7 +11,7 @@ use liquid::object;
 use prettytable::{
     cell,
     format::{FormatBuilder, LinePosition, LineSeparator},
-    row, Table,
+    row, Row, Table,
 };
 use snowchains_core::web::{
     Atcoder, AtcoderSubmitCredentials, AtcoderWatchSubmissionsCredentials,
@@ -18,7 +19,7 @@ use snowchains_core::web::{
     PlatformKind, ProblemInContest, Submit, WatchSubmissions, Yukicoder,
     YukicoderSubmitCredentials, YukicoderSubmitTarget,
 };
-use std::{borrow::BorrowMut as _, cell::RefCell, env, iter, path::PathBuf};
+use std::{borrow::BorrowMut as _, cell::RefCell, env, io, iter, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 
@@ -159,12 +160,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         Some(CargoCompeteConfigSubmitTranspile::Command {
             language_id: Some(language_id),
             ..
-        }) => language_id,
-        _ => match PlatformKind::from_url(&package_metadata_bin.problem)? {
-            PlatformKind::Atcoder => ATCODER_RUST_LANG_ID,
-            PlatformKind::Codeforces => CODEFORCES_RUST_LANG_ID,
-            PlatformKind::Yukicoder => YUKICODER_RUST_LANG_ID,
-        },
+        }) => Some(&**language_id),
+        _ => None,
     };
 
     let mut code = crate::fs::read_to_string(&bin.src_path)?;
@@ -265,84 +262,179 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
 
     let source_code_len = code.len();
 
-    let cookie_storage = CookieStorage::with_jsonl(&cookies_path)?;
-    let timeout = crate::web::TIMEOUT;
+    if let Ok(platform) = PlatformKind::from_url(&package_metadata_bin.problem) {
+        let language_id = language_id.unwrap_or(match platform {
+            PlatformKind::Atcoder => ATCODER_RUST_LANG_ID,
+            PlatformKind::Codeforces => CODEFORCES_RUST_LANG_ID,
+            PlatformKind::Yukicoder => YUKICODER_RUST_LANG_ID,
+        });
 
-    let outcome = match PlatformKind::from_url(&package_metadata_bin.problem)? {
-        PlatformKind::Atcoder => {
-            let shell = RefCell::new(shell.borrow_mut());
+        let cookie_storage = CookieStorage::with_jsonl(&cookies_path)?;
+        let timeout = crate::web::TIMEOUT;
 
-            let credentials = AtcoderSubmitCredentials {
-                username_and_password: &mut credentials::username_and_password(
-                    &shell,
-                    "Username: ",
-                    "Password: ",
-                ),
-            };
+        let outcome = match platform {
+            PlatformKind::Atcoder => {
+                let shell = RefCell::new(shell.borrow_mut());
 
-            Atcoder::exec(Submit {
-                target: ProblemInContest::Url {
-                    url: package_metadata_bin.problem.clone(),
-                },
-                credentials,
-                language_id: language_id.to_owned(),
-                code,
-                watch_submission: false,
-                cookie_storage,
-                timeout,
-                shell: &shell,
-            })?
+                let credentials = AtcoderSubmitCredentials {
+                    username_and_password: &mut credentials::username_and_password(
+                        &shell,
+                        "Username: ",
+                        "Password: ",
+                    ),
+                };
+
+                Atcoder::exec(Submit {
+                    target: ProblemInContest::Url {
+                        url: package_metadata_bin.problem.clone(),
+                    },
+                    credentials,
+                    language_id: language_id.to_owned(),
+                    code,
+                    watch_submission: false,
+                    cookie_storage,
+                    timeout,
+                    shell: &shell,
+                })?
+            }
+            PlatformKind::Codeforces => {
+                let (api_key, api_secret) = credentials::codeforces_api_key_and_secret(shell)?;
+
+                let shell = RefCell::new(shell.borrow_mut());
+
+                let credentials = CodeforcesSubmitCredentials {
+                    username_and_password: &mut credentials::username_and_password(
+                        &shell,
+                        "Username: ",
+                        "Password: ",
+                    ),
+                    api_key,
+                    api_secret,
+                };
+
+                Codeforces::exec(Submit {
+                    target: ProblemInContest::Url {
+                        url: package_metadata_bin.problem.clone(),
+                    },
+                    credentials,
+                    language_id: language_id.to_owned(),
+                    code,
+                    watch_submission: false,
+                    cookie_storage,
+                    timeout,
+                    shell: &shell,
+                })?
+            }
+            PlatformKind::Yukicoder => {
+                let credentials = YukicoderSubmitCredentials {
+                    api_key: credentials::yukicoder_api_key(shell)?,
+                };
+
+                Yukicoder::exec(Submit {
+                    target: YukicoderSubmitTarget::Url(package_metadata_bin.problem.clone()),
+                    credentials,
+                    language_id: language_id.to_owned(),
+                    code,
+                    watch_submission: false,
+                    cookie_storage: (),
+                    timeout,
+                    shell: shell.borrow_mut(),
+                })?
+            }
+        };
+
+        print_status(
+            shell,
+            &[
+                row!["Method", "cargo-compete"],
+                row!["Language ID", language_id],
+                row!["Size", source_code_len],
+                row!["URL (submissions)", outcome.submissions_url],
+                row!["URL (detail)", outcome.submission_url],
+            ],
+        )?;
+
+        if !no_watch {
+            let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
+            let timeout = crate::web::TIMEOUT;
+
+            match platform {
+                PlatformKind::Atcoder => {
+                    let contest =
+                        snowchains_core::web::atcoder_contest_id(&package_metadata_bin.problem)?;
+
+                    let shell = RefCell::new(shell);
+
+                    let credentials = AtcoderWatchSubmissionsCredentials {
+                        username_and_password: &mut credentials::username_and_password(
+                            &shell,
+                            "Username: ",
+                            "Password: ",
+                        ),
+                    };
+
+                    Atcoder::exec(WatchSubmissions {
+                        target: AtcoderWatchSubmissionsTarget { contest },
+                        credentials,
+                        cookie_storage,
+                        timeout,
+                        shell: &shell,
+                    })?;
+                }
+                PlatformKind::Codeforces => {
+                    shell.warn("watching submissions for Codeforces is not implemented")?;
+                }
+                PlatformKind::Yukicoder => {
+                    shell.warn("watching submissions for yukicoder is not implemented")?;
+                }
+            }
         }
-        PlatformKind::Codeforces => {
-            let (api_key, api_secret) = credentials::codeforces_api_key_and_secret(shell)?;
+    } else {
+        let tempdir = tempfile::Builder::new()
+            .prefix("cargo-compete-submit-code-with-oj-api-")
+            .tempdir()?;
 
-            let shell = RefCell::new(shell.borrow_mut());
+        let (source_code_path, language_id) = if let Some(language_id) = language_id {
+            let source_code_path = tempdir.path().join("main");
+            crate::fs::write(&source_code_path, &code)?;
+            (source_code_path, language_id.to_owned())
+        } else {
+            let source_code_path = tempdir.path().join("main.rs");
+            crate::fs::write(&source_code_path, &code)?;
+            let language_id = oj_api::guess_language_id(
+                &package_metadata_bin.problem,
+                &source_code_path,
+                &metadata.workspace_root,
+                shell,
+            )?;
+            (source_code_path, language_id)
+        };
 
-            let credentials = CodeforcesSubmitCredentials {
-                username_and_password: &mut credentials::username_and_password(
-                    &shell,
-                    "Username: ",
-                    "Password: ",
-                ),
-                api_key,
-                api_secret,
-            };
+        let url = oj_api::submit_code(
+            &package_metadata_bin.problem,
+            &source_code_path,
+            &language_id,
+            &metadata.workspace_root,
+            shell,
+        )?;
 
-            Codeforces::exec(Submit {
-                target: ProblemInContest::Url {
-                    url: package_metadata_bin.problem.clone(),
-                },
-                credentials,
-                language_id: language_id.to_owned(),
-                code,
-                watch_submission: false,
-                cookie_storage,
-                timeout,
-                shell: &shell,
-            })?
-        }
-        PlatformKind::Yukicoder => {
-            let credentials = YukicoderSubmitCredentials {
-                api_key: credentials::yukicoder_api_key(shell)?,
-            };
+        print_status(
+            shell,
+            &[
+                row!["Method", "oj-api"],
+                row!["Language ID", language_id],
+                row!["Size", source_code_len],
+                row!["URL (detail)", url],
+            ],
+        )?;
 
-            Yukicoder::exec(Submit {
-                target: YukicoderSubmitTarget::Url(package_metadata_bin.problem.clone()),
-                credentials,
-                language_id: language_id.to_owned(),
-                code,
-                watch_submission: false,
-                cookie_storage: (),
-                timeout,
-                shell: shell.borrow_mut(),
-            })?
-        }
-    };
+        tempdir.close()?;
+    }
+    Ok(())
+}
 
-    shell.status("Successfully", "submitted the code")?;
-
+fn print_status(shell: &mut Shell, rows: &[Row]) -> io::Result<()> {
     let mut table = Table::new();
-
     *table.get_format() = FormatBuilder::new()
         .padding(1, 1)
         .column_separator('│')
@@ -352,50 +444,8 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         .separator(LinePosition::Intern, LineSeparator::new('─', '┼', '├', '┤'))
         .separator(LinePosition::Bottom, LineSeparator::new('─', '┴', '└', '┘'))
         .build();
-
-    table.add_row(row!["Language ID", language_id]);
-    table.add_row(row!["Size", source_code_len]);
-    table.add_row(row!["URL (submissions)", outcome.submissions_url]);
-    table.add_row(row!["URL (detail)", outcome.submission_url]);
-
+    table.extend(rows.iter().cloned());
     write!(shell.err(), "{}", table)?;
     shell.err().flush()?;
-
-    if !no_watch {
-        let cookie_storage = CookieStorage::with_jsonl(cookies_path)?;
-        let timeout = crate::web::TIMEOUT;
-
-        match PlatformKind::from_url(&package_metadata_bin.problem)? {
-            PlatformKind::Atcoder => {
-                let contest =
-                    snowchains_core::web::atcoder_contest_id(&package_metadata_bin.problem)?;
-
-                let shell = RefCell::new(shell);
-
-                let credentials = AtcoderWatchSubmissionsCredentials {
-                    username_and_password: &mut credentials::username_and_password(
-                        &shell,
-                        "Username: ",
-                        "Password: ",
-                    ),
-                };
-
-                Atcoder::exec(WatchSubmissions {
-                    target: AtcoderWatchSubmissionsTarget { contest },
-                    credentials,
-                    cookie_storage,
-                    timeout,
-                    shell: &shell,
-                })?;
-            }
-            PlatformKind::Codeforces => {
-                shell.warn("watching submissions for Codeforces is not implemented")?;
-            }
-            PlatformKind::Yukicoder => {
-                shell.warn("watching submissions for yukicoder is not implemented")?;
-            }
-        }
-    }
-
-    Ok(())
+    shell.status("Successfully", "submitted the code")
 }

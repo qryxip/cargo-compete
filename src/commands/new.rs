@@ -1,18 +1,16 @@
 use crate::{
     config::{
-        CargoCompeteConfig, CargoCompeteConfigNewTemplateDependencies,
+        CargoCompeteConfig, CargoCompeteConfigNew, CargoCompeteConfigNewTemplateDependencies,
         CargoCompeteConfigNewTemplateSrc,
     },
+    oj_api,
     shell::{ColorChoice, Shell},
 };
 use anyhow::{anyhow, bail, Context as _};
 use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
-use snowchains_core::web::{
-    PlatformKind, ProblemsInContest, RetrieveTestCasesOutcome, RetrieveTestCasesOutcomeProblem,
-    YukicoderRetrieveTestCasesTargets,
-};
+use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
 use std::{
     collections::BTreeMap,
     iter,
@@ -75,8 +73,11 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let cargo_compete_dir = cargo_compete_config_path.with_file_name("");
     let cargo_compete_config = crate::config::load(&cargo_compete_config_path, shell)?;
 
-    match cargo_compete_config.new.platform {
-        PlatformKind::Atcoder => {
+    match &cargo_compete_config.new {
+        CargoCompeteConfigNew::CargoCompete {
+            platform: PlatformKind::Atcoder,
+            ..
+        } => {
             let contest = contest.with_context(|| "`contest` is required for AtCoder")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -88,19 +89,14 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             )?;
 
             let contest = outcome
-                .problems
                 .get(0)
-                .and_then(|p| p.contest.as_ref())
-                .with_context(|| "empty result")?
-                .id
-                .clone();
+                .and_then(|p| p.contest_url.as_ref())
+                .and_then(|url| url.path_segments())
+                .and_then(|segments| { segments }.nth(1).map(ToOwned::to_owned))
+                .with_context(|| "empty result")?;
             let group = Group::Atcoder(contest);
 
-            let problems = outcome
-                .problems
-                .iter()
-                .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
-                .collect();
+            let problems = outcome.iter().map(|p| (&*p.index, &p.url)).collect();
 
             let urls = urls(&outcome);
 
@@ -137,7 +133,10 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        PlatformKind::Codeforces => {
+        CargoCompeteConfigNew::CargoCompete {
+            platform: PlatformKind::Codeforces,
+            ..
+        } => {
             let contest = contest.with_context(|| "`contest` is required for Codeforces")?;
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -148,19 +147,14 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             )?;
 
             let contest = outcome
-                .problems
                 .get(0)
-                .and_then(|p| p.contest.as_ref())
-                .with_context(|| "empty result")?
-                .id
-                .clone();
+                .and_then(|p| p.contest_url.as_ref())
+                .and_then(|url| url.path_segments())
+                .and_then(|segments| { segments }.next().map(ToOwned::to_owned))
+                .with_context(|| "empty result")?;
             let group = Group::Codeforces(contest);
 
-            let problems = outcome
-                .problems
-                .iter()
-                .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
-                .collect();
+            let problems = outcome.iter().map(|p| (&*p.index, &p.url)).collect();
 
             let urls = urls(&outcome);
 
@@ -197,7 +191,10 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 )?;
             }
         }
-        PlatformKind::Yukicoder => {
+        CargoCompeteConfigNew::CargoCompete {
+            platform: PlatformKind::Yukicoder,
+            ..
+        } => {
             let contest = contest.as_deref();
             let problems = problems.map(|ps| ps.into_iter().collect());
 
@@ -214,21 +211,17 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             )?;
 
             let contest = outcome
-                .problems
                 .get(0)
-                .and_then(|p| p.contest.as_ref())
-                .map(|c| c.id.clone());
+                .and_then(|p| p.contest_url.as_ref())
+                .and_then(|url| url.path_segments())
+                .and_then(|segments| segments.last().map(ToOwned::to_owned));
 
             let group = match contest {
                 None => Group::YukicoderProblems,
                 Some(contest) => Group::YukicoderContest(contest),
             };
 
-            let problems = outcome
-                .problems
-                .iter()
-                .map(|RetrieveTestCasesOutcomeProblem { index, url, .. }| (&**index, url))
-                .collect();
+            let problems = outcome.iter().map(|p| (&*p.index, &p.url)).collect();
 
             let urls = urls(&outcome);
 
@@ -247,6 +240,77 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                     manifest_dir.to_str().with_context(|| "invalid utf-8")?,
                     &cargo_compete_config.test_suite,
                     outcome,
+                    |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
+                    |_, index| vec![index.to_kebab_case()],
+                    shell,
+                )?,
+            )
+            .collect::<Vec<_>>();
+
+            if open {
+                crate::open::open(
+                    &urls,
+                    cargo_compete_config.open,
+                    &file_paths,
+                    &manifest_dir,
+                    &cargo_compete_dir,
+                    shell,
+                )?;
+            }
+        }
+        CargoCompeteConfigNew::OjApi {
+            url: contest_url, ..
+        } => {
+            if problems.is_some() {
+                bail!("`--problems` option is not allowed for `oj-api`");
+            }
+
+            let contest_id = contest.with_context(|| "`contest` is required for oj-api")?;
+            let contest_url = &contest_url
+                .render(&object!({
+                    "id": &contest_id,
+                }))?
+                .parse()?;
+
+            let outcome = oj_api::get_contest(contest_url, &cargo_compete_dir, shell)?
+                .into_iter()
+                .map(|problem_url| {
+                    let problem =
+                        oj_api::get_problem(&problem_url, full, &cargo_compete_dir, shell)?;
+                    let problem =
+                        crate::web::retrieve_testcases::Problem::from_oj_api_with_alphabet(
+                            problem, full,
+                        )?;
+                    Ok((problem_url, problem))
+                })
+                .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
+
+            let group = &Group::OjApi(contest_id);
+
+            let (manifest_dir, src_paths) = create_new_package(
+                &cargo_compete_config_path,
+                &cargo_compete_config,
+                group,
+                &outcome.iter().map(|(u, p)| (&*p.index, u)).collect(),
+                shell,
+            )?;
+
+            let (urls, problems) = {
+                let (mut urls, mut problems) = (vec![], vec![]);
+                for (url, problem) in outcome {
+                    urls.push(url);
+                    problems.push(problem);
+                }
+                (urls, problems)
+            };
+
+            let file_paths = itertools::zip_eq(
+                src_paths,
+                crate::web::retrieve_testcases::save_test_cases(
+                    &cargo_compete_dir,
+                    manifest_dir.to_str().with_context(|| "invalid utf-8")?,
+                    &cargo_compete_config.test_suite,
+                    problems,
                     |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
                     |_, index| vec![index.to_kebab_case()],
                     shell,
@@ -269,8 +333,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn urls(outcome: &RetrieveTestCasesOutcome) -> Vec<Url> {
-    outcome.problems.iter().map(|p| p.url.clone()).collect()
+fn urls(outcome: &[crate::web::retrieve_testcases::Problem<impl Sized>]) -> Vec<Url> {
+    outcome.iter().map(|p| p.url.clone()).collect()
 }
 
 #[derive(Clone, Debug)]
@@ -279,6 +343,7 @@ enum Group {
     Codeforces(String),
     YukicoderProblems,
     YukicoderContest(String),
+    OjApi(String),
 }
 
 impl Group {
@@ -286,19 +351,18 @@ impl Group {
         match self {
             Self::Atcoder(contest)
             | Self::Codeforces(contest)
-            | Self::YukicoderContest(contest) => Some(contest),
+            | Self::YukicoderContest(contest)
+            | Self::OjApi(contest) => Some(contest),
             Self::YukicoderProblems => None,
         }
     }
 
     fn package_name(&self) -> String {
-        match self {
-            Self::Atcoder(contest) => contest.clone(),
-            Self::Codeforces(contest) | Self::YukicoderContest(contest) => {
-                format!("contest{}", contest)
-            }
-            Self::YukicoderProblems => "problems".to_owned(),
+        let mut package_name = self.contest().unwrap_or("problems").to_owned();
+        if package_name.starts_with(|c| ('0'..='9').contains(&c)) {
+            package_name = format!("contest{}", package_name);
         }
+        package_name
     }
 }
 
@@ -311,7 +375,7 @@ fn create_new_package(
 ) -> anyhow::Result<(PathBuf, Vec<PathBuf>)> {
     let cargo_compete_config_dir = cargo_compete_config_path.with_file_name("");
 
-    let manifest_dir = cargo_compete_config.new.path.render(&object!({
+    let manifest_dir = cargo_compete_config.new.path().render(&object!({
         "contest": group.contest(),
         "package_name": group.package_name(),
     }))?;
@@ -379,7 +443,7 @@ fn create_new_package(
         arr
     });
 
-    let dependencies = match &cargo_compete_config.new.template.dependencies {
+    let dependencies = match &cargo_compete_config.new.template().dependencies {
         CargoCompeteConfigNewTemplateDependencies::Inline { content } => {
             content
                 .parse::<toml_edit::Document>()
@@ -414,7 +478,7 @@ fn create_new_package(
     }
     let mut manifest = manifest.parse::<toml_edit::Document>()?;
 
-    if let Some(profile) = &cargo_compete_config.new.template.profile {
+    if let Some(profile) = &cargo_compete_config.new.template().profile {
         let mut profile = profile.clone();
         profile.as_table_mut().set_implicit(true);
         let mut head = toml_edit::Document::new();
@@ -459,7 +523,7 @@ fn create_new_package(
 
     crate::fs::write(&manifest_path, manifest.to_string_in_original_order())?;
 
-    let src = match &cargo_compete_config.new.template.src {
+    let src = match &cargo_compete_config.new.template().src {
         CargoCompeteConfigNewTemplateSrc::Inline { content } => content.clone(),
         CargoCompeteConfigNewTemplateSrc::File { path } => {
             crate::fs::read_to_string(cargo_compete_config_path.with_file_name("").join(path))?

@@ -114,12 +114,12 @@ pub(crate) fn test_suite_path(
     problem_url: &Url,
     shell: &mut Shell,
 ) -> anyhow::Result<PathBuf> {
-    let contest = match PlatformKind::from_url(problem_url)? {
-        PlatformKind::Atcoder => Some(snowchains_core::web::atcoder_contest_id(problem_url)?),
-        PlatformKind::Codeforces => {
+    let contest = match PlatformKind::from_url(problem_url) {
+        Ok(PlatformKind::Atcoder) => Some(snowchains_core::web::atcoder_contest_id(problem_url)?),
+        Ok(PlatformKind::Codeforces) => {
             Some(snowchains_core::web::codeforces_contest_id(problem_url)?.to_string())
         }
-        PlatformKind::Yukicoder => None,
+        _ => None,
     };
 
     let vars = object!({

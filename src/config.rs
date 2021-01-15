@@ -100,36 +100,153 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) submit: CargoCompeteConfigSubmit,
 }
 
-#[derive(Deserialize, Derivative)]
+#[derive(Derivative)]
 #[derivative(Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) struct CargoCompeteConfigNew {
-    #[serde(deserialize_with = "deserialize_platform_kind_in_kebab_case")]
-    pub(crate) platform: PlatformKind,
-    #[derivative(Debug = "ignore")]
-    #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
-    pub(crate) path: liquid::Template,
-    pub(crate) template: CargoCompeteConfigNewTemplate,
+pub(crate) enum CargoCompeteConfigNew {
+    CargoCompete {
+        platform: PlatformKind,
+        #[derivative(Debug = "ignore")]
+        path: liquid::Template,
+        template: CargoCompeteConfigNewTemplate,
+    },
+    OjApi {
+        #[derivative(Debug = "ignore")]
+        url: liquid::Template,
+        #[derivative(Debug = "ignore")]
+        path: liquid::Template,
+        template: CargoCompeteConfigNewTemplate,
+    },
 }
 
-fn deserialize_platform_kind_in_kebab_case<'de, D>(
-    deserializer: D,
-) -> Result<PlatformKind, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    return PlatformKindKebabCased::deserialize(deserializer).map(|kind| match kind {
-        PlatformKindKebabCased::Atcoder => PlatformKind::Atcoder,
-        PlatformKindKebabCased::Codeforces => PlatformKind::Codeforces,
-        PlatformKindKebabCased::Yukicoder => PlatformKind::Yukicoder,
-    });
+impl CargoCompeteConfigNew {
+    pub(crate) fn path(&self) -> &liquid::Template {
+        match self {
+            Self::CargoCompete { path, .. } | Self::OjApi { path, .. } => path,
+        }
+    }
 
-    #[derive(Deserialize)]
-    #[serde(rename_all = "kebab-case")]
-    enum PlatformKindKebabCased {
-        Atcoder,
-        Codeforces,
-        Yukicoder,
+    pub(crate) fn template(&self) -> &CargoCompeteConfigNewTemplate {
+        match self {
+            Self::CargoCompete { template, .. } | Self::OjApi { template, .. } => template,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return match WithExplicitTag::deserialize(deserializer)? {
+            WithExplicitTag::CargoCompete {
+                rest:
+                    CargoCompete {
+                        platform,
+                        path,
+                        template,
+                    },
+                ..
+            } => Ok(Self::CargoCompete {
+                platform,
+                path,
+                template,
+            }),
+            WithExplicitTag::OjApi {
+                url,
+                path,
+                template,
+                ..
+            } => Ok(Self::OjApi {
+                url,
+                path,
+                template,
+            }),
+            WithExplicitTag::Other(value) => {
+                let CargoCompete {
+                    platform,
+                    path,
+                    template,
+                } = value.try_into().map_err(D::Error::custom)?;
+                Ok(Self::CargoCompete {
+                    platform,
+                    path,
+                    template,
+                })
+            }
+        };
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum WithExplicitTag {
+            CargoCompete {
+                #[allow(dead_code)]
+                #[serde(deserialize_with = "cargo_compete_tag")]
+                kind: (),
+                #[serde(flatten)]
+                rest: CargoCompete,
+            },
+            OjApi {
+                #[allow(dead_code)]
+                #[serde(deserialize_with = "oj_api_tag")]
+                kind: (),
+                #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
+                url: liquid::Template,
+                #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
+                path: liquid::Template,
+                template: CargoCompeteConfigNewTemplate,
+            },
+            Other(toml::Value),
+        }
+
+        #[derive(Deserialize)]
+        struct CargoCompete {
+            #[serde(deserialize_with = "deserialize_platform_kind_in_kebab_case")]
+            platform: PlatformKind,
+            #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
+            path: liquid::Template,
+            template: CargoCompeteConfigNewTemplate,
+        }
+
+        fn deserialize_platform_kind_in_kebab_case<'de, D>(
+            deserializer: D,
+        ) -> Result<PlatformKind, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            return PlatformKindKebabCased::deserialize(deserializer).map(|kind| match kind {
+                PlatformKindKebabCased::Atcoder => PlatformKind::Atcoder,
+                PlatformKindKebabCased::Codeforces => PlatformKind::Codeforces,
+                PlatformKindKebabCased::Yukicoder => PlatformKind::Yukicoder,
+            });
+
+            #[derive(Deserialize)]
+            #[serde(rename_all = "kebab-case")]
+            enum PlatformKindKebabCased {
+                Atcoder,
+                Codeforces,
+                Yukicoder,
+            }
+        }
+
+        fn cargo_compete_tag<'de, D>(deserializer: D) -> Result<(), D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            if String::deserialize(deserializer)? != "cargo-compete" {
+                return Err(D::Error::custom(""));
+            }
+            Ok(())
+        }
+
+        fn oj_api_tag<'de, D>(deserializer: D) -> Result<(), D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            if String::deserialize(deserializer)? != "oj-api" {
+                return Err(D::Error::custom(""));
+            }
+            Ok(())
+        }
     }
 }
 

@@ -6,13 +6,23 @@
 
 - Added `bin_name` and `bin_alias` variables for `test-suite`.
 
+- Enabled `download`ing/`submit`ting with [online-judge-tools](https://github.com/online-judge-tools/oj).
+
+    `oj-api` in `$PATH` will be used if the domain of a problem URL is unknown.
+    To use this new function, you need to install online-judge-tools first.
+
+    ```toml
+    [package.metadata.cargo-compete.bin]
+    aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }
+    ```
+
 ### Changed
 
 - Simplified `package.metadata.cargo-compete.bin.*.problem`.
 
     - Removed `package.metadata.cargo-compete.bin.*.problem.{platform, contest, index}`.
-    - URLs are required.
-    - `problem = { url = ".." }` is still supported.
+    - URLs are now required.
+    - The `problem = { url = ".." }` format is still supported.
     - `contest` in `test-suite` for yukicoder will be always `null`.
 
     ```diff
