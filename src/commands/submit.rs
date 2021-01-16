@@ -1,5 +1,5 @@
 use crate::{
-    config::{CargoCompeteConfigSubmitTranspile, CargoCompeteConfigSubmitViaBinary},
+    config::CargoCompeteConfigSubmitTranspile,
     oj_api,
     project::{MetadataExt as _, PackageExt as _},
     shell::{ColorChoice, Shell},
@@ -187,78 +187,6 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 .with_context(|| "could not transpile the code")?
         };
     }
-
-    if let Some(CargoCompeteConfigSubmitViaBinary {
-        target,
-        cross,
-        strip,
-        upx,
-    }) = &cargo_compete_config.submit.via_binary
-    {
-        code = {
-            let original_source_code = code;
-
-            let program = if let Some(cross) = cross {
-                cross.clone()
-            } else {
-                crate::process::cargo_exe()?
-            };
-
-            crate::process::with_which(program, &metadata.workspace_root)?
-                .args(&[
-                    "build",
-                    "--bin",
-                    &bin.name,
-                    "--release",
-                    "--target",
-                    &target,
-                ])
-                .cwd(member.manifest_path.parent().unwrap())
-                .display_cwd()
-                .exec_with_shell_status(shell)?;
-
-            let orig_artifact = metadata
-                .target_directory
-                .join(&target)
-                .join("release")
-                .join(&bin.name);
-
-            let artifact = tempfile::Builder::new()
-                .prefix("cargo-compete-exec-base64-encoded-binary-")
-                .tempfile()?
-                .into_temp_path();
-
-            std::fs::copy(orig_artifact, &artifact)?;
-
-            if let Some(strip) = strip {
-                crate::process::with_which(strip, &metadata.workspace_root)?
-                    .arg("-s")
-                    .arg(&artifact)
-                    .exec_with_shell_status(shell)?;
-            }
-
-            if let Some(upx) = upx {
-                crate::process::with_which(upx, &metadata.workspace_root)?
-                    .arg("--best")
-                    .arg(&artifact)
-                    .exec_with_shell_status(shell)?;
-            }
-
-            let artifact_binary = crate::fs::read(&artifact)?;
-
-            artifact.close()?;
-
-            liquid::ParserBuilder::with_stdlib()
-                .build()?
-                .parse(include_str!(
-                    "../../resources/exec-base64-encoded-binary.rs.liquid"
-                ))?
-                .render(&object!({
-                    "source_code": original_source_code,
-                    "base64": base64::encode(artifact_binary),
-                }))?
-        };
-    };
 
     let source_code_len = code.len();
 

@@ -310,7 +310,6 @@ impl Default for CargoCompeteConfigTestProfile {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigSubmit {
     pub(crate) transpile: Option<CargoCompeteConfigSubmitTranspile>,
-    pub(crate) via_binary: Option<CargoCompeteConfigSubmitViaBinary>,
 }
 
 #[derive(Deserialize, Derivative)]
@@ -323,15 +322,6 @@ pub(crate) enum CargoCompeteConfigSubmitTranspile {
         args: Vec<liquid::Template>,
         language_id: Option<String>,
     },
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) struct CargoCompeteConfigSubmitViaBinary {
-    pub(crate) target: String,
-    pub(crate) cross: Option<PathBuf>,
-    pub(crate) strip: Option<PathBuf>,
-    pub(crate) upx: Option<PathBuf>,
 }
 
 fn deserialize_liquid_templates<'de, D>(deserializer: D) -> Result<Vec<liquid::Template>, D::Error>
