@@ -192,7 +192,7 @@ checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
 name = "cargo-compete"
-version = "0.6.5"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "atty",

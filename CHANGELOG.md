@@ -1,12 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] - 2021-01-16Z
 
 ### Added
 
-- Added `bin_name` and `bin_alias` variables for `test-suite`.
+- Added `bin_name` and `bin_alias` variables for `test-suite`. ([#96](https://github.com/qryxip/cargo-compete/pull/96))
 
-- Enabled `download`ing/`submit`ting with [online-judge-tools](https://github.com/online-judge-tools/oj).
+- Enabled `download`ing/`submit`ting with [online-judge-tools](https://github.com/online-judge-tools/oj). ([#98](https://github.com/qryxip/cargo-compete/pull/98))
 
     `oj-api` in `$PATH` will be used if the domain of a problem URL is unknown.
     To use this new function, you need to install online-judge-tools first.
@@ -18,7 +18,7 @@
 
 ### Changed
 
-- Simplified `package.metadata.cargo-compete.bin.*.problem`.
+- Simplified `package.metadata.cargo-compete.bin.*.problem`. ([#96](https://github.com/qryxip/cargo-compete/pull/96))
 
     - Removed `package.metadata.cargo-compete.bin.*.problem.{platform, contest, index}`.
     - URLs are now required.
@@ -43,7 +43,7 @@
 
 ### Deprecated
 
-- Deprecated `problem` variable for `test-suite`.
+- Deprecated `problem` variable for `test-suite`. ([#96](https://github.com/qryxip/cargo-compete/pull/96))
 
     Use `bin_alias` instead.
 
@@ -66,9 +66,9 @@
 
 ### Removed
 
-- Removed the `migrate v04` command.
+- Removed the `migrate v04` command. ([#100](https://github.com/qryxip/cargo-compete/pull/100))
 
-- Removed the `submit.via-binary` configration.
+- Removed the `submit.via-binary` configration. ([#100](https://github.com/qryxip/cargo-compete/pull/100))
 
     Use [cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload) instead.
 
