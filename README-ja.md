@@ -183,7 +183,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 ![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
 
-[`compete.toml`](#設定)の`submit.transpile`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)等のコード変換ツールを使って提出するコードを変換できます。
+[`compete.toml`](#設定)の`submit.transpile`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)や[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)等のコード変換ツールを使って提出するコードを変換できます。
 
 ```toml
 [submit.transpile]
@@ -192,25 +192,12 @@ args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "lib
 #language_id = ""
 ```
 
-## [online-judge-tools](https://github.com/online-judge-tools/oj)の利用
-
-`download`時と`submit`時に`package.metadata.cargo-compete.bin.*.problem`のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。
-
 ```toml
-[package]
-name = "library-checker"
-version = "0.0.0"
-edition = "2018"
-publish = false
-
-[package.metadata.cargo-compete]
-config = "./compete.toml"
-
-[package.metadata.cargo-compete.bin]
-aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }
+[submit.transpile]
+kind = "command"
+args = ["cargo", "executable-payload", "--bin", "{{ bin_name }}"]
+#language_id = ""
 ```
-
-![Record](https://user-images.githubusercontent.com/14125495/104786174-9257b380-57cf-11eb-8d67-ba893ba34f22.mp4)
 
 ## 設定
 
@@ -399,6 +386,26 @@ whiteread = "=0.5.0"
 rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
 ```
+
+## [online-judge-tools](https://github.com/online-judge-tools/oj)の利用
+
+`download`時と`submit`時に`package.metadata.cargo-compete.bin.*.problem`のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。
+
+```toml
+[package]
+name = "library-checker"
+version = "0.0.0"
+edition = "2018"
+publish = false
+
+[package.metadata.cargo-compete]
+config = "./compete.toml"
+
+[package.metadata.cargo-compete.bin]
+aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }
+```
+
+![Video](https://user-images.githubusercontent.com/14125495/104786174-9257b380-57cf-11eb-8d67-ba893ba34f22.mp4)
 
 ## cargo-atcoderとの対応
 
