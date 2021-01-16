@@ -93,7 +93,7 @@ TODO: ↓のスクショをアップデート。今`package.metadata.cargo-compe
 
 **パッケージを対象に取りません。** 引数で与えられた`platform`と`contest`に対して参加登録します。
 
-同様に、`new`コマンド等で自動で参加登録するため事前にこのコマンドを実行しなくてもよいです。
+(`login`コマンドと同様に、)`new`コマンド等で自動で参加登録するため事前にこのコマンドを実行しなくてもよいです。
 
 ### `cargo compete new`
 
@@ -389,7 +389,7 @@ smallvec = "=1.2.0"
 
 ## [online-judge-tools](https://github.com/online-judge-tools/oj)の利用
 
-`download`時と`submit`時に`package.metadata.cargo-compete.bin.*.problem`のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。
+`download`時と`submit`時に対象のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。
 
 ```toml
 [package]
@@ -426,7 +426,7 @@ aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }
 
 他のコマンドと同様に、ワークスペース下に[`compete.toml`](#設定)がある必要があります。
 
-「バイナリ提出」を行う場合の設定は[`compete.toml`](#設定)にあります。
+「バイナリ提出」を行う場合、[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)を使うように`compete.toml`の`submit.transpile`を設定してください。
 
 ### `cargo atcoder test`
 
@@ -448,25 +448,27 @@ cargo-competeの方はブラウザ上の表示に近い挙動をするため、�
 
 ### `cargo atcoder result`
 
-今のところありません。 [`cargo compete watch submission-summaries`](#cargo-compete-watch-submission-summaries)の出力を`| jq -r ".summaries[$nth].detail"`して得たURLをブラウザで開いてください。
+今のところありません。
+[`cargo compete watch submission-summaries`](#cargo-compete-watch-submission-summaries)の出力を`| jq -r ".summaries[$nth].detail"`して得たURLをブラウザで開いてください。
 
 ### `cargo atcoder clear-session`
 
-今のところありません。 [data local directory](https://docs.rs/dirs/3/dirs/fn.data_local_dir.html)下の`cargo-compete`を削除してください。
+今のところありません。
+[local data directory](https://docs.rs/dirs-next/2.0.0/dirs_next/fn.data_local_dir.html)下の`cargo-compete`を削除してください。
 
 ### `cargo atcoder info`
 
-今のところありません。 ログインしているかを確認する場合、[practice contest](https://atcoder.jp/contests/practice)のテストケースをダウンロードしてください。 practice contestの場合問題の閲覧にログインが必要です。
+今のところありません。
+ログインしているかを確認する場合、[practice contest](https://atcoder.jp/contests/practice)のテストケースをダウンロードしてください。 practice contestの場合問題の閲覧にログインが必要です。
 
 ### `cargo atcoder warmup`
 
-今のところありません。上で述べた通り、`target`ディレクトリを共有する場合初回を除きwarmupは不要です。
+今のところありません。
+上で述べた通り、`target`ディレクトリを共有する場合初回を除きwarmupは不要です。
 
 ### `cargo atcoder gen-binary`
 
-今のところありません。
-[`cargo compete submit`](#cargo-compete-submit)で作られるコードはファイルシステムに置かれません。
-このリポジトリの[`resources/exec-base64-encoded-binary.rs.liquid`](https://github.com/qryxip/cargo-compete/blob/master/resources/exec-base64-encoded-binary.rs.liquid)に、`source_code`と`base64`のパラメータを与えたものが提出されます。
+[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)を使ってください。
 
 ## ライセンス
 
