@@ -64,6 +64,20 @@
     test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
     ```
 
+### Removed
+
+- Removed the `migrate v04` command.
+
+- Removed the `submit.via-binary` configration.
+
+    Use [cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload) instead.
+
+    ```toml
+    [submit.transpile]
+    kind = "command"
+    args = ["cargo", "executable-payload", "--bin", "{{ bin_name }}"]
+    ```
+
 ## [0.6.5] - 2020-12-05Z
 
 ### Added
