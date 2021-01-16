@@ -83,18 +83,14 @@ fn main() {
 # Defaults to `"dev"`.
 #profile = "dev"
 
+{% if submit_via_binary == true -%}
+[submit.transpile]
+kind = "command"
+args = ["cargo", "executable-payload", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+#language_id = ""
+{%- else -%}
 #[submit.transpile]
 #kind = "command"
 #args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
 ##language_id = ""
-
-{% if submit_via_binary == true -%}
-  {%- assign comment = "" -%}
-{%- else -%}
-  {%- assign comment = "#" -%}
 {%- endif -%}
-{{ comment }}[submit.via-binary]
-{{ comment }}target = "x86_64-unknown-linux-musl"
-{{ comment }}#cross = "cross"
-{{ comment }}strip = "strip"
-{{ comment }}#upx = "upx"
