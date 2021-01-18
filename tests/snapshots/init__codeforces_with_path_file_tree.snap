@@ -1,0 +1,13 @@
+---
+source: tests/init.rs
+expression: tree
+---
+{
+  "codeforces": {
+    ".cargo": {
+      "config.toml": "[build]\ntarget-dir = \"target\"\n"
+    },
+    "compete.toml": "# Path to the test file (Liquid template)\n#\n# Variables:\n#\n# - `manifest_dir`: Package directory\n# - `contest`:      Contest ID (e.g. \"abc100\")\n# - `bin_name`:     Name of a `bin` target (e.g. \"abc100-a\")\n# - `bin_alias`:    \"Alias\" for a `bin` target defined in `pacakge.metadata.cargo-compete` (e.g. \"a\")\n# - `problem`:      Alias for `bin_alias` (deprecated)\n#\n# Additional filters:\n#\n# - `kebabcase`: Convert to kebab case (by using the `heck` crate)\ntest-suite = \"{{ manifest_dir }}/testcases/{{ bin_alias }}.yml\"\n\n# Open files with the command (`jq` command that outputs `string[] | string[][]`)\n#\n# VSCode:\n#open = '[[\"code\", \"-a\", .manifest_dir], [\"code\"] + (.paths | map([.src, .test_suite]) | flatten)]'\n# Emacs:\n#open = '[\"emacsclient\", \"-n\"] + (.paths | map([.src, .test_suite]) | flatten)'\n\n[new]\nkind = \"cargo-compete\"\n# Platform\n#\n# - atcoder\n# - codeforces\n# - yukicoder\nplatform = \"codeforces\"\n# Path (Liquid template)\n#\n# Variables:\n#\n# - `contest`:      Contest ID. **May be nil**\n# - `package_name`: Package name\npath = \"./{{ contest }}\"\n\n#[new]\n#kind = \"oj-api\"\n#url = \"https://atcoder.jp/contests/{{ id }}\"\n#path = \"./{{ contest }}\"\n\n[new.template]\n#lockfile = \"/path/to/cargo-lock-template.toml\"\n# `profile` for `Cargo.toml`.\n#\n# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.\n#profile = '''\n#[dev]\n#opt-level = 3\n#'''\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\n#proconio = { version = \"0.3.6\", features = [\"derive\"] }\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n\n[test]\n# Profile for `cargo build`. (\"dev\" | \"release\")\n#\n# Defaults to `\"dev\"`.\n#profile = \"dev\"\n\n#[submit.transpile]\n#kind = \"command\"\n#args = [\"cargo\", \"equip\", \"--resolve-cfgs\", \"--remove\", \"docs\", \"--minify\", \"libs\", \"--rustfmt\", \"--check\", \"--bin\", \"{{ bin_name }}\"]\n##language_id = \"\"",
+    "rust-toolchain": "1.42.0"
+  }
+}

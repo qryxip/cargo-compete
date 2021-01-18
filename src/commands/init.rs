@@ -65,6 +65,8 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
         AtcoderCrates::None
     };
 
+    crate::fs::create_dir_all(&path)?;
+
     let mut write_with_status = |file_name: &str, content: &str| -> anyhow::Result<()> {
         let path = path.join(file_name);
         crate::fs::write(&path, content)?;
