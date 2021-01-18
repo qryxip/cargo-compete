@@ -1,0 +1,8 @@
+---
+source: tests/init.rs
+expression: output
+---
+       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}compete.toml
+       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}rust-toolchain
+       Wrote {{ cwd }}{{ main_path_separator }}codeforces{{ main_path_separator }}.cargo{{ main_path_separator }}config.toml
+

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- The `init` command creates target paths.
+
 ## [0.7.0] - 2021-01-16Z
 
 ### Added
