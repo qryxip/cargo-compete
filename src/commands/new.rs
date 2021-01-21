@@ -150,7 +150,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 .get(0)
                 .and_then(|p| p.contest_url.as_ref())
                 .and_then(|url| url.path_segments())
-                .and_then(|segments| { segments }.next().map(ToOwned::to_owned))
+                .and_then(|segments| segments.skip(1).next().map(ToOwned::to_owned))
                 .with_context(|| "empty result")?;
             let group = Group::Codeforces(contest);
 
