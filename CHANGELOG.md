@@ -2,9 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Improved around Dropbox. ([qryxip/snowchains#116](https://github.com/qryxip/snowchains/pull/116))
+
 ### Fixed
 
 - The `init` command creates target paths.
+- Fixed URL parsing for Codeforces. ([qryxip/snowchains#119](https://github.com/qryxip/snowchains/pull/119))
 
 ## [0.7.0] - 2021-01-16Z
 
