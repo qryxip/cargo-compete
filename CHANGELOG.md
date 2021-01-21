@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.1] - 2021-01-21Z
 
 ### Changed
 
@@ -8,8 +8,9 @@
 
 ### Fixed
 
-- The `init` command creates target paths.
 - Fixed URL parsing for Codeforces. ([qryxip/snowchains#119](https://github.com/qryxip/snowchains/pull/119))
+- The `init` command creates target paths. ([#105](https://github.com/qryxip/cargo-compete/pull/105))
+- Fixed a problem where generated package names are set to `"contest"` for Codeforces. ([#108](https://github.com/qryxip/cargo-compete/pull/108) by [@tamuhey](https://github.com/tamuhey))
 
 ## [0.7.0] - 2021-01-16Z
 
