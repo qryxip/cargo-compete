@@ -107,9 +107,6 @@ name = "problems"
 version = "0.1.0"
 edition = "2018"
 
-[package.metadata.cargo-compete]
-config = "../compete.toml"
-
 [package.metadata.cargo-compete.bin]
 {problem} = {{ name = "{contest}-{problem}", problem = "{url}" }}
 

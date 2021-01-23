@@ -6,14 +6,13 @@ use crate::{
     oj_api,
     shell::{ColorChoice, Shell},
 };
-use anyhow::{anyhow, bail, Context as _};
+use anyhow::{bail, Context as _};
 use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
 use std::{
     collections::BTreeMap,
-    iter,
     path::{Path, PathBuf},
 };
 use structopt::StructOpt;
@@ -373,8 +372,6 @@ fn create_new_package(
     problems: &BTreeMap<&str, &Url>,
     shell: &mut Shell,
 ) -> anyhow::Result<(PathBuf, Vec<PathBuf>)> {
-    let cargo_compete_config_dir = cargo_compete_config_path.with_file_name("");
-
     let manifest_dir = cargo_compete_config.new.path().render(&object!({
         "contest": group.contest(),
         "package_name": group.package_name(),
@@ -489,22 +486,6 @@ fn create_new_package(
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]["bin"]);
-
-    manifest["package"]["metadata"]["cargo-compete"]["config"] = toml_edit::value({
-        if let Ok(rel_manifest_dir) = manifest_dir.strip_prefix(&cargo_compete_config_dir) {
-            rel_manifest_dir
-                .iter()
-                .map(|_| "..")
-                .chain(iter::once("compete.toml"))
-                .join("/")
-        } else {
-            manifest_dir
-                .clone()
-                .into_os_string()
-                .into_string()
-                .map_err(|s| anyhow!("invalid utf-8 path: {:?}", s))?
-        }
-    });
 
     for (key, val) in package_metadata_cargo_compete_bin.as_table().iter() {
         manifest["package"]["metadata"]["cargo-compete"]["bin"][key] = val.clone();

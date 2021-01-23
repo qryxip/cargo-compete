@@ -1,4 +1,4 @@
-# cargo-compete
+#jcargo-compete
 
 [![CI](https://github.com/qryxip/cargo-compete/workflows/CI/badge.svg)](https://github.com/qryxip/cargo-compete/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/qryxip/cargo-compete/branch/master/graph/badge.svg)](https://codecov.io/gh/qryxip/cargo-compete/branch/master)
@@ -331,9 +331,6 @@ version = "0.1.0"
 authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
 
-[package.metadata.cargo-compete]
-config = "../compete.toml"
-
 [package.metadata.cargo-compete.bin]
 a = { name = "practice-a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
 b = { name = "practice-b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
@@ -397,9 +394,6 @@ name = "library-checker"
 version = "0.0.0"
 edition = "2018"
 publish = false
-
-[package.metadata.cargo-compete]
-config = "./compete.toml"
 
 [package.metadata.cargo-compete.bin]
 aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }

@@ -1,8 +1,9 @@
-use crate::shell::Shell;
+use crate::{project::PackageExt as _, shell::Shell};
 use anyhow::Context as _;
 use derivative::Derivative;
 use heck::KebabCase as _;
 use indexmap::indexset;
+use krates::cm;
 use liquid::object;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
@@ -77,12 +78,27 @@ pub(crate) fn load(
     Ok(config)
 }
 
-pub(crate) fn load_from_rel_path(
-    manifest_path: &Path,
-    rel_path: impl AsRef<Path>,
+pub(crate) fn load_for_package(
+    package: &cm::Package,
     shell: &mut Shell,
 ) -> anyhow::Result<CargoCompeteConfig> {
-    load(manifest_path.with_file_name("").join(rel_path), shell)
+    let manifest_dir = package.manifest_path.with_file_name("");
+    let path = if let Some(config) = package.read_package_metadata(shell)?.config {
+        manifest_dir.join(config)
+    } else {
+        manifest_dir
+            .ancestors()
+            .map(|p| p.join("compete.toml"))
+            .find(|p| p.exists())
+            .with_context(|| {
+                format!(
+                    "could not find `compete.toml` in `{}` or any parent directory. first, create \
+                     one  with `cargo compete init`",
+                    manifest_dir.display(),
+                )
+            })?
+    };
+    load(path, shell)
 }
 
 #[derive(Deserialize, Derivative)]

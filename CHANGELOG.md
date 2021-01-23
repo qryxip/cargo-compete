@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Made `package.metadata.cargo-compete.config` optional.
+
+    ```diff
+    [package.metadata.cargo-compete]
+    -config = "../compete.toml"
+    ```
+
 ## [0.7.1] - 2021-01-21Z
 
 ### Changed
