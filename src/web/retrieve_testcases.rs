@@ -32,7 +32,7 @@ use url::Url;
 pub(crate) fn dl_for_existing_package(
     package: &cm::Package,
     package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBin>,
-    bin_indexes: Option<&HashSet<String>>,
+    bin_name_aliases: Option<&HashSet<String>>,
     full: bool,
     workspace_root: &Path,
     test_suite_path: &liquid::Template,
@@ -41,31 +41,28 @@ pub(crate) fn dl_for_existing_package(
 ) -> anyhow::Result<()> {
     let mut snowchains_targets: BTreeMap<_, BTreeMap<_, BTreeSet<_>>> = btreemap!();
     let mut oj_targets: BTreeMap<_, BTreeSet<_>> = btreemap!();
-    let mut bin_indexes = bin_indexes.cloned();
+    let mut bin_name_aliases = bin_name_aliases.cloned();
 
-    for (bin_index, PackageMetadataCargoCompeteBin { name, problem, .. }) in package_metadata_bin {
-        if bin_indexes
-            .as_mut()
-            .map_or(true, |bin_indexes| bin_indexes.remove(bin_index))
-        {
+    for (name, PackageMetadataCargoCompeteBin { alias, problem }) in package_metadata_bin {
+        let matched = bin_name_aliases.as_mut().map_or(true, |bin_name_aliases| {
+            bin_name_aliases.remove(name) || bin_name_aliases.remove(alias)
+        });
+        if matched {
             if let Ok(platform) = PlatformKind::from_url(problem) {
                 snowchains_targets
                     .entry(platform)
                     .or_default()
                     .entry(problem)
                     .or_default()
-                    .insert((name, bin_index));
+                    .insert((name, alias));
             } else {
-                oj_targets
-                    .entry(problem)
-                    .or_default()
-                    .insert((name, bin_index));
+                oj_targets.entry(problem).or_default().insert((name, alias));
             }
         }
     }
 
-    for bin_index in bin_indexes.into_iter().flatten() {
-        shell.warn(format!("no such index: {}", bin_index))?;
+    for bin_name_or_alias in bin_name_aliases.into_iter().flatten() {
+        shell.warn(format!("no such `bin`: {}", bin_name_or_alias))?;
     }
 
     let mut outcome = vec![];

@@ -33,8 +33,8 @@ pub struct OptCompeteRetrieveSubmissionSummaries {
     )]
     pub color: ColorChoice,
 
-    /// Index for `package.metadata.cargo-compete.bin`
-    pub problem: Option<String>,
+    /// Name or alias for a binary
+    pub bin_name_or_alias: Option<String>,
 }
 
 pub(crate) fn run(
@@ -45,7 +45,7 @@ pub(crate) fn run(
         package,
         manifest_path,
         color,
-        problem,
+        bin_name_or_alias,
     } = opt;
 
     let crate::Context {
@@ -66,8 +66,19 @@ pub(crate) fn run(
 
     let mut atcoder_targets = indexset!();
 
-    for (bin_index, PackageMetadataCargoCompeteBin { problem: url, .. }) in &package_metadata.bin {
-        if problem.as_ref().map_or(true, |p| p == bin_index) {
+    for (
+        bin_name,
+        PackageMetadataCargoCompeteBin {
+            alias: bin_alias,
+            problem: url,
+            ..
+        },
+    ) in &package_metadata.bin
+    {
+        if bin_name_or_alias
+            .as_ref()
+            .map_or(true, |s| [bin_name, bin_alias].contains(&s))
+        {
             match PlatformKind::from_url(url).with_context(|| "unsupported platform")? {
                 PlatformKind::Atcoder => {
                     atcoder_targets.insert(snowchains_core::web::atcoder_contest_id(&url)?);

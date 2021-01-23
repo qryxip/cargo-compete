@@ -405,24 +405,24 @@ fn create_new_package(
         .keys()
         .map(|problem_index| {
             format!(
-                r#"{} = {{ name = "", problem = "" }}
+                r#"{} = {{ alias = "", problem = "" }}
 "#,
-                escape_key(&problem_index.to_kebab_case()),
+                escape_key(&format!(
+                    "{}-{}",
+                    group.package_name(),
+                    problem_index.to_kebab_case(),
+                )),
             )
         })
         .join("")
         .parse::<toml_edit::Document>()?;
 
     for (problem_index, problem_url) in problems {
-        package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["name"] =
-            toml_edit::value(format!(
-                "{}-{}",
-                group.package_name(),
-                problem_index.to_kebab_case(),
-            ));
-
-        package_metadata_cargo_compete_bin[&problem_index.to_kebab_case()]["problem"] =
-            toml_edit::value(problem_url.as_str());
+        let bin_name = &format!("{}-{}", group.package_name(), problem_index.to_kebab_case());
+        let bin_alias = problem_index.to_kebab_case();
+        let problem_url = problem_url.as_str();
+        package_metadata_cargo_compete_bin[bin_name]["alias"] = toml_edit::value(bin_alias);
+        package_metadata_cargo_compete_bin[bin_name]["problem"] = toml_edit::value(problem_url);
     }
 
     let bin = toml_edit::Item::ArrayOfTables({

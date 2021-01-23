@@ -108,7 +108,7 @@ version = "0.1.0"
 edition = "2018"
 
 [package.metadata.cargo-compete.bin]
-{problem} = {{ name = "{contest}-{problem}", problem = "{url}" }}
+{contest}-{problem} = {{ alias = "{problem}", problem = "{url}" }}
 
 [[bin]]
 name = "{contest}-{problem}"

@@ -29,7 +29,7 @@ static YUKICODER_RUST_LANG_ID: &str = "rust";
 
 #[derive(StructOpt, Debug)]
 #[structopt(usage(
-    r"cargo compete submit [OPTIONS] <index>
+    r"cargo compete submit [OPTIONS] <bin-name-or-alias>
     cargo compete submit [OPTIONS] --src <PATH>",
 ))]
 pub struct OptCompeteSubmit {
@@ -45,8 +45,8 @@ pub struct OptCompeteSubmit {
     #[structopt(
         long,
         value_name("PATH"),
-        required_unless("index"),
-        conflicts_with("index")
+        required_unless("bin-name-or-alias"),
+        conflicts_with("bin-name-or-alias")
     )]
     pub src: Option<PathBuf>,
 
@@ -84,8 +84,8 @@ pub struct OptCompeteSubmit {
     pub color: ColorChoice,
 
     #[structopt(required_unless("src"))]
-    /// Index for `package.metadata.cargo-compete.bin`
-    pub index: Option<String>,
+    /// Name or alias for a `bin`
+    pub bin_name_or_alias: Option<String>,
 }
 
 pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Result<()> {
@@ -100,7 +100,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         release,
         manifest_path,
         color,
-        index,
+        bin_name_or_alias,
     } = opt;
 
     let crate::Context {
@@ -122,12 +122,13 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let (bin, package_metadata_bin) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
         let bin = member.bin_target_by_src_path(src)?;
-        let (_, package_metadata_bin) = package_metadata.bin_by_bin_name(&bin.name)?;
-        (bin, package_metadata_bin)
-    } else if let Some(index) = index {
-        let package_metadata_bin = package_metadata.bin_by_bin_index(index)?;
-        let bin = member.bin_target_by_name(&package_metadata_bin.name)?;
-        (bin, package_metadata_bin)
+        let (_, pkg_md_bin) = package_metadata.bin_by_bin_name_or_alias(&bin.name)?;
+        (bin, pkg_md_bin)
+    } else if let Some(bin_name_or_alias) = &bin_name_or_alias {
+        let (bin_name, pkg_md_bin) =
+            package_metadata.bin_by_bin_name_or_alias(bin_name_or_alias)?;
+        let bin = member.bin_target_by_name(bin_name)?;
+        (bin, pkg_md_bin)
     } else {
         unreachable!()
     };
