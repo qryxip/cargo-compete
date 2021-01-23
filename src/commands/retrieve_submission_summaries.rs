@@ -62,7 +62,7 @@ pub(crate) fn run(
     let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata(shell)?;
-    crate::config::load_from_rel_path(&member.manifest_path, &package_metadata.config, shell)?;
+    crate::config::load_for_package(&member, shell)?;
 
     let mut atcoder_targets = indexset!();
 

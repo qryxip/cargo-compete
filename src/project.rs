@@ -17,7 +17,7 @@ use url::Url;
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompete {
-    pub(crate) config: PathBuf,
+    pub(crate) config: Option<PathBuf>,
     pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
 }
 
