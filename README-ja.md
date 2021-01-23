@@ -332,8 +332,8 @@ authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
 
 [package.metadata.cargo-compete.bin]
-a = { name = "practice-a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
-b = { name = "practice-b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+practice-a = { alias = "a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+practice-b = { alias = "b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
 
 [[bin]]
 name = "practice-a"
@@ -396,7 +396,7 @@ edition = "2018"
 publish = false
 
 [package.metadata.cargo-compete.bin]
-aplusb = { name = "aplusb", problem = "https://judge.yosupo.jp/problem/aplusb" }
+aplusb = { problem = "https://judge.yosupo.jp/problem/aplusb" }
 ```
 
 ![Video](https://user-images.githubusercontent.com/14125495/104786174-9257b380-57cf-11eb-8d67-ba893ba34f22.mp4)

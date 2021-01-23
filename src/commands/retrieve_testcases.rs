@@ -1,5 +1,5 @@
 use crate::{
-    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
+    project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
 use std::{collections::HashSet, path::PathBuf};
@@ -12,9 +12,9 @@ pub struct OptCompeteRetrieveTestcases {
     #[structopt(long)]
     pub full: bool,
 
-    /// Retrieve only the problems
-    #[structopt(long, value_name("INDEX"))]
-    pub problems: Option<Vec<String>>,
+    /// Retrieve only the problems for the binaries
+    #[structopt(long, value_name("NAME_OR_ALIAS"))]
+    pub bin: Option<Vec<String>>,
 
     /// Package (see `cargo help pkgid`)
     #[structopt(short, long, value_name("SPEC"))]
@@ -37,7 +37,7 @@ pub struct OptCompeteRetrieveTestcases {
 pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteRetrieveTestcases {
         full,
-        problems,
+        bin,
         package,
         manifest_path,
         color,
@@ -51,8 +51,8 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
     shell.set_color_choice(color);
 
-    let problems = problems.map(|ps| ps.into_iter().collect::<HashSet<_>>());
-    let problems = problems.as_ref();
+    let bin = bin.map(|bin| bin.into_iter().collect::<HashSet<_>>());
+    let bin = bin.as_ref();
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
@@ -62,31 +62,10 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     let package_metadata = member.read_package_metadata(shell)?;
     let cargo_compete_config = crate::config::load_for_package(&member, shell)?;
 
-    let mut urls = vec![];
-    let mut file_paths = vec![];
-
-    for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata.bin {
-        if problems.map_or(true, |ps| ps.contains(index)) {
-            urls.push(problem);
-
-            let test_suite_path = crate::testing::test_suite_path(
-                &metadata.workspace_root,
-                member.manifest_dir_utf8(),
-                &cargo_compete_config.test_suite,
-                name,
-                index,
-                problem,
-                shell,
-            )?;
-
-            file_paths.push((&member.bin_target_by_name(name)?.src_path, test_suite_path));
-        }
-    }
-
     crate::web::retrieve_testcases::dl_for_existing_package(
         &member,
         &package_metadata.bin,
-        problems,
+        bin,
         full,
         &metadata.workspace_root,
         &cargo_compete_config.test_suite,

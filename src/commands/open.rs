@@ -13,9 +13,9 @@ pub struct OptCompeteOpen {
     #[structopt(long)]
     pub full: bool,
 
-    /// Problem indexes
-    #[structopt(long)]
-    pub problems: Option<Vec<String>>,
+    /// Open for only binaries
+    #[structopt(long, value_name("NAME_OR_ALIAS"))]
+    pub bin: Option<Vec<String>>,
 
     /// Package (see `cargo help pkgid`)
     #[structopt(short, long, value_name("SPEC"))]
@@ -38,7 +38,7 @@ pub struct OptCompeteOpen {
 pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteOpen {
         full,
-        problems,
+        bin,
         package,
         manifest_path,
         color,
@@ -52,7 +52,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     shell.set_color_choice(color);
 
-    let problems = problems.map(|ps| ps.into_iter().collect::<HashSet<_>>());
+    let bin = bin.map(|bin| bin.into_iter().collect::<HashSet<_>>());
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
@@ -66,8 +66,11 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     let mut file_paths = vec![];
     let mut missing = hashset!();
 
-    for (index, PackageMetadataCargoCompeteBin { name, problem, .. }) in &package_metadata.bin {
-        if problems.as_ref().map_or(true, |ps| ps.contains(index)) {
+    for (name, PackageMetadataCargoCompeteBin { alias, problem }) in &package_metadata.bin {
+        if bin
+            .as_ref()
+            .map_or(true, |bin| bin.contains(name) || bin.contains(alias))
+        {
             urls.push(problem.clone());
 
             let test_suite_path = crate::testing::test_suite_path(
@@ -75,13 +78,13 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
                 member.manifest_dir_utf8(),
                 &cargo_compete_config.test_suite,
                 name,
-                index,
+                alias,
                 &problem,
                 shell,
             )?;
 
             if !test_suite_path.exists() {
-                missing.insert(index.clone());
+                missing.insert(name.clone());
             }
 
             file_paths.push((&member.bin_target_by_name(name)?.src_path, test_suite_path));

@@ -14,71 +14,97 @@ use std::{
 };
 use url::Url;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompete {
     pub(crate) config: Option<PathBuf>,
+    #[serde(deserialize_with = "deserialize_bin")]
     pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
 }
 
-impl PackageMetadataCargoCompete {
-    pub(crate) fn bin_by_bin_index(
-        &self,
-        bin_index: impl AsRef<str>,
-    ) -> anyhow::Result<&PackageMetadataCargoCompeteBin> {
-        let bin_index = bin_index.as_ref();
-
-        self.bin.get(bin_index).with_context(|| {
-            format!(
-                "could not find `{}` in `package.metadata.cargo-compete.bin`",
-                bin_index,
-            )
-        })
-    }
-
-    pub(crate) fn bin_by_bin_name(
-        &self,
-        bin_name: impl AsRef<str>,
-    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBin)> {
-        let bin_name = bin_name.as_ref();
-
-        self.bin
-            .iter()
-            .find(|(_, PackageMetadataCargoCompeteBin { name, .. })| name == bin_name)
-            .map(|(k, v)| (&**k, v))
-            .with_context(|| {
-                format!(
-                    "could not find metadata in `package.metadata.cargo-compete.bin` which points \
-                     `{}`",
-                    bin_name,
-                )
-            })
-    }
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) struct PackageMetadataCargoCompeteBin {
-    pub(crate) name: String,
-    #[serde(deserialize_with = "deserialize_bin_problem")]
-    pub(crate) problem: Url,
-}
-
-fn deserialize_bin_problem<'de, D>(deserializer: D) -> Result<Url, D::Error>
+fn deserialize_bin<'de, D>(
+    deserializer: D,
+) -> Result<IndexMap<String, PackageMetadataCargoCompeteBin>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    return match Repr::deserialize(deserializer) {
-        Ok(Repr::V1 { url }) | Ok(Repr::V2(url)) => Ok(url),
-        Err(_) => Err(D::Error::custom(r#"expected `"<url>" | { url: "<url>" }`"#)),
-    };
+    let map = IndexMap::<String, Repr>::deserialize(deserializer)?;
+    return Ok(map
+        .into_iter()
+        .map(
+            |(
+                key,
+                Repr {
+                    name,
+                    alias,
+                    problem,
+                },
+            )| {
+                let (name, alias) = if let Some(alias) = alias {
+                    (key, alias)
+                } else if let Some(name) = name {
+                    (name, key)
+                } else {
+                    (key.clone(), key)
+                };
+                (name, PackageMetadataCargoCompeteBin { alias, problem })
+            },
+        )
+        .collect());
 
     #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Repr {
-        V1 { url: Url },
-        V2(Url),
+    #[serde(rename_all = "kebab-case")]
+    struct Repr {
+        name: Option<String>,
+        alias: Option<String>,
+        #[serde(deserialize_with = "deserialize_bin_problem")]
+        problem: Url,
     }
+
+    fn deserialize_bin_problem<'de, D>(deserializer: D) -> Result<Url, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return match Repr::deserialize(deserializer) {
+            Ok(Repr::V1 { url }) | Ok(Repr::V2(url)) => Ok(url),
+            Err(_) => Err(D::Error::custom(r#"expected `"<url>" | { url: "<url>" }`"#)),
+        };
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr {
+            V1 { url: Url },
+            V2(Url),
+        }
+    }
+}
+
+impl PackageMetadataCargoCompete {
+    pub(crate) fn bin_by_bin_name_or_alias(
+        &self,
+        bin_name_or_alias: impl AsRef<str>,
+    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBin)> {
+        let bin_name_or_alias = bin_name_or_alias.as_ref();
+
+        match *self
+            .bin
+            .iter()
+            .filter(|(name, PackageMetadataCargoCompeteBin { alias, .. })| {
+                [&**name, &**alias].contains(&bin_name_or_alias)
+            })
+            .collect::<Vec<_>>()
+        {
+            [(k, v)] => Ok((k, v)),
+            [] => bail!("no `problem` for: {}", bin_name_or_alias),
+            [..] => bail!("multiple `problem`s for {}", bin_name_or_alias),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct PackageMetadataCargoCompeteBin {
+    pub(crate) alias: String,
+    pub(crate) problem: Url,
 }
 
 #[ext(MetadataExt)]
@@ -290,4 +316,74 @@ pub(crate) fn set_cargo_config_build_target_dir(
         shell.status("Wrote", cargo_config_path.display())?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::project::{PackageMetadataCargoCompete, PackageMetadataCargoCompeteBin};
+    use indexmap::indexmap;
+    use pretty_assertions::assert_eq;
+    use toml::toml;
+
+    #[test]
+    fn deserialize_package_metadata_cargo_compete() -> anyhow::Result<()> {
+        let expected = PackageMetadataCargoCompete {
+            config: None,
+            bin: indexmap!(
+                "practice-a".to_owned() => PackageMetadataCargoCompeteBin {
+                    alias: "a".to_owned(),
+                    problem: "https://atcoder.jp/contests/practice/tasks/practice_1"
+                        .parse()
+                        .unwrap(),
+                },
+                "practice-b".to_owned() => PackageMetadataCargoCompeteBin {
+                    alias: "b".to_owned(),
+                    problem: "https://atcoder.jp/contests/practice/tasks/practice_2"
+                        .parse()
+                        .unwrap(),
+                },
+            ),
+        };
+
+        assert_eq!(
+            expected,
+            toml! {
+                [bin]
+                practice-a = { alias = "a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+                practice-b = { alias = "b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+            }
+            .try_into::<PackageMetadataCargoCompete>()?,
+        );
+
+        assert_eq!(
+            expected,
+            toml! {
+                [bin]
+                a = { name = "practice-a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+                b = { name = "practice-b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+            }
+            .try_into::<PackageMetadataCargoCompete>()?,
+        );
+
+        let expected = PackageMetadataCargoCompete {
+            config: None,
+            bin: indexmap!(
+                "aplusb".to_owned() => PackageMetadataCargoCompeteBin {
+                    alias: "aplusb".to_owned(),
+                    problem: "https://judge.yosupo.jp/problem/aplusb".parse().unwrap(),
+                },
+            ),
+        };
+
+        assert_eq!(
+            expected,
+            toml! {
+                [bin]
+                aplusb = { problem = "https://judge.yosupo.jp/problem/aplusb" }
+            }
+            .try_into::<PackageMetadataCargoCompete>()?,
+        );
+
+        Ok(())
+    }
 }

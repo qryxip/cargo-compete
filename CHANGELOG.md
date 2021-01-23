@@ -11,6 +11,22 @@
     -config = "../compete.toml"
     ```
 
+- Added new formats for `package.metadata.cargo-compete.bin`.
+
+    ```toml
+    [package.metadata.cargo-compete.bin]
+    practice-a = { alias = "a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+    practice-b = { alias = "b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+    ```
+
+    ```toml
+    [package.metadata.cargo-compete.bin]
+    practice-a = { problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
+    practice-b = { problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+    ```
+
+    The old format is still valid.
+
 ## [0.7.1] - 2021-01-21Z
 
 ### Changed
