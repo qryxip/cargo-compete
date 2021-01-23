@@ -81,7 +81,7 @@ pub(crate) fn load(
 pub(crate) fn load_for_package(
     package: &cm::Package,
     shell: &mut Shell,
-) -> anyhow::Result<CargoCompeteConfig> {
+) -> anyhow::Result<(CargoCompeteConfig, PathBuf)> {
     let manifest_dir = package.manifest_path.with_file_name("");
     let path = if let Some(config) = package.read_package_metadata(shell)?.config {
         manifest_dir.join(config)
@@ -98,7 +98,8 @@ pub(crate) fn load_for_package(
                 )
             })?
     };
-    load(path, shell)
+    let config = load(&path, shell)?;
+    Ok((config, path))
 }
 
 #[derive(Deserialize, Derivative)]
@@ -110,6 +111,7 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
     pub(crate) new: CargoCompeteConfigNew,
+    pub(crate) add: Option<CargoCompeteConfigAdd>,
     #[serde(default)]
     pub(crate) test: CargoCompeteConfigTest,
     #[serde(default)]
@@ -302,6 +304,29 @@ pub(crate) enum CargoCompeteConfigNewTemplateSrc {
     File { path: PathBuf },
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CargoCompeteConfigAdd {
+    pub(crate) is_contest: Option<Vec<String>>,
+    #[serde(deserialize_with = "deserialize_liquid_template")]
+    pub(crate) bin_name: liquid::Template,
+    #[serde(deserialize_with = "deserialize_liquid_template")]
+    pub(crate) bin_alias: liquid::Template,
+    #[serde(deserialize_with = "deserialize_liquid_template")]
+    pub(crate) bin_src_path: liquid::Template,
+}
+
+impl fmt::Debug for CargoCompeteConfigAdd {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CargoCompeteConfigAdd")
+            .field("is_contest", &self.is_contest)
+            .field("bin_name", &format_args!("_"))
+            .field("bin_alias", &format_args!("_"))
+            .field("bin_src_path", &format_args!("_"))
+            .finish()
+    }
+}
+
 #[derive(Deserialize, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTest {
@@ -338,6 +363,17 @@ pub(crate) enum CargoCompeteConfigSubmitTranspile {
         args: Vec<liquid::Template>,
         language_id: Option<String>,
     },
+}
+
+fn deserialize_liquid_template<'de, D>(deserializer: D) -> Result<liquid::Template, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    liquid::ParserBuilder::with_stdlib()
+        .build()
+        .map_err(D::Error::custom)?
+        .parse(&String::deserialize(deserializer)?)
+        .map_err(D::Error::custom)
 }
 
 fn deserialize_liquid_templates<'de, D>(deserializer: D) -> Result<Vec<liquid::Template>, D::Error>

@@ -331,7 +331,7 @@ pub(crate) struct Problem<I> {
 }
 
 impl Problem<Option<String>> {
-    fn from_oj_api(problem: oj_api::Problem, system: bool) -> Self {
+    pub(crate) fn from_oj_api(problem: oj_api::Problem, system: bool) -> Self {
         let (cases, text_files) = if system {
             let num_digits = problem.tests.len().to_string().len();
             let zero_pad = |n: usize| -> String {

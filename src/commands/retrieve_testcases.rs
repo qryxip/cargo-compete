@@ -60,7 +60,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata(shell)?;
-    let cargo_compete_config = crate::config::load_for_package(&member, shell)?;
+    let (cargo_compete_config, _) = crate::config::load_for_package(&member, shell)?;
 
     crate::web::retrieve_testcases::dl_for_existing_package(
         &member,

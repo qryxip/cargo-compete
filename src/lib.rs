@@ -14,7 +14,7 @@ mod web;
 
 use crate::{
     commands::{
-        init::OptCompeteInit, login::OptCompeteLogin,
+        add::OptCompeteAdd, init::OptCompeteInit, login::OptCompeteLogin,
         migrate_cargo_atcoder::OptCompeteMigrateCargoAtcoder, new::OptCompeteNew,
         open::OptCompeteOpen, participate::OptCompeteParticipate,
         retrieve_submission_summaries::OptCompeteRetrieveSubmissionSummaries,
@@ -59,6 +59,9 @@ pub enum OptCompete {
     /// Retrieve test cases and create a package
     #[structopt(author, visible_alias("n"))]
     New(OptCompeteNew),
+
+    #[structopt(author, visible_alias("a"))]
+    Add(OptCompeteAdd),
 
     /// Retrieve data
     #[structopt(author, visible_alias("r"))]
@@ -125,6 +128,7 @@ pub fn run(opt: OptCompete, ctx: Context<'_>) -> anyhow::Result<()> {
         OptCompete::Login(opt) => commands::login::run(opt, ctx),
         OptCompete::Participate(opt) => commands::participate::run(opt, ctx),
         OptCompete::New(opt) => commands::new::run(opt, ctx),
+        OptCompete::Add(opt) => commands::add::run(opt, ctx),
         OptCompete::Retrieve(OptCompeteRetrieve::Testcases(opt)) | OptCompete::Download(opt) => {
             commands::retrieve_testcases::run(opt, ctx)
         }
