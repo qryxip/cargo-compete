@@ -1,3 +1,4 @@
+pub(crate) mod add;
 pub(crate) mod init;
 pub(crate) mod login;
 pub(crate) mod migrate_cargo_atcoder;

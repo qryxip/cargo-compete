@@ -110,6 +110,48 @@ TODO: ↓のスクショをアップデート。今`package.metadata.cargo-compe
 
 `.cargo/config.toml`によりtarget directoryが共有されるので、クレートを使う場合も初回を除いて"warmup"は不要です。
 
+### `cargo compete add`
+
+**[`compete.toml`](#設定)が必要です。**
+最初に[`cargo compete init`](#cargo-compete-init)で生成してください。
+
+コンテストもしくは問題に対して`bin`ターゲットを生成し、テストケースをダウンロードします。
+
+設定は[`compete.toml`](#設定)の`add`で行ってください。
+
+```toml
+# for yukicoder
+[add]
+url = '{% case args[0] %}{% when "contest" %}https://yukicoder.me/contests/{{ args[1] }}{% when "problem" %}https://yukicoder.me/problems/no/{{ args[1] }}{% endcase %}'
+is-contest = ["bash", "-c", '[[ $(cut -d / -f 4) == "contests" ]]'] # optional
+bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
+#bin-alias = '{% assign segments = url | split: "/" %}{{ segments[5] }}' # optional
+#bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
+```
+
+```console
+❯ cargo compete a contest 296
+    Added `1358` (bin) for https://yukicoder.me/problems/no/1358
+    Added `1359` (bin) for https://yukicoder.me/problems/no/1359
+    Added `1360` (bin) for https://yukicoder.me/problems/no/1360
+    Added `1361` (bin) for https://yukicoder.me/problems/no/1361
+    Added `1362` (bin) for https://yukicoder.me/problems/no/1362
+    Added `1363` (bin) for https://yukicoder.me/problems/no/1363
+    Added `1364` (bin) for https://yukicoder.me/problems/no/1364
+    Added `1365` (bin) for https://yukicoder.me/problems/no/1365
+    Saved 1 test case to /home/ryo/src/competitive/yukicoder/testcases/1358.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1359.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1360.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1361.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1362.yml
+    Saved 1 test case to /home/ryo/src/competitive/yukicoder/testcases/1363.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1364.yml
+    Saved 3 test cases to /home/ryo/src/competitive/yukicoder/testcases/1365.yml
+❯ cargo compete a problem 9001
+    Added `9001` (bin) for https://yukicoder.me/problems/no/9001
+    Saved 1 test case to /home/ryo/src/competitive/yukicoder/testcases/9001.yml
+```
+
 ### `cargo compete retrieve testcases` / `cargo compete download`
 
 テストケースの再取得を行います。
@@ -309,6 +351,22 @@ fn main() {
     todo!();
 }
 '''
+
+# for Library-Checker
+#[add]
+#url = "https://judge.yosupo.jp/problem/{{ args[0] }}"
+##is-contest = ["false"] # optional
+#bin-name = '{{ args[0] }}'
+##bin-alias = '{{ args[0] }}' # optional
+##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
+
+# for yukicoder
+#[add]
+#url = '{% case args[0] %}{% when "contest" %}https://yukicoder.me/contests/{{ args[1] }}{% when "problem" %}https://yukicoder.me/problems/no/{{ args[1] }}{% endcase %}'
+#is-contest = ["bash", "-c", '[[ $(cut -d / -f 4) == "contests" ]]'] # optional
+#bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
+##bin-alias = '{% assign segments = url | split: "/" %}{{ segments[5] }}' # optional
+##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
 
 [test]
 # Profile for `cargo build`. ("dev" | "release")

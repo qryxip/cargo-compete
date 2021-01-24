@@ -7,7 +7,7 @@ use std::{
     fmt,
     io::Write as _,
     path::{Path, PathBuf},
-    process::Stdio,
+    process::{ExitStatus, Stdio},
 };
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ impl<C: Presence<PathBuf>> ProcessBuilder<C> {
 
 impl ProcessBuilder<Present> {
     pub(crate) fn exec(&self) -> anyhow::Result<()> {
-        let status = self.spawn(Stdio::inherit())?.wait()?;
+        let status = self.status()?;
         if !status.success() {
             bail!("{} didn't exit successfully: {}", self, status);
         }
@@ -65,6 +65,10 @@ impl ProcessBuilder<Present> {
     pub(crate) fn exec_with_shell_status(&self, shell: &mut Shell) -> anyhow::Result<()> {
         shell.status("Running", self)?;
         self.exec()
+    }
+
+    pub(crate) fn status(&self) -> anyhow::Result<ExitStatus> {
+        self.spawn(Stdio::inherit())?.wait().map_err(Into::into)
     }
 
     fn read(&self) -> anyhow::Result<String> {
