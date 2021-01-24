@@ -29,6 +29,14 @@ fn atcoder_agc047() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[test]
+fn atcoder_m_solutions2020() -> anyhow::Result<()> {
+    let (output, tree) = run(PlatformKind::Atcoder, "m-solutions2020", &b""[..])?;
+    assert_snapshot!("atcoder_m_solutions2020_output", output);
+    assert_json_snapshot!("atcoder_m_solutions2020_file_tree", tree, { r#".**["Cargo.lock"]"# => ".." });
+    Ok(())
+}
+
 #[cfg(feature = "__test_with_credentials")]
 #[test]
 fn atcoder_practice() -> anyhow::Result<()> {

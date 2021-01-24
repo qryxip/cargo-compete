@@ -6,12 +6,13 @@ use crate::{
     oj_api,
     shell::{ColorChoice, Shell},
 };
-use anyhow::{bail, Context as _};
+use anyhow::{anyhow, bail, Context as _};
 use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     path::{Path, PathBuf},
 };
@@ -87,13 +88,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 shell,
             )?;
 
-            let contest = outcome
-                .get(0)
-                .and_then(|p| p.contest_url.as_ref())
-                .and_then(|url| url.path_segments())
-                .and_then(|segments| { segments }.nth(1).map(ToOwned::to_owned))
-                .with_context(|| "empty result")?;
-            let group = Group::Atcoder(contest);
+            let group = Group::Atcoder(extract_contest_id(&outcome, 1)?);
 
             let problems = outcome.iter().map(|p| (&*p.index, &p.url)).collect();
 
@@ -145,13 +140,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 shell,
             )?;
 
-            let contest = outcome
-                .get(0)
-                .and_then(|p| p.contest_url.as_ref())
-                .and_then(|url| url.path_segments())
-                .and_then(|segments| { segments }.nth(1).map(ToOwned::to_owned))
-                .with_context(|| "empty result")?;
-            let group = Group::Codeforces(contest);
+            let group = Group::Codeforces(extract_contest_id(&outcome, 1)?);
 
             let problems = outcome.iter().map(|p| (&*p.index, &p.url)).collect();
 
@@ -212,9 +201,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
             let contest = outcome
                 .get(0)
                 .and_then(|p| p.contest_url.as_ref())
-                .and_then(|url| url.path_segments())
-                .and_then(|segments| segments.last().map(ToOwned::to_owned));
-
+                .map(|u| nth_path_segment(u, 1))
+                .transpose()?;
             let group = match contest {
                 None => Group::YukicoderProblems,
                 Some(contest) => Group::YukicoderContest(contest),
@@ -334,6 +322,40 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
 fn urls(outcome: &[crate::web::retrieve_testcases::Problem<impl Sized>]) -> Vec<Url> {
     outcome.iter().map(|p| p.url.clone()).collect()
+}
+
+fn extract_contest_id(
+    problems: &[crate::web::retrieve_testcases::Problem<impl Sized>],
+    nth_segment: usize,
+) -> anyhow::Result<String> {
+    let url = problems
+        .get(0)
+        .and_then(|p| p.contest_url.as_ref())
+        .with_context(|| "empty result")?;
+    nth_path_segment(&url, nth_segment)
+}
+
+fn nth_path_segment(url: &Url, nth: usize) -> anyhow::Result<String> {
+    let segments = url
+        .path_segments()
+        .map(|ss| ss.collect::<Vec<_>>())
+        .unwrap_or_default();
+
+    let segment = segments.get(nth).with_context(|| {
+        format!(
+            "the number of path segments is {} but the index is {}: {}",
+            segments.len(),
+            nth,
+            url,
+        )
+    })?;
+
+    let decodor = || percent_encoding::percent_decode_str(segment);
+
+    decodor()
+        .decode_utf8()
+        .map(Cow::into_owned)
+        .map_err(|e| anyhow!("{}: {}", e, decodor().decode_utf8_lossy()))
 }
 
 #[derive(Clone, Debug)]
@@ -564,5 +586,24 @@ fn set_implicit_table_if_none(item: &mut toml_edit::Item) {
             tbl.set_implicit(true);
             toml_edit::Item::Table(tbl)
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn nth_path_segment() -> anyhow::Result<()> {
+        assert_eq!(
+            "m-solutions2020",
+            super::nth_path_segment(
+                &"https://atcoder.jp/contests/m-solutions2020"
+                    .parse()
+                    .unwrap(),
+                1,
+            )?
+        );
+        Ok(())
     }
 }
