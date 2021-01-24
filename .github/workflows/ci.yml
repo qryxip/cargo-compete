@@ -235,7 +235,7 @@ jobs:
           ATCODER_USERNAME: ${{ secrets.ATCODER_USERNAME }}
           ATCODER_PASSWORD: ${{ secrets.ATCODER_PASSWORD }}
 
-  upload:
+  upload-archives:
     strategy:
       fail-fast: false
       matrix:
@@ -304,10 +304,48 @@ jobs:
           name: assets
           path: ${{ steps.asset.outputs.asset }}
 
+  upload-release-notes:
+    name: Upload the release notes
+    runs-on: ubuntu-20.04
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Prepare release notes
+        run: |
+          with open('./CHANGELOG.md') as file:
+              changelog = file.read()
+          output = ''
+          inside_subsection = False
+          for line in changelog.splitlines():
+              is_h2 = line.startswith('## ')
+              if not inside_subsection and is_h2:
+                  inside_subsection = True
+              elif inside_subsection and not is_h2:
+                  output += line + '\n'
+              elif inside_subsection:
+                  break
+          with open('./release-notes.md', 'w') as file:
+              file.write(output)
+        shell: python
+
+      - name: Upload the release notes
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-notes
+          path: release-notes.md
+
   release:
     name: GitHub Release
     runs-on: ubuntu-20.04
-    needs: [rustfmt, build, upload]
+    needs: [rustfmt, build, upload-archives, upload-release-notes]
 
     steps:
       - name: Download the assets
@@ -316,9 +354,16 @@ jobs:
           name: assets
           path: ./assets
 
+      - name: Download the release notes
+        uses: actions/download-artifact@v2
+        with:
+          name: release-notes
+          path: .
+
       - name: GH Release
         uses: softprops/action-gh-release@v1
         with:
+          body_path: ./release-notes.md
           files: ./assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
