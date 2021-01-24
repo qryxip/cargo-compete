@@ -5,15 +5,11 @@ use crate::{
     shell::ColorChoice,
 };
 use anyhow::{anyhow, bail, ensure, Context as _};
-use itertools::Either;
 use krates::cm;
 use liquid::object;
-use maplit::{btreemap, btreeset, hashmap};
-use snowchains_core::web::{PlatformKind, ProblemsInContest};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::{Path, PathBuf},
-};
+use maplit::{btreeset, hashmap};
+use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use url::Url;
@@ -45,8 +41,8 @@ pub struct OptCompeteAdd {
     )]
     pub color: ColorChoice,
 
-    /// URLs
-    pub urls: Vec<Url>,
+    /// Arguments
+    pub args: Vec<String>,
 }
 
 pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result<()> {
@@ -56,7 +52,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         package,
         manifest_path,
         color,
-        urls,
+        args,
     } = opt;
 
     let crate::Context {
@@ -79,88 +75,94 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         .as_ref()
         .with_context(|| "`add` field is required for this command")?;
 
-    let (problem_urls, contest_urls) = &mut {
-        let mut problem_urls: BTreeMap<_, BTreeSet<_>> = btreemap!();
-        let mut contest_urls = btreeset!();
-        for url in urls {
-            let is_contest = if let Some(args) = &cargo_compete_config_add.is_contest {
-                ensure!(!args.is_empty(), "`add.is-contest` is empty");
-                crate::process::process(&args[0])
-                    .args(&args[1..])
-                    .pipe_input(Some(url.as_str()))
-                    .cwd(&metadata.workspace_root)
-                    .status()?
-                    .success()
-            } else {
-                false
-            };
-            if is_contest {
-                contest_urls.insert(url);
-            } else {
-                let key = match PlatformKind::from_url(&url) {
-                    Ok(platform) => Either::Left(platform),
-                    Err(_) => Either::Right(()),
-                };
-                problem_urls.entry(key).or_default().insert(url);
-            }
-        }
-        (problem_urls, contest_urls)
+    let url = cargo_compete_config_add
+        .url
+        .render(&object!({ "args": &args }))?;
+    ensure!(!url.is_empty(), "empty URL for {:?}", args);
+    let url = url
+        .parse::<Url>()
+        .with_context(|| format!("could not parse {:?} as a URL", url))?;
+
+    let is_contest = if let Some(args) = &cargo_compete_config_add.is_contest {
+        ensure!(!args.is_empty(), "`add.is-contest` is empty");
+        crate::process::process(&args[0])
+            .args(&args[1..])
+            .pipe_input(Some(url.as_str()))
+            .cwd(&metadata.workspace_root)
+            .status()?
+            .success()
+    } else {
+        false
     };
 
-    let mut problems = vec![];
-
-    problems.extend(crate::web::retrieve_testcases::dl_from_atcoder(
-        ProblemsInContest::Urls {
-            urls: problem_urls
-                .remove(&Either::Left(PlatformKind::Atcoder))
-                .unwrap_or_default(),
-        },
-        full,
-        &cookies_path,
-        shell,
-    )?);
-
-    problems.extend(crate::web::retrieve_testcases::dl_from_codeforces(
-        ProblemsInContest::Urls {
-            urls: problem_urls
-                .remove(&Either::Left(PlatformKind::Codeforces))
-                .unwrap_or_default(),
-        },
-        &cookies_path,
-        shell,
-    )?);
-
-    problems.extend(crate::web::retrieve_testcases::dl_from_yukicoder(
-        snowchains_core::web::YukicoderRetrieveTestCasesTargets::Urls(
-            problem_urls
-                .remove(&Either::Left(PlatformKind::Yukicoder))
-                .unwrap_or_default(),
-        ),
-        full,
-        shell,
-    )?);
-
-    let mut problems = problems
+    let problems = match PlatformKind::from_url(&url) {
+        Ok(PlatformKind::Atcoder) => crate::web::retrieve_testcases::dl_from_atcoder(
+            if is_contest {
+                ProblemsInContest::Indexes {
+                    contest: crate::web::url::atcoder_contest(&url)?,
+                    problems: None,
+                }
+            } else {
+                ProblemsInContest::Urls {
+                    urls: btreeset!(url),
+                }
+            },
+            full,
+            &cookies_path,
+            shell,
+        )?
         .into_iter()
         .map(crate::web::retrieve_testcases::Problem::<Option<String>>::from)
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>(),
 
-    let mut oj_urls = problem_urls.remove(&Either::Right(())).unwrap_or_default();
-    for url in &*contest_urls {
-        oj_urls.extend(oj_api::get_contest(url, &metadata.workspace_root, shell)?);
-    }
+        Ok(PlatformKind::Codeforces) => crate::web::retrieve_testcases::dl_from_codeforces(
+            if is_contest {
+                ProblemsInContest::Indexes {
+                    contest: crate::web::url::codeforces_contest(&url)?,
+                    problems: None,
+                }
+            } else {
+                ProblemsInContest::Urls {
+                    urls: btreeset!(url),
+                }
+            },
+            &cookies_path,
+            shell,
+        )?
+        .into_iter()
+        .map(crate::web::retrieve_testcases::Problem::<Option<String>>::from)
+        .collect::<Vec<_>>(),
 
-    problems.extend(
-        oj_urls
-            .iter()
-            .map(|url| {
-                let problem = oj_api::get_problem(url, full, &metadata.workspace_root, shell)?;
-                Ok(crate::web::retrieve_testcases::Problem::from_oj_api(
-                    problem, full,
-                ))
-            })
-            .collect::<anyhow::Result<Vec<_>>>()?,
-    );
+        Ok(PlatformKind::Yukicoder) => crate::web::retrieve_testcases::dl_from_yukicoder(
+            if is_contest {
+                YukicoderRetrieveTestCasesTargets::Contest(
+                    crate::web::url::codeforces_contest(&url)?,
+                    None,
+                )
+            } else {
+                YukicoderRetrieveTestCasesTargets::Urls(btreeset!(url))
+            },
+            full,
+            shell,
+        )?
+        .into_iter()
+        .map(crate::web::retrieve_testcases::Problem::<Option<String>>::from)
+        .collect::<Vec<_>>(),
+
+        Err(_) => if is_contest {
+            oj_api::get_contest(&url, &metadata.workspace_root, shell)?
+        } else {
+            vec![url]
+        }
+        .iter()
+        .map(|url| {
+            let problem = oj_api::get_problem(url, full, &metadata.workspace_root, shell)?;
+            Ok(crate::web::retrieve_testcases::Problem::from_oj_api(
+                problem, full,
+            ))
+        })
+        .collect::<anyhow::Result<_>>()?,
+    };
 
     let manifest =
         &mut crate::fs::read_to_string(&member.manifest_path)?.parse::<toml_edit::Document>()?;
@@ -178,11 +180,21 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
             ..
         } = cargo_compete_config_add;
 
-        let bin_name = &*bin_name.render(&object!({ "url": &problem.url }))?;
-        let bin_alias = &*bin_alias.render(&object!({ "url": &problem.url }))?;
-        let bin_src_path = &*bin_src_path.render(
-            &object!({ "url": &problem.url, "bin_name": bin_name, "bin_alias": bin_alias }),
-        )?;
+        let bin_name = &*bin_name.render(&object!({
+            "args": &args,
+            "url": &problem.url,
+        }))?;
+        let bin_alias = &*bin_alias.render(&object!({
+            "args": &args,
+            "url": &problem.url,
+            "bin_name": bin_name,
+        }))?;
+        let bin_src_path = &*bin_src_path.render(&object!({
+            "args": &args,
+            "url": &problem.url,
+            "bin_name": bin_name,
+            "bin_alias": bin_alias,
+        }))?;
 
         if member
             .all_bin_targets_sorted()

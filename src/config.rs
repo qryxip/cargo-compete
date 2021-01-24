@@ -304,21 +304,67 @@ pub(crate) enum CargoCompeteConfigNewTemplateSrc {
     File { path: PathBuf },
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigAdd {
+    pub(crate) url: liquid::Template,
     pub(crate) is_contest: Option<Vec<String>>,
-    #[serde(deserialize_with = "deserialize_liquid_template")]
     pub(crate) bin_name: liquid::Template,
-    #[serde(deserialize_with = "deserialize_liquid_template")]
     pub(crate) bin_alias: liquid::Template,
-    #[serde(deserialize_with = "deserialize_liquid_template")]
     pub(crate) bin_src_path: liquid::Template,
+}
+
+impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let Repr {
+            url,
+            is_contest,
+            bin_name,
+            bin_alias,
+            bin_src_path,
+        } = Repr::deserialize(deserializer)?;
+
+        let bin_name = &bin_name;
+        let bin_alias = bin_alias.as_deref().unwrap_or(bin_name);
+        let bin_src_path = bin_src_path
+            .as_deref()
+            .unwrap_or("src/bin/{{ bin_alias }}.rs");
+
+        let parser = liquid::ParserBuilder::with_stdlib()
+            .build()
+            .map_err(D::Error::custom)?;
+        let parse = |s| parser.parse(s).map_err(D::Error::custom);
+
+        let url = parse(&url)?;
+        let bin_name = parse(bin_name)?;
+        let bin_alias = parse(bin_alias)?;
+        let bin_src_path = parse(bin_src_path)?;
+
+        return Ok(Self {
+            url,
+            is_contest,
+            bin_name,
+            bin_alias,
+            bin_src_path,
+        });
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct Repr {
+            url: String,
+            is_contest: Option<Vec<String>>,
+            bin_name: String,
+            bin_alias: Option<String>,
+            bin_src_path: Option<String>,
+        }
+    }
 }
 
 impl fmt::Debug for CargoCompeteConfigAdd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CargoCompeteConfigAdd")
+            .field("url", &format_args!("_"))
             .field("is_contest", &self.is_contest)
             .field("bin_name", &format_args!("_"))
             .field("bin_alias", &format_args!("_"))
@@ -363,17 +409,6 @@ pub(crate) enum CargoCompeteConfigSubmitTranspile {
         args: Vec<liquid::Template>,
         language_id: Option<String>,
     },
-}
-
-fn deserialize_liquid_template<'de, D>(deserializer: D) -> Result<liquid::Template, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    liquid::ParserBuilder::with_stdlib()
-        .build()
-        .map_err(D::Error::custom)?
-        .parse(&String::deserialize(deserializer)?)
-        .map_err(D::Error::custom)
 }
 
 fn deserialize_liquid_templates<'de, D>(deserializer: D) -> Result<Vec<liquid::Template>, D::Error>
