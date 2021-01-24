@@ -1,0 +1,12 @@
+---
+source: tests/new.rs
+expression: output
+---
+     Created `m-solutions2020` package at {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}a.yml
+       Saved 2 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}b.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}c.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}d.yml
+       Saved 4 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}e.yml
+       Saved 3 test cases to {{ cwd }}{{ slash_or_backslash }}.{{ slash_or_backslash }}m-solutions2020{{ slash_or_backslash }}testcases{{ slash_or_backslash }}f.yml
+

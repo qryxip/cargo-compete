@@ -27,6 +27,10 @@
 
     The old format is still valid.
 
+### Fixed
+
+- Fixed a problem about hyphen-separated contest IDs.
+
 ## [0.7.1] - 2021-01-21Z
 
 ### Changed
