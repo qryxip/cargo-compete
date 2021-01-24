@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0] - 2021-01-24Z
 
 ### Added
 
-- Added `add` command.
+- Added `add` command. ([#114](https://github.com/qryxip/cargo-compete/pull/114))
 
     ```toml
     # for Library-Checker
@@ -65,14 +65,14 @@
 
 ### Changed
 
-- Made `package.metadata.cargo-compete.config` optional.
+- Made `package.metadata.cargo-compete.config` optional. ([#112](https://github.com/qryxip/cargo-compete/pull/112))
 
     ```diff
     [package.metadata.cargo-compete]
     -config = "../compete.toml"
     ```
 
-- Added new formats for `package.metadata.cargo-compete.bin`.
+- Added new formats for `package.metadata.cargo-compete.bin`. ([#113](https://github.com/qryxip/cargo-compete/pull/113))
 
     ```toml
     [package.metadata.cargo-compete.bin]
@@ -90,7 +90,7 @@
 
 ### Fixed
 
-- Fixed a problem about hyphen-separated contest IDs.
+- Fixed a problem about hyphen-separated contest IDs. ([#114](https://github.com/qryxip/cargo-compete/pull/114))
 
 ## [0.7.1] - 2021-01-21Z
 
