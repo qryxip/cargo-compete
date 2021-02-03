@@ -103,10 +103,15 @@ jobs:
           key: cargo-udeps-build-${{ steps.install-nightly.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: Install cargo-udeps v${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
-        uses: actions-rs/install@v0.1
+        # https://github.com/rust-lang/cargo/issues/9124
+        #uses: actions-rs/install@v0.1
+        #with:
+        #  crate: cargo-udeps
+        #  version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+        uses: actions-rs/cargo@v1
         with:
-          crate: cargo-udeps
-          version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+          command: install
+          args: cargo-udeps --version ${{ steps.resolve-version-of-cargo-udeps.outputs.version }} --locked
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
