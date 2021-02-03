@@ -49,11 +49,11 @@ jobs:
           toolchain: stable-x86_64-unknown-linux-gnu
           default: true
 
-      - name: Set up `nightly-2020-11-24-x86_64-unknown-linux-gnu`
+      - name: Set up `nightly-2021-01-31-x86_64-unknown-linux-gnu`
         id: install-nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2020-11-24-x86_64-unknown-linux-gnu
+          toolchain: nightly-2021-01-31-x86_64-unknown-linux-gnu
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
@@ -103,17 +103,22 @@ jobs:
           key: cargo-udeps-build-${{ steps.install-nightly.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: Install cargo-udeps v${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
-        uses: actions-rs/install@v0.1
+        # https://github.com/rust-lang/cargo/issues/9124
+        #uses: actions-rs/install@v0.1
+        #with:
+        #  crate: cargo-udeps
+        #  version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+        uses: actions-rs/cargo@v1
         with:
-          crate: cargo-udeps
-          version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+          command: install
+          args: cargo-udeps --version ${{ steps.resolve-version-of-cargo-udeps.outputs.version }} --locked
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
         with:
           command: udeps
           args: --all-targets
-          toolchain: nightly-2020-11-24-x86_64-unknown-linux-gnu
+          toolchain: nightly-2021-01-31-x86_64-unknown-linux-gnu
 
   grcov:
     name: grcov
