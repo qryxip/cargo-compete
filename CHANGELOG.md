@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.1] - 2021-02-14Z
 
 ### Fixed
 
