@@ -17,13 +17,13 @@ __test_with_credentials = []
 [dependencies]
 anyhow = "1.0.38"
 atty = "0.2.14"
-az = "1.0.0"
+az = "1.1.0"
 base64 = "0.13.0"
 derivative = "2.2.0"
 dirs-next = "2.0.0"
 easy-ext = "0.2.6"
 fwdansi = "1.1.0"
-git2 = "0.13.16"
+git2 = "0.13.17"
 heck = "0.3.2"
 human-size = "0.4.1"
 if_chain = "1.0.1"
@@ -31,9 +31,9 @@ ignore = "0.4.17"
 indexmap = { version = "1.6.1", features = ["serde-1"] }
 indicatif = "0.15.0"
 itertools = "0.10.0"
-krates = "0.5.0"
-liquid = "0.21.4"
-liquid-core = "0.21.2"
+krates = "0.6.0"
+liquid = "0.21.5"
+liquid-core = "0.21.3"
 liquid-derive = "0.21.0"
 maplit = "1.0.2"
 opener = "0.4.1"
@@ -43,17 +43,17 @@ prettytable-rs = "0.8.0"
 reqwest = { version = "0.11.0", default-features = false, features = ["blocking"] }
 rpassword = "5.0.1"
 rprompt = "1.0.5"
-serde = { version = "1.0.121", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_ignored = "0.1.2"
-serde_json = "1.0.61"
-serde_yaml = "0.8.15"
+serde_json = "1.0.62"
+serde_yaml = "0.8.17"
 shell-escape = "0.1.5"
-snowchains_core = "0.8.1"
+snowchains_core = "0.8.2"
 structopt = "0.3.21"
 strum = { version = "0.20.0", features = ["derive"] }
 tempfile = "3.2.0"
 termcolor = "1.1.2"
-tokio = { version = "1.1.0", features = ["signal"] }
+tokio = { version = "1.2.0", features = ["signal"] }
 toml = "0.5.8"
 toml_edit = "0.2.0"
 url = { version = "2.2.0", features = ["serde"] }
@@ -63,6 +63,6 @@ which = "4.0.2"
 term_size = "=1.0.0-beta.2"
 
 [dev-dependencies]
-insta = { version = "1.5.3", features = ["redactions"] }
+insta = { version = "1.6.0", features = ["redactions"] }
 once_cell = "1.5.2"
 regex = "1.4.3"
