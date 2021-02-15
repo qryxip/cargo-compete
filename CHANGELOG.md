@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.8.2] - 2021-02-15Z
+
+### Added
+
+- Added `Checker` variant to `Match`. ([qryxip/snowchains#124](https://github.com/qryxip/snowchains/pull/124))
+
+    ```yaml
+    match:
+      Checker:
+        cmd: cat "$ACTUAL_OUTPUT" | cargo run --bin check-a
+        shell: Bash
+    ```
+
+    ```yaml
+    match:
+      Checker:
+        cmd: ~/.cache/online-judge-tools/library-checker-problems/math/sqrt_mod/checker "$INPUT" "$ACTUAL_OUTPUT" "$EXPECTED_OUTPUT"
+        shell: Bash
+    ```
+
 ## [0.8.1] - 2021-02-14Z
 
 ### Fixed

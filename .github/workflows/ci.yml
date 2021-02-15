@@ -345,7 +345,7 @@ jobs:
   release:
     name: GitHub Release
     runs-on: ubuntu-20.04
-    needs: [rustfmt, build, upload-archives, upload-release-notes]
+    needs: [rustfmt, cargo-udeps, build, upload-archives, upload-release-notes]
 
     steps:
       - name: Download the assets
