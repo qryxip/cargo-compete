@@ -1,4 +1,4 @@
-#jcargo-compete
+# cargo-compete
 
 [![CI](https://github.com/qryxip/cargo-compete/workflows/CI/badge.svg)](https://github.com/qryxip/cargo-compete/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/qryxip/cargo-compete/branch/master/graph/badge.svg)](https://codecov.io/gh/qryxip/cargo-compete/branch/master)
@@ -441,6 +441,363 @@ whiteread = "=0.5.0"
 rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
 ```
+
+## テストファイルのYAML
+
+テストケースは以下のような形でYAMLに保存されます。
+
+```yaml
+# https://atcoder.jp/contests/practice/tasks/practice_1
+---
+type: Batch
+timelimit: 2s
+match: Lines
+
+cases:
+  - name: sample1
+    in: |
+      1
+      2 3
+      test
+    out: |
+      6 test
+  - name: sample2
+    in: |
+      72
+      128 256
+      myonmyon
+    out: |
+      456 myonmyon
+
+extend: []
+```
+
+```yaml
+# https://atcoder.jp/contests/ddcc2019-final/tasks/ddcc2019_final_a
+---
+type: Batch
+timelimit: 2s
+match:
+  Float:
+    relative_error: 1e-8
+    absolute_error: 1e-8
+
+cases:
+  - name: sample1
+    in: |
+      5
+      -->--
+    out: |
+      3.83333333333333
+  - name: sample2
+    in: |
+      7
+      -------
+    out: |
+      6.5
+  - name: sample3
+    in: |
+      10
+      -->>>-->--
+    out: |
+      6.78333333333333
+
+extend: []
+```
+
+```yaml
+# https://judge.yosupo.jp/problem/sqrt_mod
+---
+type: Batch
+timelimit: 10s
+match:
+  Checker:
+    cmd: ~/.cache/online-judge-tools/library-checker-problems/math/sqrt_mod/checker "$INPUT" "$ACTUAL_OUTPUT" "$EXPECTED_OUTPUT"
+    shell: Bash
+
+cases: []
+
+extend:
+  - type: Text
+    path: "./sqrt-mod"
+    in: /in/*.txt
+    out: /out/*.txt
+```
+
+形式は以下のスキーマにおける`TestSuite`です。
+
+### `TestSuite`
+
+`type`をタグとした[internally taggedのADT](https://serde.rs/enum-representations.html#internally-tagged)です。
+
+- [`TestSuite::Batch`](#testsuitebatch)
+- [`TestSuite::Interactive`](#testsuiteinteractive)
+- [`TestSuite::Unsubmittable`](#testsuiteunsubmittable)
+
+### `TestSuite::Batch`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>timelimit</code></td>
+      <td align="left"><code><a href="#duration">Duration</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left">実行時間制限</td>
+    </tr>
+    <tr>
+      <td align="left"><code>match</code></td>
+      <td align="left"><code><a href="#match">Match</a></code></td>
+      <td align="left"></td>
+      <td align="left">出力の判定方法</td>
+    </tr>
+    <tr>
+      <td align="left"><code>cases</code></td>
+      <td align="left"><code><a href="#case">Case</a>[]</code></td>
+      <td align="left"><code>[]</code></td>
+      <td align="left">入出力のセット</td>
+    </tr>
+    <tr>
+      <td align="left"><code>extend</code></td>
+      <td align="left"><code><a href="#extend">Extend</a>[]</code></td>
+      <td align="left"><code>[]</code></td>
+      <td align="left">入出力のセットの追加</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Duration`
+
+[`humantime::format_duration`](https://docs.rs/humantime/2/humantime/fn.format_duration.html)でパースできる文字列です。
+
+### `Match`
+
+[untaggedなADT](https://serde.rs/enum-representations.html#untagged)です。
+
+- [`Match::Exact`](#matchexact)
+- [`Match::Lines`](#matchlines)
+- [`Match::Float`](#matchfloat)
+- [`Match::Checker`](#matchchecker)
+
+### `Match::Exact`
+
+文字列全体の一致で判定します。
+
+### `Match::Lines`
+
+各行の一致で判定します。
+
+### `Match::Float`
+
+空白区切りでの単語の一致で判定します。
+この際数値として読める単語は浮動小数点数とみなし、誤差を許容します。
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>relative_error</code></td>
+      <td align="left"><code><a href="#positivefinitefloat64">PositiveFiniteFloat64</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left">相対誤差</td>
+    </tr>
+    <tr>
+      <td align="left"><code>absolute_error</code></td>
+      <td align="left"><code><a href="#positivefinitefloat64">PositiveFiniteFloat64</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left">絶対誤差</td>
+    </tr>
+  </tbody>
+</table>
+
+### `PositiveFiniteFloat64`
+
+正かつ`inf`ではない64-bitの浮動小数点数です。
+
+### `Match::Checker`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>cmd</code></td>
+      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
+      <td align="left"></td>
+      <td align="left">コマンド</td>
+    </tr>
+    <tr>
+      <td align="left"><code>shell</code></td>
+      <td align="left"><a href="#shell"><code>Shell</code></a></td>
+      <td align="left"></td>
+      <td align="left">シェル</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Shell`
+
+[untaggedなADT](https://serde.rs/enum-representations.html#untagged)です。
+
+- [`Shell::Bash`](#shellbash)
+
+### `Shell::Bash`
+
+`bash -c "$cmd"`として`cmd`を実行します。
+
+### `Case`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>name</code></td>
+      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
+      <td align="left"><code>""</code></td>
+      <td align="left">名前</td>
+    </tr>
+    <tr>
+      <td align="left"><code>in</code></td>
+      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
+      <td align="left"></td>
+      <td align="left">入力</td>
+    </tr>
+    <tr>
+      <td align="left"><code>out</code></td>
+      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
+      <td align="left"></td>
+      <td align="left">出力</td>
+    </tr>
+    <tr>
+      <td align="left"><code>timelimit</code></td>
+      <td align="left"><code><a href="#duration">Duration</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left"><code>timelimit</code>をオーバーライド</td>
+    </tr>
+    <tr>
+      <td align="left"><code>match</code></td>
+      <td align="left"><code><a href="#match">Match</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left"><code>match</code>をオーバーライド</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Extend`
+
+`type`をタグとした[internally taggedのADT](https://serde.rs/enum-representations.html#internally-tagged)です。
+
+- [`Extend::Text`](#extendtext)
+
+### `Extend::Text`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>path</code></td>
+      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
+      <td align="left"></td>
+      <td align="left">ディレクトリ</td>
+    </tr>
+    <tr>
+      <td align="left"><code>in</code></td>
+      <td align="left"><a href="#glob"><code>Glob</code></a></td>
+      <td align="left"></td>
+      <td align="left">入力のテキストファイル</td>
+    </tr>
+    <tr>
+      <td align="left"><code>out</code></td>
+      <td align="left"><a href="#glob"><code>Glob</code></a></td>
+      <td align="left"></td>
+      <td align="left">出力のテキストファイル</td>
+    </tr>
+    <tr>
+      <td align="left"><code>timelimit</code></td>
+      <td align="left"><code><a href="#duration">Duration</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left"><code>timelimit</code>をオーバーライド</td>
+    </tr>
+    <tr>
+      <td align="left"><code>match</code></td>
+      <td align="left"><code><a href="#match">Match</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left"><code>match</code>をオーバーライド</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Glob`
+
+globを示す文字列です。
+
+### `TestSuite::Interactive`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>timelimit</code></td>
+      <td align="left"><code><a href="#duration">Duration</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
+      <td align="left">実行時間制限</td>
+    </tr>
+  </tbody>
+</table>
+
+### `TestSuite::Unsubmittable`
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+</table>
 
 ## [online-judge-tools](https://github.com/online-judge-tools/oj)の利用
 
