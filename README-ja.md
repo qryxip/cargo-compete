@@ -11,15 +11,19 @@
 
 競技プログラミングのためのCargoコマンドです。
 
+AtCoder、Codeforces、yukicoderをサポートしています。
+その他のサイトも[online-judge-tools/api-client](https://github.com/online-judge-tools/api-client)を使うことで利用可能です。
+
 ## 機能
 
-- サイトへのログイン及びコンテストへの参加登録
-- サンプルケースを取得し、YAMLで保存
+- サイトへのログイン
+- (自動で)コンテストへの参加登録
+- サンプルテストケース/システムテストケースを取得し、YAMLで保存
 - コードのテスト
 - 提出
 - 提出一覧のストリーミング (AtCoderのみ)
 
-|               | 参加登録               | テストケース (サンプル) | テストケース (全部)    | 提出                   | 提出一覧をwatchする     | 提出の詳細を見る |
+|               | 参加登録               | サンプルテストケース    | システムテストケース   | 提出                   | 提出一覧をwatch         | 提出の詳細       |
 | :-----------: | :--------------------: | :---------------------: | :--------------------: | :--------------------: | :---------------------: | :--------------: |
 | AtCoder       | :heavy_check_mark:     | :heavy_check_mark:      | :heavy_check_mark:     | :heavy_check_mark:     | :grey_question:         | :x:              |
 | Codeforces    | :x:                    | :heavy_check_mark:      | N/A                    | :heavy_check_mark:     | :x:                     | :x:              |
@@ -28,19 +32,21 @@
 
 ## インストール
 
-### Crates.io
+### Crates.ioからインストール
 
 ```console
 $ cargo install cargo-compete
 ```
 
-### `master`ブランチ
+ビルドが失敗するなら、`--locked`を付けると成功する場合があります。
+
+### `master`ブランチからインストール
 
 ```console
 $ cargo install --git https://github.com/qryxip/cargo-compete
 ```
 
-### GitHub Releases
+### GitHub Releasesからバイナリをダウンロード
 
 [バイナリでの提供](https://github.com/qryxip/cargo-compete/releases)もしています。
 
@@ -48,7 +54,10 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 ### `cargo compete init`
 
-他のコマンドのためにいくつかのファイルを生成します。最初に実行してください。
+他のコマンドのためにいくつかのファイルを生成します。
+
+最初に実行してください。
+生成するファイルは以下の通りです。
 
 - [`compete.toml`](#設定)
 
@@ -56,14 +65,14 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
 - [`rust-toolchain`](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
 
-    `cargo`と`rustc`のバージョンを指定するテキストファイルまたはTOMLファイルです。
-    AtCoder用なら`1.42.0`と書けば、`rust-toolchain`を置いたディレクトリ下で`~/.cargo/bin/cargo(.exe)`を起動したときに1.42.0のものが呼ばれるようになります。
+    [ツールチェイン](https://rust-lang.github.io/rustup/concepts/toolchains.html)のバージョンを指定するテキストファイルまたはTOMLファイルです。
+    例えば`1.42.0`と書けば、`rust-toolchain`を置いたディレクトリ下で`~/.cargo/bin/cargo(.exe)`を起動したときに1.42.0の`cargo`と`rustc`が呼ばれるようになります。
 
 - [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html)
 
-    `build/target-dir`を設定し、`target`ディレクトリを共有するようにします。
+    `build/target-dir`を設定し、[`target`ディレクトリ](https://doc.rust-lang.org/cargo/guide/build-cache.html)を共有するようにします。
 
-- `.template-cargo-lock.toml`
+- `template-cargo-lock.toml`
 
     [`cargo compete new`](#cargo-compete-new)に使う`Cargo.lock`のテンプレートです。
     質問に「AtCoderでクレートを使用するがバイナリ提出はしない」と回答した場合のみ生成されます。
@@ -112,10 +121,10 @@ TODO: ↓のスクショをアップデート。今`package.metadata.cargo-compe
 
 ### `cargo compete add`
 
+コンテストもしくは問題に対して[`bin`ターゲット](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#binaries)を生成し、テストケースをダウンロードします。
+
 **[`compete.toml`](#設定)が必要です。**
 最初に[`cargo compete init`](#cargo-compete-init)で生成してください。
-
-コンテストもしくは問題に対して`bin`ターゲットを生成し、テストケースをダウンロードします。
 
 設定は[`compete.toml`](#設定)の`add`で行ってください。
 
@@ -210,8 +219,6 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 **パッケージを対象に取ります。**
 パッケージに`cd`して実行してください。
 
-`compete.toml`と対象パッケージの`[package.metadata]`からどのテストケースを使うかを決定します。
-
 `submit`時にも提出するコードをテストするため、提出前にこのコマンドを実行しておく必要はありません。
 
 ### `cargo compete submit`
@@ -220,8 +227,6 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 **パッケージを対象に取ります。**
 パッケージに`cd`して実行してください。
-
-対象パッケージの`[package.metadata]`から提出先のサイトと問題を決定します。
 
 ![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
 
@@ -244,7 +249,6 @@ args = ["cargo", "executable-payload", "--bin", "{{ bin_name }}"]
 ## 設定
 
 設定は各ワークスペース下にある`compete.toml`にあります。
-バイナリ提出関連の設定もこちらです。
 
 ```toml
 # Path to the test file (Liquid template)
@@ -536,6 +540,8 @@ extend:
 
 ### `TestSuite::Batch`
 
+通常の問題に対するテストスイートです。
+
 <table>
   <thead>
     <tr>
@@ -581,22 +587,23 @@ extend:
 
 [untaggedなADT](https://serde.rs/enum-representations.html#untagged)です。
 
-- [`Match::Exact`](#matchexact)
-- [`Match::Lines`](#matchlines)
+- [`Match::Exact`](#matchexact--exact)
+- [`Match::Lines`](#matchlines--lines)
 - [`Match::Float`](#matchfloat)
 - [`Match::Checker`](#matchchecker)
 
-### `Match::Exact`
+### `Match::Exact` = `"Exact"`
 
 文字列全体の一致で判定します。
 
-### `Match::Lines`
+### `Match::Lines` = `"Lines"`
 
-各行の一致で判定します。
+[各行](https://doc.rust-lang.org/stable/std/primitive.str.html#method.lines)の一致で判定します。
 
 ### `Match::Float`
 
 空白区切りでの単語の一致で判定します。
+
 この際数値として読める単語は浮動小数点数とみなし、誤差を許容します。
 
 <table>
@@ -659,11 +666,11 @@ extend:
 
 [untaggedなADT](https://serde.rs/enum-representations.html#untagged)です。
 
-- [`Shell::Bash`](#shellbash)
+- [`Shell::Bash`](#shellbash--bash)
 
-### `Shell::Bash`
+### `Shell::Bash` = `"Bash"`
 
-`bash -c "$cmd"`として`cmd`を実行します。
+Bashです。
 
 ### `Case`
 
@@ -788,6 +795,8 @@ globを示す文字列です。
 
 ### `TestSuite::Unsubmittable`
 
+[APG4b](https://atcoder.jp/contests/APG4b)の問題のようなもののためのダミーのテストスイートです。
+
 <table>
   <thead>
     <tr>
@@ -799,7 +808,20 @@ globを示す文字列です。
   </thead>
 </table>
 
-## [online-judge-tools](https://github.com/online-judge-tools/oj)の利用
+## Cookieとトークン
+
+Cookieと各トークンは<code>[{ local data directory }](https://docs.rs/dirs-next/2/dirs_next/fn.data_local_dir.html)/cargo-compete</code>下に保存されています。
+
+```console
+.
+├── cookies.jsonl
+└── tokens
+    ├── codeforces.json
+    ├── dropbox.json
+    └── yukicoder.json
+```
+
+## [online-judge-tools](https://github.com/online-judge-tools)の利用
 
 `download`時と`submit`時に対象のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。
 
@@ -831,7 +853,7 @@ aplusb = { problem = "https://judge.yosupo.jp/problem/aplusb" }
 
 ### `cargo atcoder submit`
 
-[`cargo compete submit`](#cargo-compete-submit)でコード、または「エンコード」したコードを提出します。
+[`cargo compete submit`](#cargo-compete-submit)でソースコードを提出します。
 
 他のコマンドと同様に、ワークスペース下に[`compete.toml`](#設定)がある必要があります。
 
