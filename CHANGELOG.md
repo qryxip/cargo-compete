@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- cargo-compete now reads these environment variables if they exist, and use them.
+
+    - `$DROPBOX_ACCESS_TOKEN`
+    - `$YUKICODER_API_KEY`
+    - `$CODEFORCES_API_KEY`
+    - `$CODEFORCES_API_SECRET`
+
 ## [0.8.2] - 2021-02-15Z
 
 ### Added
