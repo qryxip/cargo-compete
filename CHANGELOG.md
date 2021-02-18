@@ -1,15 +1,21 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.3] - 2021-02-18Z
 
 ### Added
 
-- cargo-compete now reads these environment variables if they exist, and use them.
+- cargo-compete now reads these environment variables if they exist, and use them. ([#129](https://github.com/qryxip/cargo-compete/pull/129))
 
     - `$DROPBOX_ACCESS_TOKEN`
     - `$YUKICODER_API_KEY`
     - `$CODEFORCES_API_KEY`
     - `$CODEFORCES_API_SECRET`
+
+### Fixed
+
+- Added `#[serde(default)]` to `PartialBatchTestCase::out: Option<Arc<str>>`. ([qryxip/snowchains/#128](https://github.com/qryxip/snowchains/pull/128))
+
+    Previously, explicit `out: ~` had been allowed but the field itself was required.
 
 ## [0.8.2] - 2021-02-15Z
 
