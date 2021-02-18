@@ -826,6 +826,15 @@ The cookies and tokens are saved under <code>[{ local data directory }](https://
     └── yukicoder.json
 ```
 
+## Environment variables
+
+cargo-compete reads these environment variables if they exist, and use them.
+
+- `$DROPBOX_ACCESS_TOKEN`
+- `$YUKICODER_API_KEY`
+- `$CODEFORCES_API_KEY`
+- `$CODEFORCES_API_SECRET`
+
 ## With [online-judge-tools](https://github.com/online-judge-tools)
 
 For unsupported websites, `oj-api(.exe)` in the `$PATH` is used when `download`ing and `submit`ting.

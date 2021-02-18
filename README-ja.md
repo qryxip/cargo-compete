@@ -821,6 +821,15 @@ Cookieと各トークンは<code>[{ local data directory }](https://docs.rs/dirs
     └── yukicoder.json
 ```
 
+## 環境変数
+
+cargo-competeは以下の環境変数が存在する場合、それらを読んで使います。
+
+- `$DROPBOX_ACCESS_TOKEN`
+- `$YUKICODER_API_KEY`
+- `$CODEFORCES_API_KEY`
+- `$CODEFORCES_API_SECRET`
+
 ## [online-judge-tools](https://github.com/online-judge-tools)の利用
 
 `download`時と`submit`時に対象のURLがサポートされていないサイトを指しているのなら、`$PATH`内にある`oj-api(.exe)`が使われます。

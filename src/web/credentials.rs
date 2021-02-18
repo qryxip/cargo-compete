@@ -1,7 +1,7 @@
 use crate::shell::Shell;
-use anyhow::Context as _;
+use anyhow::{anyhow, Context as _};
 use serde::{Deserialize, Serialize};
-use std::{cell::RefCell, path::PathBuf};
+use std::{cell::RefCell, env, path::PathBuf};
 
 pub(crate) fn username_and_password<'a>(
     shell: &'a RefCell<&'a mut Shell>,
@@ -17,6 +17,10 @@ pub(crate) fn username_and_password<'a>(
 }
 
 pub(crate) fn dropbox_access_token() -> anyhow::Result<String> {
+    if let Some(value) = env_var("DROPBOX_ACCESS_TOKEN")? {
+        return Ok(value);
+    }
+
     let path = token_path("dropbox.json")?;
 
     let DropboxJson { access_token } = crate::fs::read_json(&path).with_context(|| {
@@ -44,6 +48,10 @@ The access token must have these permissions.
 }
 
 pub(crate) fn yukicoder_api_key(shell: &mut Shell) -> anyhow::Result<String> {
+    if let Some(value) = env_var("YUKICODER_API_KEY")? {
+        return Ok(value);
+    }
+
     let path = token_path("yukicoder.json")?;
     if path.exists() {
         crate::fs::read_json(path)
@@ -56,6 +64,13 @@ pub(crate) fn yukicoder_api_key(shell: &mut Shell) -> anyhow::Result<String> {
 }
 
 pub(crate) fn codeforces_api_key_and_secret(shell: &mut Shell) -> anyhow::Result<(String, String)> {
+    if let (Some(api_key), Some(api_secret)) = (
+        env_var("CODEFORCES_API_KEY")?,
+        env_var("CODEFORCES_API_SECRET")?,
+    ) {
+        return Ok((api_key, api_secret));
+    }
+
     let path = token_path("codeforces.json")?;
 
     let CodeforcesJson {
@@ -82,6 +97,15 @@ pub(crate) fn codeforces_api_key_and_secret(shell: &mut Shell) -> anyhow::Result
         api_key: String,
         api_secret: String,
     }
+}
+
+fn env_var(name: &str) -> anyhow::Result<Option<String>> {
+    env::var_os(name)
+        .map(|v| {
+            v.into_string()
+                .map_err(|_| anyhow!("${} is not valid UTF-8", name))
+        })
+        .transpose()
 }
 
 fn token_path(file_name: &str) -> anyhow::Result<PathBuf> {
