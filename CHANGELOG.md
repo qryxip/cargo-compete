@@ -28,7 +28,7 @@
     "./template-cargo-lock.toml" = "Cargo.lock"
     ```
 
-- Made `new.template` optional.
+- Made `new` and `new.template` optional.
 
 ### Deprecated
 
