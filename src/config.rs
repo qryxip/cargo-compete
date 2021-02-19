@@ -113,6 +113,7 @@ pub(crate) struct CargoCompeteConfig {
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
     template: Option<CargoCompeteConfigTemplate>,
+    #[serde(default)]
     pub(crate) new: CargoCompeteConfigNew,
     pub(crate) add: Option<CargoCompeteConfigAdd>,
     #[serde(default)]
@@ -211,6 +212,7 @@ pub(crate) struct CargoCompeteConfigTemplateNew {
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub(crate) enum CargoCompeteConfigNew {
+    None,
     CargoCompete {
         platform: PlatformKind,
         #[derivative(Debug = "ignore")]
@@ -227,14 +229,16 @@ pub(crate) enum CargoCompeteConfigNew {
 }
 
 impl CargoCompeteConfigNew {
-    pub(crate) fn path(&self) -> &liquid::Template {
+    pub(crate) fn path(&self) -> Option<&liquid::Template> {
         match self {
-            Self::CargoCompete { path, .. } | Self::OjApi { path, .. } => path,
+            Self::None => None,
+            Self::CargoCompete { path, .. } | Self::OjApi { path, .. } => Some(path),
         }
     }
 
     fn template(&self) -> Option<&CargoCompeteConfigNewTemplate> {
         match self {
+            Self::None => None,
             Self::CargoCompete { template, .. } | Self::OjApi { template, .. } => template.as_ref(),
         }
     }
@@ -246,6 +250,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
         D: Deserializer<'de>,
     {
         return match WithExplicitTag::deserialize(deserializer)? {
+            WithExplicitTag::None => Ok(Self::None),
             WithExplicitTag::CargoCompete {
                 rest:
                     CargoCompete {
@@ -286,6 +291,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
         #[derive(Deserialize)]
         #[serde(untagged)]
         enum WithExplicitTag {
+            None,
             CargoCompete {
                 #[allow(dead_code)]
                 #[serde(deserialize_with = "cargo_compete_tag")]
@@ -355,6 +361,12 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
             }
             Ok(())
         }
+    }
+}
+
+impl Default for CargoCompeteConfigNew {
+    fn default() -> Self {
+        Self::None
     }
 }
 

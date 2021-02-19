@@ -70,6 +70,9 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let cargo_compete_config = crate::config::load(&cargo_compete_config_path, shell)?;
 
     match &cargo_compete_config.new {
+        CargoCompeteConfigNew::None => {
+            bail!("`new` is `none`: {}", cargo_compete_config_path.display())
+        }
         CargoCompeteConfigNew::CargoCompete {
             platform: PlatformKind::Atcoder,
             ..
@@ -374,10 +377,14 @@ fn create_new_package(
         )
     })?;
 
-    let manifest_dir = cargo_compete_config.new.path().render(&object!({
-        "contest": group.contest(),
-        "package_name": group.package_name(),
-    }))?;
+    let manifest_dir = cargo_compete_config
+        .new
+        .path()
+        .with_context(|| format!("`new` is `none`: {}", cargo_compete_config_path.display()))?
+        .render(&object!({
+            "contest": group.contest(),
+            "package_name": group.package_name(),
+        }))?;
     let manifest_dir = Path::new(&manifest_dir);
     let manifest_dir = cargo_compete_config_path
         .with_file_name(".")
