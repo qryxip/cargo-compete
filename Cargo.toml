@@ -1,6 +1,6 @@
 [package]
 name = "cargo-compete"
-version = "0.8.3"
+version = "0.8.4"
 authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -40,7 +40,7 @@ opener = "0.4.1"
 percent-encoding = "2.1.0"
 pretty_assertions = "0.6.1"
 prettytable-rs = "0.8.0"
-reqwest = { version = "0.11.0", default-features = false, features = ["blocking"] }
+reqwest = { version = "0.11.1", default-features = false, features = ["blocking"] }
 rpassword = "5.0.1"
 rprompt = "1.0.5"
 serde = { version = "1.0.123", features = ["derive"] }
@@ -57,7 +57,7 @@ termcolor = "1.1.2"
 tokio = { version = "1.2.0", features = ["signal"] }
 toml = "0.5.8"
 toml_edit = "0.2.0"
-url = { version = "2.2.0", features = ["serde"] }
+url = { version = "2.2.1", features = ["serde"] }
 which = "4.0.2"
 
 [target.'cfg(windows)'.dependencies]
