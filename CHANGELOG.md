@@ -1,5 +1,45 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `template` field to `compete.toml`.
+
+    ```toml
+    [template]
+    src = '''
+    fn main() {
+        todo!();
+    }
+    '''
+
+    [template.new]
+    profile = '''
+    [dev]
+    opt-level = 3
+    '''
+    dependencies = '''
+    proconio = { version = "=0.3.6", features = ["derive"] }
+    # ...
+    '''
+
+    [template.new.copy-files]
+    "./template-cargo-lock.toml" = "Cargo.lock"
+    ```
+
+- Made `new.template` optional.
+
+### Deprecated
+
+- Deprecated the `new.template` config.
+
+    Use `template` instead.
+
+### Fixed
+
+- Fixed [a problem where `Cargo.lock` was not copied when running `new` command](https://github.com/qryxip/cargo-compete/issues/131).
+
 ## [0.8.3] - 2021-02-18Z
 
 ### Added
