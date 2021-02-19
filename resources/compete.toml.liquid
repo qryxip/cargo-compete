@@ -20,6 +20,33 @@ test-suite = {% raw %}"{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"{% endra
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
+[template]
+src = '''
+fn main() {
+    todo!();
+}
+'''
+
+[template.new]
+# `profile` for `Cargo.toml`.
+#
+# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
+dependencies = '''
+{% if template_new_dependencies_content -%}
+{{ template_new_dependencies_content | rstrip }}
+{%- else -%}
+#proconio = { version = "=0.3.6", features = ["derive"] }
+{%- endif %}
+'''
+
+[template.new.copy-files]
+{% if template_new_lockfile -%}
+"{{ template_new_lockfile }}" = "Cargo.lock"
+{% endif %}
 [new]
 kind = "cargo-compete"
 # Platform
@@ -44,38 +71,6 @@ path = {% raw %}"./{{ contest }}"{% endraw %}
 #kind = "oj-api"
 #url = {% raw %}"https://atcoder.jp/contests/{{ id }}"{% endraw %}
 #path = {% raw %}"./{{ contest }}"{% endraw %}
-
-[new.template]
-{% if new_template_lockfile -%}
-lockfile = "{{ new_template_lockfile }}"
-{% else -%}
-#lockfile = "/path/to/cargo-lock-template.toml"
-{% endif -%}
-# `profile` for `Cargo.toml`.
-#
-# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
-#profile = '''
-#[dev]
-#opt-level = 3
-#'''
-
-[new.template.dependencies]
-kind = "inline"
-content = '''
-{% if new_template_dependencies_content -%}
-{{ new_template_dependencies_content | rstrip }}
-{%- else -%}
-#proconio = { version = "0.3.6", features = ["derive"] }
-{%- endif %}
-'''
-
-[new.template.src]
-kind = "inline"
-content = '''
-fn main() {
-    todo!();
-}
-'''
 
 {% raw -%}
 # for Library-Checker

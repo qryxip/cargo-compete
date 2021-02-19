@@ -230,13 +230,13 @@ target-dir = ""
 
     let compete_toml_path = path.join("compete.toml");
     let compete_toml = crate::config::generate(
-        PlatformKind::Atcoder,
-        None,
         cargo_atcoder_config
             .as_ref()
             .and_then(|c| c["dependencies"].as_table())
             .map(|t| t.to_string())
             .as_deref(),
+        None,
+        PlatformKind::Atcoder,
         submit_via_binary,
     )?;
 

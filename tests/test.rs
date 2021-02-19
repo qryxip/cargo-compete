@@ -68,23 +68,21 @@ fn run(
                 cwd.join("compete.toml"),
                 r#"test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml"
 
-[new]
-platform = "atcoder"
-path = "./{{ package_name }}"
-
-[new.template.dependencies]
-kind = "inline"
-content = '''
-proconio = "=0.3.6"
-'''
-
-[new.template.src]
-kind = "inline"
-content = '''
+[template]
+src = '''
 fn main() {
     todo!();
 }
 '''
+
+[template.new]
+dependencies = '''
+proconio = "=0.3.6"
+'''
+
+[new]
+platform = "atcoder"
+path = "./{{ package_name }}"
 "#,
             )?;
 

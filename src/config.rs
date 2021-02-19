@@ -1,22 +1,24 @@
 use crate::{project::PackageExt as _, shell::Shell};
-use anyhow::Context as _;
+use anyhow::{bail, Context as _};
 use derivative::Derivative;
 use heck::KebabCase as _;
 use indexmap::indexset;
 use krates::cm;
 use liquid::object;
+use maplit::btreemap;
 use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
+    collections::BTreeMap,
     fmt,
     path::{Path, PathBuf},
     str::{self, FromStr},
 };
 
 pub(crate) fn generate(
+    template_new_dependencies_content: Option<&str>,
+    template_new_lockfile: Option<&str>,
     new_platform: PlatformKind,
-    new_template_lockfile: Option<&str>,
-    new_template_dependencies_content: Option<&str>,
     submit_via_bianry: bool,
 ) -> anyhow::Result<String> {
     let generated = liquid::ParserBuilder::with_stdlib()
@@ -25,8 +27,8 @@ pub(crate) fn generate(
         .unwrap()
         .render(&object!({
             "new_platform": new_platform.to_kebab_case_str(),
-            "new_template_lockfile": new_template_lockfile,
-            "new_template_dependencies_content": new_template_dependencies_content,
+            "template_new_dependencies_content": template_new_dependencies_content,
+            "template_new_lockfile": template_new_lockfile,
             "submit_via_binary": submit_via_bianry,
         }))
         .unwrap();
@@ -110,12 +112,100 @@ pub(crate) struct CargoCompeteConfig {
     #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
     pub(crate) test_suite: liquid::Template,
     pub(crate) open: Option<String>,
+    template: Option<CargoCompeteConfigTemplate>,
     pub(crate) new: CargoCompeteConfigNew,
     pub(crate) add: Option<CargoCompeteConfigAdd>,
     #[serde(default)]
     pub(crate) test: CargoCompeteConfigTest,
     #[serde(default)]
     pub(crate) submit: CargoCompeteConfigSubmit,
+}
+
+impl CargoCompeteConfig {
+    pub(crate) fn template(
+        &self,
+        config_path: &Path,
+        shell: &mut Shell,
+    ) -> anyhow::Result<CargoCompeteConfigTemplate> {
+        if let Some(template) = &self.template {
+            Ok(template.clone())
+        } else if let Some(CargoCompeteConfigNewTemplate {
+            lockfile,
+            profile,
+            dependencies,
+            src,
+            ..
+        }) = self.new.template()
+        {
+            shell.warn("`new.template` is deprecated. see https://github.com/qryxip/cargo-compete#configuration")?;
+
+            let read = |rel_path: &Path| -> _ {
+                crate::fs::read_to_string(config_path.with_file_name("").join(rel_path))
+            };
+
+            let src = match src {
+                CargoCompeteConfigNewTemplateSrc::Inline { content } => content.clone(),
+                CargoCompeteConfigNewTemplateSrc::File { path } => read(path)?,
+            };
+
+            let profile = profile.clone().unwrap_or_default();
+
+            let dependencies = match dependencies {
+                CargoCompeteConfigNewTemplateDependencies::Inline { content } => {
+                    content.parse::<toml_edit::Document>().with_context(|| {
+                        "could not parse the toml value in `new.template.dependencies.content`"
+                    })?
+                }
+                CargoCompeteConfigNewTemplateDependencies::ManifestFile { path } => {
+                    let mut dependencies = toml_edit::Document::new();
+                    let root = read(path)?.parse::<toml_edit::Document>()?["dependencies"].clone();
+                    if root.is_table() {
+                        dependencies.root = root;
+                    } else if !root.is_none() {
+                        bail!("`dependencies` is not a `Table`");
+                    }
+                    dependencies
+                }
+            };
+
+            let copy_files = lockfile
+                .as_ref()
+                .map(|p| btreemap!(p.clone() => "Cargo.lock".into()))
+                .unwrap_or_default();
+
+            Ok(CargoCompeteConfigTemplate {
+                src,
+                new: Some(CargoCompeteConfigTemplateNew {
+                    profile,
+                    dependencies,
+                    copy_files,
+                }),
+            })
+        } else {
+            bail!(
+                "`template` or `new.template` is required: {}",
+                config_path.display(),
+            );
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CargoCompeteConfigTemplate {
+    pub(crate) src: String,
+    pub(crate) new: Option<CargoCompeteConfigTemplateNew>,
+}
+
+#[derive(Deserialize, Default, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct CargoCompeteConfigTemplateNew {
+    #[serde(default, with = "serde_with::rust::display_fromstr")]
+    pub(crate) profile: toml_edit::Document,
+    #[serde(default, with = "serde_with::rust::display_fromstr")]
+    pub(crate) dependencies: toml_edit::Document,
+    #[serde(default)]
+    pub(crate) copy_files: BTreeMap<PathBuf, PathBuf>,
 }
 
 #[derive(Derivative)]
@@ -125,14 +215,14 @@ pub(crate) enum CargoCompeteConfigNew {
         platform: PlatformKind,
         #[derivative(Debug = "ignore")]
         path: liquid::Template,
-        template: CargoCompeteConfigNewTemplate,
+        template: Option<CargoCompeteConfigNewTemplate>,
     },
     OjApi {
         #[derivative(Debug = "ignore")]
         url: liquid::Template,
         #[derivative(Debug = "ignore")]
         path: liquid::Template,
-        template: CargoCompeteConfigNewTemplate,
+        template: Option<CargoCompeteConfigNewTemplate>,
     },
 }
 
@@ -143,9 +233,9 @@ impl CargoCompeteConfigNew {
         }
     }
 
-    pub(crate) fn template(&self) -> &CargoCompeteConfigNewTemplate {
+    fn template(&self) -> Option<&CargoCompeteConfigNewTemplate> {
         match self {
-            Self::CargoCompete { template, .. } | Self::OjApi { template, .. } => template,
+            Self::CargoCompete { template, .. } | Self::OjApi { template, .. } => template.as_ref(),
         }
     }
 }
@@ -211,7 +301,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
                 url: liquid::Template,
                 #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
                 path: liquid::Template,
-                template: CargoCompeteConfigNewTemplate,
+                template: Option<CargoCompeteConfigNewTemplate>,
             },
             Other(toml::Value),
         }
@@ -222,7 +312,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
             platform: PlatformKind,
             #[serde(deserialize_with = "deserialize_liquid_template_with_custom_filter")]
             path: liquid::Template,
-            template: CargoCompeteConfigNewTemplate,
+            template: Option<CargoCompeteConfigNewTemplate>,
         }
 
         fn deserialize_platform_kind_in_kebab_case<'de, D>(
@@ -271,12 +361,12 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigNew {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigNewTemplate {
-    pub(crate) toolchain: Option<String>,
-    pub(crate) lockfile: Option<PathBuf>,
+    toolchain: Option<String>,
+    lockfile: Option<PathBuf>,
     #[serde(default, deserialize_with = "deserialize_option_from_str")]
-    pub(crate) profile: Option<toml_edit::Document>,
-    pub(crate) dependencies: CargoCompeteConfigNewTemplateDependencies,
-    pub(crate) src: CargoCompeteConfigNewTemplateSrc,
+    profile: Option<toml_edit::Document>,
+    dependencies: CargoCompeteConfigNewTemplateDependencies,
+    src: CargoCompeteConfigNewTemplateSrc,
 }
 
 fn deserialize_option_from_str<'de, T, D>(deserializer: D) -> Result<Option<T>, D::Error>
@@ -292,14 +382,14 @@ where
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
-pub(crate) enum CargoCompeteConfigNewTemplateDependencies {
+enum CargoCompeteConfigNewTemplateDependencies {
     Inline { content: String },
     ManifestFile { path: PathBuf },
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
-pub(crate) enum CargoCompeteConfigNewTemplateSrc {
+enum CargoCompeteConfigNewTemplateSrc {
     Inline { content: String },
     File { path: PathBuf },
 }
@@ -480,22 +570,22 @@ mod tests {
     #[test]
     fn generate() -> anyhow::Result<()> {
         fn generate(
-            new_template_lockfile: bool,
-            new_template_dependencies_content: bool,
+            template_new_dependencies_content: bool,
+            template_new_lockfile: bool,
             submit_via_bianry: bool,
         ) -> anyhow::Result<()> {
             let generated = super::generate(
-                PlatformKind::Atcoder,
-                if new_template_lockfile {
-                    Some("./cargo-lock-template.toml")
-                } else {
-                    None
-                },
-                if new_template_dependencies_content {
+                if template_new_dependencies_content {
                     Some(include_str!("../resources/atcoder-deps.toml"))
                 } else {
                     None
                 },
+                if template_new_lockfile {
+                    Some("./cargo-lock-template.toml")
+                } else {
+                    None
+                },
+                PlatformKind::Atcoder,
                 submit_via_bianry,
             )?;
 

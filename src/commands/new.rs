@@ -1,8 +1,5 @@
 use crate::{
-    config::{
-        CargoCompeteConfig, CargoCompeteConfigNew, CargoCompeteConfigNewTemplateDependencies,
-        CargoCompeteConfigNewTemplateSrc,
-    },
+    config::{CargoCompeteConfig, CargoCompeteConfigNew},
     oj_api,
     shell::{ColorChoice, Shell},
 };
@@ -369,6 +366,14 @@ fn create_new_package(
     problems: &BTreeMap<&str, &Url>,
     shell: &mut Shell,
 ) -> anyhow::Result<(PathBuf, Vec<PathBuf>)> {
+    let template = cargo_compete_config.template(cargo_compete_config_path, shell)?;
+    let template_new = template.new.as_ref().with_context(|| {
+        format!(
+            "`template.new` is required for the command: {}",
+            cargo_compete_config_path.display(),
+        )
+    })?;
+
     let manifest_dir = cargo_compete_config.new.path().render(&object!({
         "contest": group.contest(),
         "package_name": group.package_name(),
@@ -437,22 +442,6 @@ fn create_new_package(
         arr
     });
 
-    let dependencies = match &cargo_compete_config.new.template().dependencies {
-        CargoCompeteConfigNewTemplateDependencies::Inline { content } => {
-            content
-                .parse::<toml_edit::Document>()
-                .with_context(|| {
-                    "could not parse the toml value in `new.template.dependencies.content`"
-                })?
-                .root
-        }
-        CargoCompeteConfigNewTemplateDependencies::ManifestFile { path } => {
-            crate::fs::read_to_string(cargo_compete_config_path.with_file_name("").join(path))?
-                .parse::<toml_edit::Document>()?["dependencies"]
-                .clone()
-        }
-    };
-
     static DEFAULT_MANIFEST_END: &str = r"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -472,8 +461,8 @@ fn create_new_package(
     }
     let mut manifest = manifest.parse::<toml_edit::Document>()?;
 
-    if let Some(profile) = &cargo_compete_config.new.template().profile {
-        let mut profile = profile.clone();
+    if !template_new.profile.as_table().is_empty() {
+        let mut profile = template_new.profile.clone();
         profile.as_table_mut().set_implicit(true);
         let mut head = toml_edit::Document::new();
         head["profile"] = profile.root;
@@ -489,7 +478,7 @@ fn create_new_package(
     }
 
     manifest["bin"] = bin;
-    manifest["dependencies"] = dependencies;
+    manifest["dependencies"] = template_new.dependencies.root.clone();
 
     if let Ok(new_manifest) = manifest
         .to_string()
@@ -500,13 +489,6 @@ fn create_new_package(
     }
 
     crate::fs::write(&manifest_path, manifest.to_string_in_original_order())?;
-
-    let src = match &cargo_compete_config.new.template().src {
-        CargoCompeteConfigNewTemplateSrc::Inline { content } => content.clone(),
-        CargoCompeteConfigNewTemplateSrc::File { path } => {
-            crate::fs::read_to_string(cargo_compete_config_path.with_file_name("").join(path))?
-        }
-    };
 
     let src_bin_dir = manifest_dir.join("src").join("bin");
 
@@ -522,9 +504,15 @@ fn create_new_package(
         .collect::<Vec<_>>();
 
     for src_path in &src_paths {
-        crate::fs::write(src_path, &src)?;
+        crate::fs::write(src_path, &template.src)?;
     }
     crate::fs::remove_file(manifest_dir.join("src").join("main.rs"))?;
+
+    for (from, to) in &template_new.copy_files {
+        let from = cargo_compete_config_path.with_file_name("").join(from);
+        let to = manifest_dir.join(to);
+        crate::fs::copy(from, to)?;
+    }
 
     shell.status(
         "Created",

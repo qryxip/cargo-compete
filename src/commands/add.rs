@@ -1,5 +1,5 @@
 use crate::{
-    config::{CargoCompeteConfigAdd, CargoCompeteConfigNewTemplateSrc},
+    config::CargoCompeteConfigAdd,
     oj_api,
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
@@ -70,6 +70,9 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
     let member = metadata.query_for_member(package.as_deref())?;
     let (cargo_compete_config, cargo_compete_config_path) =
         crate::config::load_for_package(&member, shell)?;
+    let src_content = &cargo_compete_config
+        .template(&cargo_compete_config_path, shell)?
+        .src;
     let cargo_compete_config_add = cargo_compete_config
         .add
         .as_ref()
@@ -206,15 +209,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
 
         let abs_bin_src_path = member.manifest_path.with_file_name("").join(bin_src_path);
         crate::fs::create_dir_all(abs_bin_src_path.with_file_name(""))?;
-        crate::fs::write(
-            &abs_bin_src_path,
-            match &cargo_compete_config.new.template().src {
-                CargoCompeteConfigNewTemplateSrc::Inline { content } => content.clone(),
-                CargoCompeteConfigNewTemplateSrc::File { path } => crate::fs::read_to_string(
-                    cargo_compete_config_path.with_file_name("").join(path),
-                )?,
-            },
-        )?;
+        crate::fs::write(&abs_bin_src_path, src_content)?;
         abs_bin_src_paths.push(abs_bin_src_path);
         urls_to_open.push(problem.url.clone());
         bin_names_by_url.insert(problem.url.clone(), bin_name.to_owned());

@@ -1,12 +1,13 @@
 ---
 source: tests/test.rs
 expression: tree
+
 ---
 {
   ".cargo": {
     "config.toml": "[build]\ntarget-dir = \"target\"\n"
   },
-  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml\"\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n\n[new.template.dependencies]\nkind = \"inline\"\ncontent = '''\nproconio = \"=0.3.6\"\n'''\n\n[new.template.src]\nkind = \"inline\"\ncontent = '''\nfn main() {\n    todo!();\n}\n'''\n",
+  "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml\"\n\n[template]\nsrc = '''\nfn main() {\n    todo!();\n}\n'''\n\n[template.new]\ndependencies = '''\nproconio = \"=0.3.6\"\n'''\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n",
   "practice": {
     "Cargo.lock": "..",
     "Cargo.toml": "[package]\nname = \"problems\"\nversion = \"0.1.0\"\nedition = \"2018\"\n\n[package.metadata.cargo-compete.bin]\npractice-a = { alias = \"a\", problem = \"https://atcoder.jp/contests/practice/tasks/practice_1\" }\n\n[[bin]]\nname = \"practice-a\"\npath = \"src/bin/a.rs\"\n\n[dependencies]\nproconio = \"=0.3.6\"\n",

@@ -267,29 +267,14 @@ test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
 # Emacs:
 #open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
 
-[new]
-kind = "cargo-compete"
-# Platform
-#
-# - atcoder
-# - codeforces
-# - yukicoder
-platform = "atcoder"
-# Path (Liquid template)
-#
-# Variables:
-#
-# - `contest`:      Contest ID. **May be nil**
-# - `package_name`: Package name
-path = "./{{ contest }}"
+[template]
+src = '''
+fn main() {
+    todo!();
+}
+'''
 
-#[new]
-#kind = "oj-api"
-#url = "https://atcoder.jp/contests/{{ id }}"
-#path = "./{{ contest }}"
-
-[new.template]
-lockfile = "./template-cargo-lock.toml"
+[template.new]
 # `profile` for `Cargo.toml`.
 #
 # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
@@ -297,10 +282,7 @@ lockfile = "./template-cargo-lock.toml"
 #[dev]
 #opt-level = 3
 #'''
-
-[new.template.dependencies]
-kind = "inline"
-content = '''
+dependencies = '''
 num = "=0.2.1"
 num-bigint = "=0.2.6"
 num-complex = "=0.2.4"
@@ -342,13 +324,29 @@ rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
 '''
 
-[new.template.src]
-kind = "inline"
-content = '''
-fn main() {
-    todo!();
-}
-'''
+[template.new.copy-files]
+"./template-cargo-lock.toml" = "Cargo.lock"
+
+[new]
+kind = "cargo-compete"
+# Platform
+#
+# - atcoder
+# - codeforces
+# - yukicoder
+platform = "atcoder"
+# Path (Liquid template)
+#
+# Variables:
+#
+# - `contest`:      Contest ID. **May be nil**
+# - `package_name`: Package name
+path = "./{{ contest }}"
+
+#[new]
+#kind = "oj-api"
+#url = "https://atcoder.jp/contests/{{ id }}"
+#path = "./{{ contest }}"
 
 # for Library-Checker
 #[add]

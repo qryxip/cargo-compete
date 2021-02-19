@@ -77,17 +77,17 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
     write_with_status(
         "compete.toml",
         &crate::config::generate(
-            platform,
-            if atcoder_crates == AtcoderCrates::UseNormally {
-                Some(TEMPLATE_CARGO_LOCK)
-            } else {
-                None
-            },
             if atcoder_crates == AtcoderCrates::UseNormally {
                 Some(include_str!("../../resources/atcoder-deps.toml"))
             } else {
                 None
             },
+            if atcoder_crates == AtcoderCrates::UseNormally {
+                Some(TEMPLATE_CARGO_LOCK)
+            } else {
+                None
+            },
+            platform,
             atcoder_crates == AtcoderCrates::UseViaBinary,
         )?,
     )?;
