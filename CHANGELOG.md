@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.5] - 2021-02-23Z
+
+### Fixed
+
+- Fixed [a problem where processes are not killed for timeout](https://github.com/qryxip/cargo-compete/issues/135). ([qryxip/snowchains#129](https://github.com/qryxip/snowchains/pull/129))
+
 ## [0.8.4] - 2021-02-19Z
 
 ### Added
