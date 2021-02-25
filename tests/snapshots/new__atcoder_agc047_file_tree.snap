@@ -20,12 +20,36 @@ expression: tree
       }
     },
     "testcases": {
-      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      5\n      7.5\n      2.4\n      17.000000001\n      17\n      16.000000000\n    out: |\n      3\n  - name: sample2\n    in: |\n      11\n      0.9\n      1\n      1\n      1.25\n      2.30000\n      5\n      70\n      0.000000001\n      9999.999999999\n      0.999999999\n      1.000000001\n    out: |\n      8\n\nextend: []\n",
-      "b.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      abcxyx\n      cyx\n      abc\n    out: |\n      1\n  - name: sample2\n    in: |\n      6\n      b\n      a\n      abc\n      c\n      d\n      ab\n    out: |\n      5\n\nextend: []\n",
-      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      4\n      2019 0 2020 200002\n    out: |\n      474287\n  - name: sample2\n    in: |\n      5\n      1 1 2 2 100000\n    out: |\n      600013\n\nextend: []\n",
-      "d.yml": "---\ntype: Batch\ntimelimit: 2s 500ms\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      2 3 1 4\n    out: |\n      121788\n  - name: sample2\n    in: |\n      2\n      1 2\n    out: |\n      36\n  - name: sample3\n    in: |\n      5\n      6 14 15 7 12 16 5 4 11 9 3 10 8 2 13 1\n    out: |\n      10199246\n\nextend: []\n",
-      "e.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: >\n    out: |\n      4\n      < 0 1 8\n      + 0 1 2\n      + 2 8 2\n      + 0 0 0\n\nextend: []\n",
-      "f.yml": "---\ntype: Batch\ntimelimit: 1s 250ms\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      6\n      1 8\n      6 10\n      2 7\n      4 4\n      9 3\n      5 1\n    out: |\n      5\n      0\n      7\n      5\n      0\n      0\n  - name: sample2\n    in: |\n      5\n      5 5\n      100 100\n      70 20\n      81 70\n      800 1\n    out: |\n      985\n      985\n      1065\n      1034\n      0\n  - name: sample3\n    in: |\n      10\n      2 5\n      4 4\n      13 12\n      12 13\n      14 17\n      17 19\n      22 22\n      16 18\n      19 27\n      25 26\n    out: |\n      2\n      2\n      9\n      9\n      3\n      3\n      24\n      5\n      0\n      25\n\nextend: []\n"
+      "a": {
+        "in": {},
+        "out": {}
+      },
+      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      5\n      7.5\n      2.4\n      17.000000001\n      17\n      16.000000000\n    out: |\n      3\n  - name: sample2\n    in: |\n      11\n      0.9\n      1\n      1\n      1.25\n      2.30000\n      5\n      70\n      0.000000001\n      9999.999999999\n      0.999999999\n      1.000000001\n    out: |\n      8\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "b": {
+        "in": {},
+        "out": {}
+      },
+      "b.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      abcxyx\n      cyx\n      abc\n    out: |\n      1\n  - name: sample2\n    in: |\n      6\n      b\n      a\n      abc\n      c\n      d\n      ab\n    out: |\n      5\n\nextend:\n  - type: Text\n    path: \"./b\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "c": {
+        "in": {},
+        "out": {}
+      },
+      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      4\n      2019 0 2020 200002\n    out: |\n      474287\n  - name: sample2\n    in: |\n      5\n      1 1 2 2 100000\n    out: |\n      600013\n\nextend:\n  - type: Text\n    path: \"./c\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "d": {
+        "in": {},
+        "out": {}
+      },
+      "d.yml": "---\ntype: Batch\ntimelimit: 2s 500ms\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      2 3 1 4\n    out: |\n      121788\n  - name: sample2\n    in: |\n      2\n      1 2\n    out: |\n      36\n  - name: sample3\n    in: |\n      5\n      6 14 15 7 12 16 5 4 11 9 3 10 8 2 13 1\n    out: |\n      10199246\n\nextend:\n  - type: Text\n    path: \"./d\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "e": {
+        "in": {},
+        "out": {}
+      },
+      "e.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: >\n    out: |\n      4\n      < 0 1 8\n      + 0 1 2\n      + 2 8 2\n      + 0 0 0\n\nextend:\n  - type: Text\n    path: \"./e\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "f": {
+        "in": {},
+        "out": {}
+      },
+      "f.yml": "---\ntype: Batch\ntimelimit: 1s 250ms\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      6\n      1 8\n      6 10\n      2 7\n      4 4\n      9 3\n      5 1\n    out: |\n      5\n      0\n      7\n      5\n      0\n      0\n  - name: sample2\n    in: |\n      5\n      5 5\n      100 100\n      70 20\n      81 70\n      800 1\n    out: |\n      985\n      985\n      1065\n      1034\n      0\n  - name: sample3\n    in: |\n      10\n      2 5\n      4 4\n      13 12\n      12 13\n      14 17\n      17 19\n      22 22\n      16 18\n      19 27\n      25 26\n    out: |\n      2\n      2\n      9\n      9\n      3\n      3\n      24\n      5\n      0\n      25\n\nextend:\n  - type: Text\n    path: \"./f\"\n    in: /in/*.txt\n    out: /out/*.txt\n"
     }
   },
   "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml\"\n\n[template]\nsrc = '''\nfn main() {\n    todo!();\n}\n'''\n\n[template.new]\ndependencies = '''\nproconio = \"=0.3.6\"\n'''\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n"

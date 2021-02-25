@@ -7,7 +7,8 @@ use crate::{
 use anyhow::Context;
 use indexmap::{indexmap, IndexMap};
 use krates::cm;
-use maplit::btreemap;
+use maplit::{btreemap, btreeset};
+use percent_encoding::PercentDecode;
 use snowchains_core::{
     testsuite::{Additional, BatchTestSuite, Match, PartialBatchTestCase, TestSuite},
     web::{
@@ -19,14 +20,87 @@ use snowchains_core::{
     },
 };
 use std::{
-    borrow::BorrowMut as _,
+    borrow::{BorrowMut as _, Cow},
     cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashSet},
     iter,
-    path::{Path, PathBuf},
+    path::{self, Path, PathBuf},
     time::Duration,
 };
 use url::Url;
+
+pub(crate) fn dl_only_system_test_cases(
+    url: &Url,
+    cookies_path: &Path,
+    cwd: &Path,
+    shell: &mut Shell,
+) -> anyhow::Result<()> {
+    let system_test_cases_dir = &system_test_cases_dir(url)?;
+    let in_dir = &system_test_cases_dir.join("in");
+    let out_dir = &system_test_cases_dir.join("out");
+
+    let Problem { text_files, .. } = match url.host_str() {
+        Some("atcoder.jp") => {
+            let shell = RefCell::new(shell.borrow_mut());
+
+            let username_and_password =
+                &mut credentials::username_and_password(&shell, "Username: ", "Password: ");
+
+            take(Atcoder::exec(RetrieveTestCases {
+                targets: ProblemsInContest::Urls {
+                    urls: btreeset!(url.clone()),
+                },
+                credentials: AtcoderRetrieveSampleTestCasesCredentials {
+                    username_and_password,
+                },
+                full: Some(RetrieveFullTestCases {
+                    credentials: AtcoderRetrieveFullTestCasesCredentials {
+                        dropbox_access_token: credentials::dropbox_access_token()?,
+                    },
+                }),
+                cookie_storage: CookieStorage::with_jsonl(cookies_path)?,
+                timeout: crate::web::TIMEOUT,
+                shell: &shell,
+            })?)
+        }
+        Some("yukicoder.me") => take(Yukicoder::exec(RetrieveTestCases {
+            targets: YukicoderRetrieveTestCasesTargets::Urls(btreeset!(url.clone())),
+            credentials: (),
+            full: Some(RetrieveFullTestCases {
+                credentials: YukicoderRetrieveFullTestCasesCredentials {
+                    api_key: credentials::yukicoder_api_key(shell)?,
+                },
+            }),
+            cookie_storage: (),
+            timeout: crate::web::TIMEOUT,
+            shell: &RefCell::new(shell.borrow_mut()),
+        })?),
+        _ => {
+            let problem = oj_api::get_problem(url, true, cwd, shell)?;
+            Problem::from_oj_api(problem, true)
+        }
+    };
+
+    if !text_files.is_empty() {
+        crate::fs::create_dir_all(in_dir)?;
+    }
+    if text_files.values().any(|(_, o)| o.is_some()) {
+        crate::fs::create_dir_all(out_dir)?;
+    }
+
+    for (name, (input, output)) in text_files {
+        let file_name = &format!("{}.txt", name);
+        crate::fs::write(in_dir.join(file_name), input)?;
+        if let Some(output) = output {
+            crate::fs::write(out_dir.join(file_name), output)?;
+        }
+    }
+    return Ok(());
+
+    fn take(outcome: RetrieveTestCasesOutcome) -> Problem<Option<String>> {
+        { outcome }.problems.pop().unwrap().into()
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn dl_for_existing_package(
@@ -217,6 +291,20 @@ pub(crate) fn dl_from_yukicoder(
     .map(|RetrieveTestCasesOutcome { problems, .. }| problems.into_iter().map(Into::into).collect())
 }
 
+pub(crate) fn system_test_cases_dir(problem_url: &Url) -> anyhow::Result<PathBuf> {
+    let system_test_cases_dir = dirs_next::cache_dir()
+        .with_context(|| "could not find the cache directory")?
+        .join("cargo-compete")
+        .join("system-test-cases");
+
+    Ok(iter::once(problem_url.host_str().unwrap_or_default())
+        .chain(problem_url.path_segments().into_iter().flatten())
+        .map(percent_encoding::percent_decode_str)
+        .map(PercentDecode::decode_utf8_lossy)
+        .map(Cow::into_owned)
+        .fold(system_test_cases_dir, |d, p| d.join(p)))
+}
+
 pub(crate) fn save_test_cases<I>(
     workspace_root: &Path,
     pkg_manifest_dir: &str,
@@ -236,6 +324,38 @@ pub(crate) fn save_test_cases<I>(
         ..
     } in problems
     {
+        let system_test_cases_dir = system_test_cases_dir(&url)?;
+
+        crate::fs::create_dir_all(system_test_cases_dir.join("in"))?;
+        if text_files.values().any(|(_, o)| o.is_some()) {
+            crate::fs::create_dir_all(system_test_cases_dir.join("out"))?;
+        }
+
+        for (name, (input, output)) in &text_files {
+            let path = |dir_name: &str| -> _ {
+                system_test_cases_dir
+                    .join(dir_name)
+                    .join(name)
+                    .with_extension("txt")
+            };
+            crate::fs::write(path("in"), input)?;
+            if let Some(output) = output {
+                crate::fs::write(path("out"), output)?;
+            }
+        }
+
+        let empty = match &test_suite {
+            TestSuite::Batch(BatchTestSuite { cases, .. }) => cases.is_empty(),
+            _ => true,
+        } && text_files.is_empty();
+
+        let contains_any_out = match &test_suite {
+            TestSuite::Batch(BatchTestSuite { cases, .. }) => cases
+                .iter()
+                .any(|PartialBatchTestCase { out, .. }| out.is_some()),
+            _ => false,
+        } || text_files.values().any(|(_, o)| o.is_some());
+
         for (bin_name, bin_alias) in bin_names(&url, &index).into_iter().flat_map(|bin_name| {
             bin_aliases(&url, &index)
                 .into_iter()
@@ -253,35 +373,27 @@ pub(crate) fn save_test_cases<I>(
 
             acc.push(path.clone());
 
-            let txt_path = |dir_file_name: &str, txt_file_name: &str| -> _ {
-                path.with_file_name(&bin_alias)
-                    .join(dir_file_name)
-                    .join(txt_file_name)
-                    .with_extension("txt")
-            };
-
-            for (name, (input, output)) in &text_files {
-                let in_path = txt_path("in", name);
-                crate::fs::create_dir_all(in_path.parent().unwrap())?;
-                crate::fs::write(in_path, input)?;
-                if let Some(out) = output {
-                    let out_path = txt_path("out", name);
-                    crate::fs::create_dir_all(out_path.parent().unwrap())?;
-                    crate::fs::write(out_path, &r#out)?;
-                }
+            if !empty {
+                crate::fs::create_dir_all(path.with_file_name(&bin_alias).join("in"))?;
+            }
+            if contains_any_out {
+                crate::fs::create_dir_all(path.with_file_name(&bin_alias).join("out"))?;
             }
 
-            if !text_files.is_empty() {
-                if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
-                    cases.clear();
-
+            if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
+                if text_files.is_empty() {
                     extend.push(Additional::Text {
                         path: format!("./{}", bin_alias),
                         r#in: "/in/*.txt".to_owned(),
                         out: "/out/*.txt".to_owned(),
                         timelimit: None,
                         r#match: None,
-                    })
+                    });
+                } else {
+                    cases.clear();
+                    extend.push(Additional::SystemTestCases {
+                        problem: url.clone(),
+                    });
                 }
             }
 
@@ -305,15 +417,16 @@ pub(crate) fn save_test_cases<I>(
                         TestSuite::Unsubmittable =>
                             "no test cases (unsubmittable problem)".to_owned(),
                     },
-                    if text_files.is_empty() {
-                        format!("{}", path.display())
+                    if empty {
+                        path.with_file_name(format!("{}.yml", bin_alias))
                     } else {
-                        format!(
-                            "{}",
-                            path.with_file_name(format!("{{{0}.yml, {0}/}}", bin_alias))
-                                .display(),
-                        )
-                    },
+                        path.with_file_name(format!(
+                            "{{{0}.yml, {0}{1}}}",
+                            bin_alias,
+                            path::MAIN_SEPARATOR,
+                        ))
+                    }
+                    .display(),
                 ),
             )?;
         }
@@ -445,5 +558,11 @@ impl From<snowchains_core::web::RetrieveTestCasesOutcomeProblem> for Problem<Str
                 .collect(),
             contest_url: problem.contest.map(|c| c.url),
         }
+    }
+}
+
+impl From<snowchains_core::web::RetrieveTestCasesOutcomeProblem> for Problem<Option<String>> {
+    fn from(problem: snowchains_core::web::RetrieveTestCasesOutcomeProblem) -> Self {
+        Problem::<String>::from(problem).into()
     }
 }

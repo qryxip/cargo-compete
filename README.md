@@ -465,7 +465,11 @@ cases:
     out: |
       456 myonmyon
 
-extend: []
+extend:
+  - type: Text
+    path: "./a"
+    in: /in/*.txt
+    out: /out/*.txt
 ```
 
 ```yaml
@@ -498,7 +502,11 @@ cases:
     out: |
       6.78333333333333
 
-extend: []
+extend:
+  - type: Text
+    path: "./a"
+    in: /in/*.txt
+    out: /out/*.txt
 ```
 
 ```yaml
@@ -514,10 +522,8 @@ match:
 cases: []
 
 extend:
-  - type: Text
-    path: "./sqrt-mod"
-    in: /in/*.txt
-    out: /out/*.txt
+  - type: SystemTestCases
+    problem: https://judge.yosupo.jp/problem/sqrt_mod
 ```
 
 The format is `TestSuite` in the following schemas.
@@ -698,8 +704,8 @@ Bash.
     </tr>
     <tr>
       <td align="left"><code>out</code></td>
-      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
-      <td align="left"></td>
+      <td align="left"><code><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow">str</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
       <td align="left">Output</td>
     </tr>
     <tr>
@@ -722,6 +728,7 @@ Bash.
 An [internally tagged ADT](https://serde.rs/enum-representations.html#internally-tagged).
 
 - [`Extend::Text`](#extendtext)
+- [`Extend::SystemTestCases`](#extendsystemtestcases)
 
 ### `Extend::Text`
 
@@ -771,6 +778,36 @@ An [internally tagged ADT](https://serde.rs/enum-representations.html#internally
 ### `Glob`
 
 A glob.
+
+### `Extend::SystemTestCases`
+
+System test cases.
+
+System test cases are stored under <code>[{ cache directory }](https://docs.rs/dirs-next/2/dirs_next/fn.cache_dir.html)/cargo-compete/system-test-cases</code>.
+They are automatically downloaded if missing when `test`ing code.
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">Field</th>
+      <th align="left">Type</th>
+      <th align="left">Default</th>
+      <th align="left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>problem</code></td>
+      <td align="left"><a href="#url"><code>Url</code></a></td>
+      <td align="left"></td>
+      <td align="left">URL of the problem</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Url`
+
+A URL.
 
 ### `TestSuite::Interactive`
 

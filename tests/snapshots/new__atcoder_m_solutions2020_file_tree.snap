@@ -21,12 +21,36 @@ expression: tree
       }
     },
     "testcases": {
-      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      725\n    out: |\n      7\n  - name: sample2\n    in: |\n      1600\n    out: |\n      2\n\nextend: []\n",
-      "b.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      7 2 5\n      3\n    out: |\n      Yes\n  - name: sample2\n    in: |\n      7 4 2\n      3\n    out: |\n      No\n\nextend: []\n",
-      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      5 3\n      96 98 95 100 20\n    out: |\n      Yes\n      No\n  - name: sample2\n    in: |\n      3 2\n      1001 869120 1001\n    out: |\n      No\n  - name: sample3\n    in: |\n      15 7\n      3 1 4 1 5 9 2 6 5 3 5 8 9 7 9\n    out: |\n      Yes\n      Yes\n      No\n      Yes\n      Yes\n      No\n      Yes\n      Yes\n\nextend: []\n",
-      "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      7\n      100 130 130 130 115 115 150\n    out: |\n      1685\n  - name: sample2\n    in: |\n      6\n      200 180 160 140 120 100\n    out: |\n      1000\n  - name: sample3\n    in: |\n      2\n      157 193\n    out: |\n      1216\n\nextend: []\n",
-      "e.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      1 2 300\n      3 3 600\n      1 4 800\n    out: |\n      2900\n      900\n      0\n      0\n  - name: sample2\n    in: |\n      5\n      3 5 400\n      5 3 700\n      5 5 1000\n      5 7 700\n      7 5 400\n    out: |\n      13800\n      1600\n      0\n      0\n      0\n      0\n  - name: sample3\n    in: |\n      6\n      2 5 1000\n      5 2 1100\n      5 5 1700\n      -2 -5 900\n      -5 -2 600\n      -5 -5 2200\n    out: |\n      26700\n      13900\n      3200\n      1200\n      0\n      0\n      0\n  - name: sample4\n    in: |\n      8\n      2 2 286017\n      3 1 262355\n      2 -2 213815\n      1 -3 224435\n      -2 -2 136860\n      -3 -1 239338\n      -2 2 217647\n      -1 3 141903\n    out: |\n      2576709\n      1569381\n      868031\n      605676\n      366338\n      141903\n      0\n      0\n      0\n\nextend: []\n",
-      "f.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      2\n      11 1 U\n      11 47 D\n    out: |\n      230\n  - name: sample2\n    in: |\n      4\n      20 30 U\n      30 20 R\n      20 10 D\n      10 20 L\n    out: |\n      SAFE\n  - name: sample3\n    in: |\n      8\n      168 224 U\n      130 175 R\n      111 198 D\n      121 188 L\n      201 116 U\n      112 121 R\n      145 239 D\n      185 107 L\n    out: |\n      100\n\nextend: []\n"
+      "a": {
+        "in": {},
+        "out": {}
+      },
+      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      725\n    out: |\n      7\n  - name: sample2\n    in: |\n      1600\n    out: |\n      2\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "b": {
+        "in": {},
+        "out": {}
+      },
+      "b.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      7 2 5\n      3\n    out: |\n      Yes\n  - name: sample2\n    in: |\n      7 4 2\n      3\n    out: |\n      No\n\nextend:\n  - type: Text\n    path: \"./b\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "c": {
+        "in": {},
+        "out": {}
+      },
+      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      5 3\n      96 98 95 100 20\n    out: |\n      Yes\n      No\n  - name: sample2\n    in: |\n      3 2\n      1001 869120 1001\n    out: |\n      No\n  - name: sample3\n    in: |\n      15 7\n      3 1 4 1 5 9 2 6 5 3 5 8 9 7 9\n    out: |\n      Yes\n      Yes\n      No\n      Yes\n      Yes\n      No\n      Yes\n      Yes\n\nextend:\n  - type: Text\n    path: \"./c\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "d": {
+        "in": {},
+        "out": {}
+      },
+      "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      7\n      100 130 130 130 115 115 150\n    out: |\n      1685\n  - name: sample2\n    in: |\n      6\n      200 180 160 140 120 100\n    out: |\n      1000\n  - name: sample3\n    in: |\n      2\n      157 193\n    out: |\n      1216\n\nextend:\n  - type: Text\n    path: \"./d\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "e": {
+        "in": {},
+        "out": {}
+      },
+      "e.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3\n      1 2 300\n      3 3 600\n      1 4 800\n    out: |\n      2900\n      900\n      0\n      0\n  - name: sample2\n    in: |\n      5\n      3 5 400\n      5 3 700\n      5 5 1000\n      5 7 700\n      7 5 400\n    out: |\n      13800\n      1600\n      0\n      0\n      0\n      0\n  - name: sample3\n    in: |\n      6\n      2 5 1000\n      5 2 1100\n      5 5 1700\n      -2 -5 900\n      -5 -2 600\n      -5 -5 2200\n    out: |\n      26700\n      13900\n      3200\n      1200\n      0\n      0\n      0\n  - name: sample4\n    in: |\n      8\n      2 2 286017\n      3 1 262355\n      2 -2 213815\n      1 -3 224435\n      -2 -2 136860\n      -3 -1 239338\n      -2 2 217647\n      -1 3 141903\n    out: |\n      2576709\n      1569381\n      868031\n      605676\n      366338\n      141903\n      0\n      0\n      0\n\nextend:\n  - type: Text\n    path: \"./e\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "f": {
+        "in": {},
+        "out": {}
+      },
+      "f.yml": "---\ntype: Batch\ntimelimit: 3s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      2\n      11 1 U\n      11 47 D\n    out: |\n      230\n  - name: sample2\n    in: |\n      4\n      20 30 U\n      30 20 R\n      20 10 D\n      10 20 L\n    out: |\n      SAFE\n  - name: sample3\n    in: |\n      8\n      168 224 U\n      130 175 R\n      111 198 D\n      121 188 L\n      201 116 U\n      112 121 R\n      145 239 D\n      185 107 L\n    out: |\n      100\n\nextend:\n  - type: Text\n    path: \"./f\"\n    in: /in/*.txt\n    out: /out/*.txt\n"
     }
   }
 }

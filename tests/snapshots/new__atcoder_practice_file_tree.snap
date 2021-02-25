@@ -17,7 +17,11 @@ expression: tree
       }
     },
     "testcases": {
-      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      1\n      2 3\n      test\n    out: |\n      6 test\n  - name: sample2\n    in: |\n      72\n      128 256\n      myonmyon\n    out: |\n      456 myonmyon\n\nextend: []\n",
+      "a": {
+        "in": {},
+        "out": {}
+      },
+      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      1\n      2 3\n      test\n    out: |\n      6 test\n  - name: sample2\n    in: |\n      72\n      128 256\n      myonmyon\n    out: |\n      456 myonmyon\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
       "b.yml": "---\ntype: Interactive\ntimelimit: 2s\n"
     }
   }

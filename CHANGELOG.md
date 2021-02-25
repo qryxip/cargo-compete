@@ -1,5 +1,65 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added [`SystemTestCases` variant](https://github.com/qryxip/cargo-compete#extendsystemtestcases) to `extend` in test suite files. ([qryxip/snowchains#131](https://github.com/qryxip/snowchains/pull/131))
+
+    System test cases are stored under <code>[{ cache directory }](https://docs.rs/dirs-next/2/dirs_next/fn.cache_dir.html)/cargo-compete/system-test-cases</code>.
+    They are automatically downloaded if missing when `test`ing code.
+
+    ```yaml
+    extend:
+      - type: SystemTestCases
+        problem: "https://atcoder.jp/contests/abc191/tasks/abc191_a"
+    ```
+
+### Changed
+
+- `cargo compete test` command without `--full` option will append `{ type: Text, ... }` to `extend` and will create empty `in` and `out` directories.
+
+    ```console
+    ❯ cargo compete n arc110 --problems a
+        Created `arc110` package at /home/ryo/src/competitive/atcoder/./arc110
+        Saved 2 test cases to /home/ryo/src/competitive/atcoder/./arc110/testcases/{a.yml, a/}
+    ❯ tree ./arc110/testcases
+    ./arc110/testcases
+    ├── a
+    │   ├── in
+    │   └── out
+    └── a.yml
+
+    3 directories, 1 file
+    ```
+
+    ```yaml
+    ---
+    type: Batch
+    timelimit: 2s
+    match: Lines
+
+    cases:
+      - name: sample1
+        in: |
+          3
+        out: |
+          7
+      - name: sample2
+        in: |
+          10
+        out: |
+          39916801
+
+    extend:
+      - type: Text
+        path: "./a"
+        in: /in/*.txt
+        out: /out/*.txt
+    ```
+
+- `SystemTestCases` will be used for `--full` option.
+
 ## [0.8.5] - 2021-02-23Z
 
 ### Fixed

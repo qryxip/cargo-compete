@@ -76,7 +76,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
 
     let crate::Context {
         cwd,
-        cookies_path: _,
+        cookies_path,
         shell,
     } = ctx;
 
@@ -120,6 +120,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         },
         test_case_names: testcases.map(|ss| ss.into_iter().collect()),
         display_limit,
+        cookies_path: &cookies_path,
         shell,
     })
 }

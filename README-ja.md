@@ -473,7 +473,11 @@ cases:
     out: |
       456 myonmyon
 
-extend: []
+extend:
+  - type: Text
+    path: "./a"
+    in: /in/*.txt
+    out: /out/*.txt
 ```
 
 ```yaml
@@ -506,7 +510,11 @@ cases:
     out: |
       6.78333333333333
 
-extend: []
+extend:
+  - type: Text
+    path: "./a"
+    in: /in/*.txt
+    out: /out/*.txt
 ```
 
 ```yaml
@@ -522,10 +530,8 @@ match:
 cases: []
 
 extend:
-  - type: Text
-    path: "./sqrt-mod"
-    in: /in/*.txt
-    out: /out/*.txt
+  - type: SystemTestCases
+    problem: https://judge.yosupo.jp/problem/sqrt_mod
 ```
 
 形式は以下のスキーマにおける`TestSuite`です。
@@ -698,8 +704,8 @@ Bashです。
     </tr>
     <tr>
       <td align="left"><code>out</code></td>
-      <td align="left"><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow"><code>str</code></a></td>
-      <td align="left"></td>
+      <td align="left"><code><a href="https://yaml.org/spec/1.2/spec.html#tag/repository/str" rel="nofollow">str</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left"><code>~</code></td>
       <td align="left">出力</td>
     </tr>
     <tr>
@@ -722,6 +728,7 @@ Bashです。
 `type`をタグとした[internally taggedのADT](https://serde.rs/enum-representations.html#internally-tagged)です。
 
 - [`Extend::Text`](#extendtext)
+- [`Extend::SysTemTestCases`](#extendsystemtestcases)
 
 ### `Extend::Text`
 
@@ -771,6 +778,36 @@ Bashです。
 ### `Glob`
 
 globを示す文字列です。
+
+### `Extend::SystemTestCases`
+
+システムテストケースです。
+
+システムテストケースは <code>[{ cache directory }](https://docs.rs/dirs-next/2/dirs_next/fn.cache_dir.html)/cargo-compete/system-test-cases</code>下に保存されます。
+`test`時に見つからない場合、自動でダウンロードされます。
+
+<table>
+  <thead>
+    <tr>
+      <th align="left">フィールド</th>
+      <th align="left">型</th>
+      <th align="left">デフォルト</th>
+      <th align="left">説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="left"><code>problem</code></td>
+      <td align="left"><a href="#url"><code>Url</code></a></td>
+      <td align="left"></td>
+      <td align="left">問題のURL</td>
+    </tr>
+  </tbody>
+</table>
+
+### `Url`
+
+URLを示す文字列です。
 
 ### `TestSuite::Interactive`
 

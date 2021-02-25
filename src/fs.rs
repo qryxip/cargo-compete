@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 use serde::{de::DeserializeOwned, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub(crate) fn read_to_string(path: impl AsRef<Path>) -> anyhow::Result<String> {
     let path = path.as_ref();
@@ -42,4 +42,12 @@ pub(crate) fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> anyhow::Resu
     let (from, to) = (from.as_ref(), to.as_ref());
     std::fs::copy(from, to)
         .with_context(|| format!("failed to copy `{}` to `{}`", from.display(), to.display()))
+}
+
+pub(crate) fn read_dir(path: impl AsRef<Path>) -> anyhow::Result<Vec<PathBuf>> {
+    let path = path.as_ref();
+    std::fs::read_dir(path)?
+        .map(|e| e.map(|e| e.path()))
+        .collect::<Result<_, _>>()
+        .with_context(|| format!("could not list files in `{}`", path.display()))
 }

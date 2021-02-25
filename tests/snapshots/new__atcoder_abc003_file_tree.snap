@@ -18,10 +18,26 @@ expression: tree
       }
     },
     "testcases": {
-      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      6\n    out: |\n      35000\n  - name: sample2\n    in: |\n      91\n    out: |\n      460000\n\nextend: []\n",
-      "b.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      ch@ku@ai\n      choku@@i\n    out: |\n      You can win\n  - name: sample2\n    in: |\n      aoki\n      @ok@\n    out: |\n      You will lose\n  - name: sample3\n    in: |\n      arc\n      abc\n    out: |\n      You will lose\n\nextend: []\n",
-      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      2 2\n      1000 1500\n    out: |\n      1000.000000\n  - name: sample2\n    in: |\n      2 1\n      1000 1500\n    out: |\n      750\n  - name: sample3\n    in: |\n      10 5\n      2604 2281 3204 2264 2200 2650 2229 2461 2439 2211\n    out: |\n      2820.031250000\n\nextend: []\n",
-      "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3 2\n      2 2\n      2 2\n    out: |\n      12\n  - name: sample2\n    in: |\n      4 5\n      3 1\n      3 0\n    out: |\n      10\n  - name: sample3\n    in: |\n      23 18\n      15 13\n      100 95\n    out: |\n      364527243\n  - name: sample4\n    in: |\n      30 30\n      24 22\n      145 132\n    out: |\n      976668549\n\nextend: []\n"
+      "a": {
+        "in": {},
+        "out": {}
+      },
+      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      6\n    out: |\n      35000\n  - name: sample2\n    in: |\n      91\n    out: |\n      460000\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "b": {
+        "in": {},
+        "out": {}
+      },
+      "b.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      ch@ku@ai\n      choku@@i\n    out: |\n      You can win\n  - name: sample2\n    in: |\n      aoki\n      @ok@\n    out: |\n      You will lose\n  - name: sample3\n    in: |\n      arc\n      abc\n    out: |\n      You will lose\n\nextend:\n  - type: Text\n    path: \"./b\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "c": {
+        "in": {},
+        "out": {}
+      },
+      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      2 2\n      1000 1500\n    out: |\n      1000.000000\n  - name: sample2\n    in: |\n      2 1\n      1000 1500\n    out: |\n      750\n  - name: sample3\n    in: |\n      10 5\n      2604 2281 3204 2264 2200 2650 2229 2461 2439 2211\n    out: |\n      2820.031250000\n\nextend:\n  - type: Text\n    path: \"./c\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "d": {
+        "in": {},
+        "out": {}
+      },
+      "d.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch: Lines\n\ncases:\n  - name: sample1\n    in: |\n      3 2\n      2 2\n      2 2\n    out: |\n      12\n  - name: sample2\n    in: |\n      4 5\n      3 1\n      3 0\n    out: |\n      10\n  - name: sample3\n    in: |\n      23 18\n      15 13\n      100 95\n    out: |\n      364527243\n  - name: sample4\n    in: |\n      30 30\n      24 22\n      145 132\n    out: |\n      976668549\n\nextend:\n  - type: Text\n    path: \"./d\"\n    in: /in/*.txt\n    out: /out/*.txt\n"
     }
   },
   "compete.toml": "test-suite = \"{{ manifest_dir }}/testcases/{{ bin_alias | kebabcase }}.yml\"\n\n[template]\nsrc = '''\nfn main() {\n    todo!();\n}\n'''\n\n[template.new]\ndependencies = '''\nproconio = \"=0.3.6\"\n'''\n\n[new]\nplatform = \"atcoder\"\npath = \"./{{ package_name }}\"\n"
