@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.6] - 2021-02-25Z
 
 ### Added
 
-- Added [`SystemTestCases` variant](https://github.com/qryxip/cargo-compete#extendsystemtestcases) to `extend` in test suite files. ([qryxip/snowchains#131](https://github.com/qryxip/snowchains/pull/131))
+- Added [`SystemTestCases` variant](https://github.com/qryxip/cargo-compete#extendsystemtestcases) to `extend` in test suite files. ([qryxip/snowchains#131](https://github.com/qryxip/snowchains/pull/131), [#138](https://github.com/qryxip/cargo-compete/pull/138))
 
     System test cases are stored under <code>[{ cache directory }](https://docs.rs/dirs-next/2/dirs_next/fn.cache_dir.html)/cargo-compete/system-test-cases</code>.
     They are automatically downloaded if missing when `test`ing code.
@@ -17,7 +17,7 @@
 
 ### Changed
 
-- `cargo compete test` command without `--full` option will append `{ type: Text, ... }` to `extend` and will create empty `in` and `out` directories.
+- `cargo compete test` command without `--full` option will append `{ type: Text, ... }` to `extend` and will create empty `in` and `out` directories. ([#138](https://github.com/qryxip/cargo-compete/pull/138))
 
     ```console
     ❯ cargo compete n arc110 --problems a
@@ -58,11 +58,11 @@
         out: /out/*.txt
     ```
 
-- `SystemTestCases` will be used for `--full` option.
+- `SystemTestCases` will be used for `--full` option. ([#138](https://github.com/qryxip/cargo-compete/pull/138))
 
 ### Fixed
 
-- Fixed a problem where `cargo compete download` command saves nothing.
+- Fixed a problem where `cargo compete download` command saves nothing. ([#139](https://github.com/qryxip/cargo-compete/pull/139))
 
 ## [0.8.5] - 2021-02-23Z
 
