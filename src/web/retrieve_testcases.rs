@@ -141,19 +141,19 @@ pub(crate) fn dl_for_existing_package(
 
     let mut outcome = vec![];
 
-    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Atcoder) {
+    if let Some(targets) = snowchains_targets.get(&PlatformKind::Atcoder) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = ProblemsInContest::Urls { urls };
         outcome.extend(dl_from_atcoder(targets, full, cookies_path, shell)?);
     }
 
-    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Codeforces) {
+    if let Some(targets) = snowchains_targets.get(&PlatformKind::Codeforces) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = ProblemsInContest::Urls { urls };
         outcome.extend(dl_from_codeforces(targets, cookies_path, shell)?);
     }
 
-    if let Some(targets) = snowchains_targets.remove(&PlatformKind::Yukicoder) {
+    if let Some(targets) = snowchains_targets.get(&PlatformKind::Yukicoder) {
         let urls = targets.keys().copied().cloned().collect();
         let targets = YukicoderRetrieveTestCasesTargets::Urls(urls);
         outcome.extend(dl_from_yukicoder(targets, full, shell)?);
