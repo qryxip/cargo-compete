@@ -60,6 +60,10 @@
 
 - `SystemTestCases` will be used for `--full` option.
 
+### Fixed
+
+- Fixed a problem where `cargo compete download` command saves nothing.
+
 ## [0.8.5] - 2021-02-23Z
 
 ### Fixed
