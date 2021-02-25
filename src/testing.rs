@@ -5,11 +5,16 @@ use human_size::{Byte, Size};
 use krates::cm;
 use liquid::object;
 use maplit::btreemap;
-use snowchains_core::{judge::CommandExpression, testsuite::TestSuite, web::PlatformKind};
+use snowchains_core::{
+    judge::CommandExpression,
+    testsuite::{PartialBatchTestCase, TestSuite},
+    web::PlatformKind,
+};
 use std::{
-    collections::HashSet,
+    collections::{BTreeMap, HashSet},
     env,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use url::Url;
 
@@ -23,6 +28,7 @@ pub(crate) struct Args<'a> {
     pub(crate) release: bool,
     pub(crate) test_case_names: Option<HashSet<String>>,
     pub(crate) display_limit: Size,
+    pub(crate) cookies_path: &'a Path,
     pub(crate) shell: &'a mut Shell,
 }
 
@@ -37,6 +43,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         release,
         test_case_names,
         display_limit,
+        cookies_path,
         shell,
     } = args;
 
@@ -53,9 +60,66 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let test_suite = crate::fs::read_yaml(&test_suite_path)?;
 
     let test_cases = match test_suite {
-        TestSuite::Batch(test_suite) => {
-            test_suite.load_test_cases(test_suite_path.parent().unwrap(), test_case_names)?
-        }
+        TestSuite::Batch(test_suite) => test_suite.load_test_cases(
+            test_suite_path.parent().unwrap(),
+            test_case_names,
+            |problem_url| {
+                fn read(path: &Path) -> anyhow::Result<Arc<str>> {
+                    crate::fs::read_to_string(path).map(Into::into)
+                }
+
+                let system_test_cases_dir =
+                    crate::web::retrieve_testcases::system_test_cases_dir(problem_url)?;
+
+                let text_files = |dir_name: &str| -> anyhow::Result<Vec<_>> {
+                    let paths = crate::fs::read_dir(system_test_cases_dir.join(dir_name))?;
+                    Ok(paths
+                        .into_iter()
+                        .filter(|p| p.extension() == Some("txt".as_ref()))
+                        .map(|p| {
+                            let s = p
+                                .file_stem()
+                                .expect("should not be empty")
+                                .to_string_lossy()
+                                .into_owned();
+                            (s, p)
+                        })
+                        .collect())
+                };
+
+                if !system_test_cases_dir.join("in").exists() {
+                    crate::web::retrieve_testcases::dl_only_system_test_cases(
+                        problem_url,
+                        cookies_path,
+                        &metadata.workspace_root,
+                        shell,
+                    )?;
+                }
+
+                let mut system_test_cases: BTreeMap<_, (Option<_>, Option<_>)> = btreemap!();
+
+                for (name, path) in text_files("in")? {
+                    system_test_cases.entry(name).or_default().0 = Some(read(&path)?);
+                }
+                for (name, path) in text_files("out")? {
+                    system_test_cases.entry(name).or_default().1 = Some(read(&path)?);
+                }
+
+                Ok(system_test_cases
+                    .into_iter()
+                    .flat_map(|(name, (r#in, out))| {
+                        let r#in = r#in?;
+                        Some(PartialBatchTestCase {
+                            name: Some(name),
+                            r#in,
+                            out,
+                            timelimit: None,
+                            r#match: None,
+                        })
+                    })
+                    .collect())
+            },
+        )?,
         TestSuite::Interactive(_) => {
             shell.warn("tests for `Interactive` problems are currently not supported")?;
             vec![]
