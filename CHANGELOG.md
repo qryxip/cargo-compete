@@ -1,16 +1,20 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.7] - 2021-02-26Z
 
 ### Changed
 
-- Made `Extend::SystemTestCases.problem` optional. ([#qryxip/snowchains#133](https://github.com/qryxip/snowchains/pull/133))
+- Made `Extend::SystemTestCases.problem` optional. ([#qryxip/snowchains#133](https://github.com/qryxip/snowchains/pull/133), [#141](https://github.com/qryxip/cargo-compete/pull/141))
 
     ```diff
      extend:
        - type: SystemTestCases
     -    problem: https://atcoder.jp/contests/agc001/tasks/agc001_a
     ```
+
+### Fixed
+
+- Fixed around <kbd>Ctrl-c</kbd>. ([#qryxip/snowchains#135](https://github.com/qryxip/snowchains/pull/135))
 
 ## [0.8.6] - 2021-02-25Z
 
