@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Made `Extend::SystemTestCases.problem` optional. ([#qryxip/snowchains#133](https://github.com/qryxip/snowchains/pull/133))
+
+    ```diff
+     extend:
+       - type: SystemTestCases
+    -    problem: https://atcoder.jp/contests/agc001/tasks/agc001_a
+    ```
+
 ## [0.8.6] - 2021-02-25Z
 
 ### Added

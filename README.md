@@ -523,7 +523,6 @@ cases: []
 
 extend:
   - type: SystemTestCases
-    problem: https://judge.yosupo.jp/problem/sqrt_mod
 ```
 
 The format is `TestSuite` in the following schemas.
@@ -798,8 +797,8 @@ They are automatically downloaded if missing when `test`ing code.
   <tbody>
     <tr>
       <td align="left"><code>problem</code></td>
-      <td align="left"><a href="#url"><code>Url</code></a></td>
-      <td align="left"></td>
+      <td align="left"><code><a href="#url">Url</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left">~</td>
       <td align="left">URL of the problem</td>
     </tr>
   </tbody>

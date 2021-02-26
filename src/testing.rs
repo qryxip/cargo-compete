@@ -63,10 +63,12 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         TestSuite::Batch(test_suite) => test_suite.load_test_cases(
             test_suite_path.parent().unwrap(),
             test_case_names,
-            |problem_url| {
+            |override_problem_url| {
                 fn read(path: &Path) -> anyhow::Result<Arc<str>> {
                     crate::fs::read_to_string(path).map(Into::into)
                 }
+
+                let problem_url = override_problem_url.unwrap_or(problem_url);
 
                 let system_test_cases_dir =
                     crate::web::retrieve_testcases::system_test_cases_dir(problem_url)?;

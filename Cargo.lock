@@ -2222,9 +2222,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea1c6153794552ea7cf7cf63b1231a25de00ec90db326ba6264440fa08e31486"
+checksum = "43535db9747a4ba938c0ce0a98cc631a46ebf943c9e1d604e091df6007620bf6"
 dependencies = [
  "itoa",
  "ryu",
@@ -2335,9 +2335,9 @@ dependencies = [
 
 [[package]]
 name = "similar"
-version = "1.2.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a04629d2e8ecdcf30e0188e3699ed6d50d5750d0219db146a790065fe92a897"
+checksum = "1ad1d488a557b235fc46dae55512ffbfc429d2482b08b4d9435ab07384ca8aec"
 
 [[package]]
 name = "siphasher"
@@ -2359,9 +2359,9 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
 name = "snowchains_core"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c76833acf93de98c71046567c88a869479b39f66ed5884eb9c798166e1148234"
+checksum = "706f774337966cd979d7c484076730d5f949e04d6b266e3c22a10e205a107841"
 dependencies = [
  "anyhow",
  "chrono",
