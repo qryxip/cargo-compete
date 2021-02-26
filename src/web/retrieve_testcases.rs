@@ -391,9 +391,7 @@ pub(crate) fn save_test_cases<I>(
                     });
                 } else {
                     cases.clear();
-                    extend.push(Additional::SystemTestCases {
-                        problem: url.clone(),
-                    });
+                    extend.push(Additional::SystemTestCases { problem: None });
                 }
             }
 

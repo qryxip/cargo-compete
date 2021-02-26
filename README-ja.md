@@ -531,7 +531,6 @@ cases: []
 
 extend:
   - type: SystemTestCases
-    problem: https://judge.yosupo.jp/problem/sqrt_mod
 ```
 
 形式は以下のスキーマにおける`TestSuite`です。
@@ -798,8 +797,8 @@ globを示す文字列です。
   <tbody>
     <tr>
       <td align="left"><code>problem</code></td>
-      <td align="left"><a href="#url"><code>Url</code></a></td>
-      <td align="left"></td>
+      <td align="left"><code><a href="#url">Url</a> | <a href="https://yaml.org/spec/1.2/spec.html#tag/repository/null" rel="nofollow">null</a></code></td>
+      <td align="left">~</td>
       <td align="left">問題のURL</td>
     </tr>
   </tbody>
