@@ -593,6 +593,7 @@ extend:
 [untaggedなADT](https://serde.rs/enum-representations.html#untagged)です。
 
 - [`Match::Exact`](#matchexact--exact)
+- [`Match::SplitWhitespace`](#matchsplitwhitespace--splitwhitespace)
 - [`Match::Lines`](#matchlines--lines)
 - [`Match::Float`](#matchfloat)
 - [`Match::Checker`](#matchchecker)
@@ -600,6 +601,10 @@ extend:
 ### `Match::Exact` = `"Exact"`
 
 文字列全体の一致で判定します。
+
+### `Match::SplitWhiteSpace` = `"SplitWhitespace"`
+
+[空白区切りでの単語](https://doc.rust-lang.org/stable/std/primitive.str.html#method.split_whitespace)の一致で判定します。
 
 ### `Match::Lines` = `"Lines"`
 
