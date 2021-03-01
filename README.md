@@ -585,6 +585,7 @@ A string that can parsed with [`humantime::format_duration`](https://docs.rs/hum
 An [untagged ADT](https://serde.rs/enum-representations.html#untagged).
 
 - [`Match::Exact`](#matchexact--exact)
+- [`Match::SplitWhitespace`](#matchsplitwhitespace--splitwhitespace)
 - [`Match::Lines`](#matchlines--lines)
 - [`Match::Float`](#matchfloat)
 - [`Match::Checker`](#matchchecker)
@@ -592,6 +593,10 @@ An [untagged ADT](https://serde.rs/enum-representations.html#untagged).
 ### `Match::Exact` = `"Exact"`
 
 Compares whole strings.
+
+### `Match::SplitWhiteSpace` = `"SplitWhitespace"`
+
+Compares [words splitted by whitespace](https://doc.rust-lang.org/stable/std/primitive.str.html#method.split_whitespace).
 
 ### `Match::Lines` = `"Lines"`
 

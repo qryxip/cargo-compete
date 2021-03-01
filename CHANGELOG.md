@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- [Added `SplitWhitespace` variant to `Match`](https://github.com/qryxip/cargo-compete#matchsplitwhitespace--splitwhitespace). ([qryxip/snowchains#136](https://github.com/qryxip/snowchains/pull/136))
+
 ## [0.8.7] - 2021-02-26Z
 
 ### Changed
