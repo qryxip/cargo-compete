@@ -188,6 +188,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
+name = "camino"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd065703998b183ed0b348a22555691373a9345a1431141e5778b48bb17e4703"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cargo-compete"
 version = "0.8.7"
 dependencies = [
@@ -2367,11 +2376,12 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
 name = "snowchains_core"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d96b773a4440977fabc42eca6f2a5f134a1d50ec8ace44100527f8b26fbf513d"
+checksum = "5b8c640b61cb24a1015453e9fa2c8dc889eefcf93be71d589479695f5010bf5d"
 dependencies = [
  "anyhow",
+ "camino",
  "chrono",
  "cookie_store",
  "derivative",

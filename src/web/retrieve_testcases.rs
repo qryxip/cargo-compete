@@ -53,7 +53,6 @@ pub(crate) fn dl_only_system_test_cases(
                 credentials: AtcoderRetrieveSampleTestCasesCredentials {
                     username_and_password,
                 },
-                default_match: Match::Lines,
                 full: Some(RetrieveFullTestCases {
                     credentials: AtcoderRetrieveFullTestCasesCredentials {
                         dropbox_access_token: credentials::dropbox_access_token()?,
@@ -67,7 +66,6 @@ pub(crate) fn dl_only_system_test_cases(
         Some("yukicoder.me") => take(Yukicoder::exec(RetrieveTestCases {
             targets: YukicoderRetrieveTestCasesTargets::Urls(btreeset!(url.clone())),
             credentials: (),
-            default_match: Match::Lines,
             full: Some(RetrieveFullTestCases {
                 credentials: YukicoderRetrieveFullTestCasesCredentials {
                     api_key: credentials::yukicoder_api_key(shell)?,
@@ -229,7 +227,6 @@ pub(crate) fn dl_from_atcoder(
     Atcoder::exec(RetrieveTestCases {
         targets,
         credentials,
-        default_match: Match::Lines,
         full,
         cookie_storage,
         timeout: crate::web::TIMEOUT,
@@ -258,7 +255,6 @@ pub(crate) fn dl_from_codeforces(
     Codeforces::exec(RetrieveTestCases {
         targets,
         credentials,
-        default_match: Match::Lines,
         full: None,
         cookie_storage,
         timeout: crate::web::TIMEOUT,
@@ -287,7 +283,6 @@ pub(crate) fn dl_from_yukicoder(
     Yukicoder::exec(RetrieveTestCases {
         targets,
         credentials: (),
-        default_match: Match::Lines,
         full,
         cookie_storage: (),
         timeout: crate::web::TIMEOUT,
@@ -388,7 +383,7 @@ pub(crate) fn save_test_cases<I>(
             if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
                 if text_files.is_empty() {
                     extend.push(Additional::Text {
-                        path: format!("./{}", bin_alias),
+                        path: format!("./{}", bin_alias).into(),
                         r#in: "/in/*.txt".to_owned(),
                         out: "/out/*.txt".to_owned(),
                         timelimit: None,
