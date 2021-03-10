@@ -6,6 +6,22 @@
 
 - [Added `SplitWhitespace` variant to `Match`](https://github.com/qryxip/cargo-compete#matchsplitwhitespace--splitwhitespace). ([qryxip/snowchains#136](https://github.com/qryxip/snowchains/pull/136))
 
+- cargo-compete now warns when the expected output and the actual one are not matched and whitespace-separated words do. ([qryxip/snowchains#137](https://github.com/qryxip/snowchains/pull/137))
+
+    ```console
+    2/2 ("sample2") Wrong Answer (0 ms)
+    stdin:
+    3 3
+    3 3 3
+    expected:
+    EMPTY
+    actual:
+
+    note:
+    whitespace-separated words matched. try setting `match` to `SplitWhitespace`
+    error: 1/2 tests failed
+    ```
+
 ## [0.8.7] - 2021-02-26Z
 
 ### Changed
