@@ -159,14 +159,14 @@ pub(crate) fn run(
         }
 
         crate::fs::write(&package.manifest_path, manifest.to_string())?;
-        shell.status("Modified", package.manifest_path.display())?;
+        shell.status("Modified", &package.manifest_path)?;
     }
 
     for package in &packages {
-        let lock_path = package.manifest_path.with_file_name("Cargo.lock");
-        shell.status("Updating", lock_path.display())?;
+        let lock_path = &package.manifest_path.with_file_name("Cargo.lock");
+        shell.status("Updating", lock_path)?;
         if let Err(err) = crate::project::cargo_metadata(&package.manifest_path, &cwd) {
-            shell.warn(format!("broke `{}`!!!!!: {}", lock_path.display(), err))?;
+            shell.warn(format!("broke `{}`!!!!!: {}", lock_path, err))?;
         }
     }
 

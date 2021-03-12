@@ -1,5 +1,6 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
+use camino::Utf8Path;
 use git2::Repository;
 use serde_json::json;
 use std::{borrow::Borrow, path::Path};
@@ -8,9 +9,9 @@ use url::Url;
 pub(crate) fn open(
     urls: &[impl Borrow<Url>],
     open: Option<impl AsRef<str>>,
-    paths: &[(impl AsRef<Path>, impl AsRef<Path>)],
-    pkg_manifest_dir: &Path,
-    process_cwd: &Path,
+    paths: &[(impl AsRef<Utf8Path>, impl AsRef<Utf8Path>)],
+    pkg_manifest_dir: &Utf8Path,
+    process_cwd: &Utf8Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     for url in urls {
@@ -30,18 +31,16 @@ pub(crate) fn open(
                 .ok()
                 .and_then(|r| r.workdir().map(|p| ensure_utf8(p).map(ToOwned::to_owned)))
                 .transpose()?,
-            "manifest_dir": ensure_utf8(pkg_manifest_dir)?,
+            "manifest_dir": pkg_manifest_dir,
             "paths": paths
                 .iter()
                 .map(|(src_path, test_suite_path)| {
-                    let src_path = ensure_utf8(src_path.as_ref())?;
-                    let test_suite_path = ensure_utf8(test_suite_path.as_ref())?;
-                    Ok(json!({
-                        "src": src_path,
-                        "test_suite": test_suite_path
-                    }))
+                    json!({
+                        "src": src_path.as_ref(),
+                        "test_suite": test_suite_path.as_ref()
+                    })
                 })
-                .collect::<anyhow::Result<Vec<_>>>()?
+                .collect::<Vec<_>>()
         })
         .to_string();
 

@@ -1,9 +1,10 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata as cm;
 use easy_ext::ext;
 use indexmap::{indexset, IndexMap};
 use itertools::Itertools as _;
-use krates::cm;
 use serde::{
     de::{Deserializer, Error as _, IntoDeserializer},
     Deserialize,
@@ -17,7 +18,7 @@ use url::Url;
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompete {
-    pub(crate) config: Option<PathBuf>,
+    pub(crate) config: Option<Utf8PathBuf>,
     #[serde(deserialize_with = "deserialize_bin")]
     pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
 }
@@ -164,16 +165,10 @@ impl cm::Metadata {
 
 #[ext(PackageExt)]
 impl cm::Package {
-    pub(crate) fn manifest_dir(&self) -> &Path {
+    pub(crate) fn manifest_dir(&self) -> &Utf8Path {
         self.manifest_path
             .parent()
             .expect("`manifest_path` should end with `Cargo.toml`")
-    }
-
-    pub(crate) fn manifest_dir_utf8(&self) -> &str {
-        self.manifest_dir()
-            .to_str()
-            .expect("this is from JSON string")
     }
 
     pub(crate) fn read_package_metadata(

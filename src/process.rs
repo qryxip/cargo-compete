@@ -1,5 +1,6 @@
 use crate::shell::Shell;
 use anyhow::{bail, Context as _};
+use camino::{Utf8Path, Utf8PathBuf};
 use itertools::Itertools as _;
 use std::{
     env,
@@ -11,7 +12,7 @@ use std::{
 };
 
 #[derive(Debug)]
-pub(crate) struct ProcessBuilder<C: Presence<PathBuf>> {
+pub(crate) struct ProcessBuilder<C: Presence<Utf8PathBuf>> {
     program: OsString,
     args: Vec<OsString>,
     cwd: C::Value,
@@ -19,7 +20,7 @@ pub(crate) struct ProcessBuilder<C: Presence<PathBuf>> {
     pipe_input: Option<Vec<u8>>,
 }
 
-impl<C: Presence<PathBuf>> ProcessBuilder<C> {
+impl<C: Presence<Utf8PathBuf>> ProcessBuilder<C> {
     pub(crate) fn arg(mut self, arg: impl AsRef<OsStr>) -> Self {
         self.args.push(arg.as_ref().to_owned());
         self
@@ -30,7 +31,7 @@ impl<C: Presence<PathBuf>> ProcessBuilder<C> {
         self
     }
 
-    pub(crate) fn cwd(self, cwd: impl AsRef<Path>) -> ProcessBuilder<Present> {
+    pub(crate) fn cwd(self, cwd: impl AsRef<Utf8Path>) -> ProcessBuilder<Present> {
         ProcessBuilder {
             program: self.program,
             args: self.args,
@@ -118,7 +119,7 @@ impl fmt::Display for ProcessBuilder<Present> {
                 shell_escape::escape(arg.to_string_lossy()),
             ))),
             if self.display_cwd {
-                format!(" in {}", self.cwd.display())
+                format!(" in {}", self.cwd)
             } else {
                 "".to_owned()
             }
@@ -156,7 +157,7 @@ pub(crate) fn process(program: impl AsRef<Path>) -> ProcessBuilder<NotPresent> {
 
 pub(crate) fn with_which(
     program: impl AsRef<Path>,
-    cwd: impl AsRef<Path>,
+    cwd: impl AsRef<Utf8Path>,
 ) -> anyhow::Result<ProcessBuilder<Present>> {
     let (program, cwd) = (program.as_ref(), cwd.as_ref().to_owned());
     let program = which(program, &cwd)?.into();
@@ -172,10 +173,10 @@ pub(crate) fn with_which(
 
 pub(crate) fn which(
     binary_name: impl AsRef<OsStr>,
-    cwd: impl AsRef<Path>,
+    cwd: impl AsRef<Utf8Path>,
 ) -> anyhow::Result<PathBuf> {
     let binary_name = binary_name.as_ref();
-    which::which_in(binary_name, env::var_os("PATH"), cwd)
+    which::which_in(binary_name, env::var_os("PATH"), cwd.as_ref())
         .with_context(|| format!("`{}` not found", binary_name.to_string_lossy()))
 }
 

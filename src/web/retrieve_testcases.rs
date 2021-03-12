@@ -5,8 +5,9 @@ use crate::{
     web::credentials,
 };
 use anyhow::Context;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata as cm;
 use indexmap::{indexmap, IndexMap};
-use krates::cm;
 use maplit::{btreemap, btreeset};
 use percent_encoding::PercentDecode;
 use snowchains_core::{
@@ -32,7 +33,7 @@ use url::Url;
 pub(crate) fn dl_only_system_test_cases(
     url: &Url,
     cookies_path: &Path,
-    cwd: &Path,
+    cwd: &Utf8Path,
     shell: &mut Shell,
 ) -> anyhow::Result<()> {
     let system_test_cases_dir = &system_test_cases_dir(url)?;
@@ -108,7 +109,7 @@ pub(crate) fn dl_for_existing_package(
     package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBin>,
     bin_name_aliases: Option<&HashSet<String>>,
     full: bool,
-    workspace_root: &Path,
+    workspace_root: &Utf8Path,
     test_suite_path: &liquid::Template,
     cookies_path: &Path,
     shell: &mut Shell,
@@ -170,7 +171,7 @@ pub(crate) fn dl_for_existing_package(
 
     save_test_cases(
         workspace_root,
-        package.manifest_dir_utf8(),
+        package.manifest_dir(),
         test_suite_path,
         outcome,
         |url, _| {
@@ -306,14 +307,14 @@ pub(crate) fn system_test_cases_dir(problem_url: &Url) -> anyhow::Result<PathBuf
 }
 
 pub(crate) fn save_test_cases<I>(
-    workspace_root: &Path,
-    pkg_manifest_dir: &str,
+    workspace_root: &Utf8Path,
+    pkg_manifest_dir: &Utf8Path,
     path: &liquid::Template,
     problems: Vec<Problem<I>>,
     bin_names: impl Fn(&Url, &I) -> Vec<String>,
     bin_aliases: impl Fn(&Url, &I) -> Vec<String>,
     shell: &mut Shell,
-) -> anyhow::Result<Vec<PathBuf>> {
+) -> anyhow::Result<Vec<Utf8PathBuf>> {
     let mut acc = vec![];
 
     for Problem {
@@ -423,8 +424,7 @@ pub(crate) fn save_test_cases<I>(
                             bin_alias,
                             path::MAIN_SEPARATOR,
                         ))
-                    }
-                    .display(),
+                    },
                 ),
             )?;
         }
