@@ -4,14 +4,12 @@ use crate::{
     shell::{ColorChoice, Shell},
 };
 use anyhow::{bail, Context as _};
+use camino::{Utf8Path, Utf8PathBuf};
 use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
-use std::{
-    collections::BTreeMap,
-    path::{Path, PathBuf},
-};
+use std::collections::BTreeMap;
 use structopt::StructOpt;
 use strum::VariantNames as _;
 use url::Url;
@@ -32,7 +30,7 @@ pub struct OptCompeteNew {
 
     /// Path to `compete.toml`
     #[structopt(long, value_name("PATH"))]
-    pub config: Option<PathBuf>,
+    pub config: Option<Utf8PathBuf>,
 
     /// Coloring
     #[structopt(
@@ -71,7 +69,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
     match &cargo_compete_config.new {
         CargoCompeteConfigNew::None => {
-            bail!("`new` is `none`: {}", cargo_compete_config_path.display())
+            bail!("`new` is `none`: {}", cargo_compete_config_path)
         }
         CargoCompeteConfigNew::CargoCompete {
             platform: PlatformKind::Atcoder,
@@ -110,7 +108,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 src_paths,
                 crate::web::retrieve_testcases::save_test_cases(
                     &cargo_compete_dir,
-                    manifest_dir.to_str().with_context(|| "invalid utf-8")?,
+                    &manifest_dir,
                     &cargo_compete_config.test_suite,
                     outcome,
                     |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
@@ -167,7 +165,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 src_paths,
                 crate::web::retrieve_testcases::save_test_cases(
                     &cargo_compete_dir,
-                    manifest_dir.to_str().with_context(|| "invalid utf-8")?,
+                    &manifest_dir,
                     &cargo_compete_config.test_suite,
                     outcome,
                     |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
@@ -233,7 +231,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 src_paths,
                 crate::web::retrieve_testcases::save_test_cases(
                     &cargo_compete_dir,
-                    manifest_dir.to_str().with_context(|| "invalid utf-8")?,
+                    &manifest_dir,
                     &cargo_compete_config.test_suite,
                     outcome,
                     |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
@@ -304,7 +302,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 src_paths,
                 crate::web::retrieve_testcases::save_test_cases(
                     &cargo_compete_dir,
-                    manifest_dir.to_str().with_context(|| "invalid utf-8")?,
+                    &manifest_dir,
                     &cargo_compete_config.test_suite,
                     problems,
                     |_, index| vec![group.package_name() + "-" + &index.to_kebab_case()],
@@ -363,29 +361,29 @@ impl Group {
 }
 
 fn create_new_package(
-    cargo_compete_config_path: &Path,
+    cargo_compete_config_path: &Utf8Path,
     cargo_compete_config: &CargoCompeteConfig,
     group: &Group,
     problems: &BTreeMap<&str, &Url>,
     shell: &mut Shell,
-) -> anyhow::Result<(PathBuf, Vec<PathBuf>)> {
+) -> anyhow::Result<(Utf8PathBuf, Vec<Utf8PathBuf>)> {
     let template = cargo_compete_config.template(cargo_compete_config_path, shell)?;
     let template_new = template.new.as_ref().with_context(|| {
         format!(
             "`template.new` is required for the command: {}",
-            cargo_compete_config_path.display(),
+            cargo_compete_config_path,
         )
     })?;
 
     let manifest_dir = cargo_compete_config
         .new
         .path()
-        .with_context(|| format!("`new` is `none`: {}", cargo_compete_config_path.display()))?
+        .with_context(|| format!("`new` is `none`: {}", cargo_compete_config_path))?
         .render(&object!({
             "contest": group.contest(),
             "package_name": group.package_name(),
         }))?;
-    let manifest_dir = Path::new(&manifest_dir);
+    let manifest_dir = Utf8Path::new(&manifest_dir);
     let manifest_dir = cargo_compete_config_path
         .with_file_name(".")
         .join(manifest_dir.strip_prefix(".").unwrap_or(manifest_dir));
@@ -395,7 +393,7 @@ fn create_new_package(
     if manifest_dir.exists() {
         bail!(
             "could not create a new package. `{}` already exists",
-            manifest_dir.display(),
+            manifest_dir,
         );
     }
 
@@ -523,11 +521,7 @@ fn create_new_package(
 
     shell.status(
         "Created",
-        format!(
-            "`{}` package at {}",
-            group.package_name(),
-            manifest_dir.display(),
-        ),
+        format!("`{}` package at {}", group.package_name(), manifest_dir),
     )?;
 
     Ok((manifest_dir, src_paths))

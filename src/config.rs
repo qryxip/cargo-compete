@@ -1,9 +1,10 @@
 use crate::{project::PackageExt as _, shell::Shell};
 use anyhow::{bail, Context as _};
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata as cm;
 use derivative::Derivative;
 use heck::KebabCase as _;
 use indexmap::indexset;
-use krates::cm;
 use liquid::object;
 use maplit::btreemap;
 use serde::{de::Error as _, Deserialize, Deserializer};
@@ -11,7 +12,7 @@ use snowchains_core::web::PlatformKind;
 use std::{
     collections::BTreeMap,
     fmt,
-    path::{Path, PathBuf},
+    path::Path,
     str::{self, FromStr},
 };
 
@@ -37,13 +38,13 @@ pub(crate) fn generate(
 
 pub(crate) fn locate(
     cwd: impl AsRef<Path>,
-    cli_opt_path: Option<impl AsRef<Path>>,
-) -> anyhow::Result<PathBuf> {
+    cli_opt_path: Option<impl AsRef<Utf8Path>>,
+) -> anyhow::Result<Utf8PathBuf> {
     let cwd = cwd.as_ref();
 
-    if let Some(cli_opt_path) = cli_opt_path {
+    let config_path = if let Some(cli_opt_path) = cli_opt_path {
         let cli_opt_path = cli_opt_path.as_ref();
-        Ok(cwd.join(cli_opt_path.strip_prefix(".").unwrap_or(cli_opt_path)))
+        cwd.join(cli_opt_path.strip_prefix(".").unwrap_or(cli_opt_path))
     } else {
         cwd.ancestors()
             .map(|p| p.join("compete.toml"))
@@ -54,8 +55,13 @@ pub(crate) fn locate(
                      one  with `cargo compete init`",
                     cwd.display(),
                 )
-            })
-    }
+            })?
+    };
+
+    config_path
+        .to_str()
+        .map(Into::into)
+        .with_context(|| format!("non UTF-8 path: {:?}", config_path.display()))
 }
 
 pub(crate) fn load(
@@ -83,7 +89,7 @@ pub(crate) fn load(
 pub(crate) fn load_for_package(
     package: &cm::Package,
     shell: &mut Shell,
-) -> anyhow::Result<(CargoCompeteConfig, PathBuf)> {
+) -> anyhow::Result<(CargoCompeteConfig, Utf8PathBuf)> {
     let manifest_dir = package.manifest_path.with_file_name("");
     let path = if let Some(config) = package.read_package_metadata(shell)?.config {
         manifest_dir.join(config)
@@ -96,7 +102,7 @@ pub(crate) fn load_for_package(
                 format!(
                     "could not find `compete.toml` in `{}` or any parent directory. first, create \
                      one  with `cargo compete init`",
-                    manifest_dir.display(),
+                    manifest_dir,
                 )
             })?
     };
@@ -125,7 +131,7 @@ pub(crate) struct CargoCompeteConfig {
 impl CargoCompeteConfig {
     pub(crate) fn template(
         &self,
-        config_path: &Path,
+        config_path: &Utf8Path,
         shell: &mut Shell,
     ) -> anyhow::Result<CargoCompeteConfigTemplate> {
         if let Some(template) = &self.template {
@@ -140,7 +146,7 @@ impl CargoCompeteConfig {
         {
             shell.warn("`new.template` is deprecated. see https://github.com/qryxip/cargo-compete#configuration")?;
 
-            let read = |rel_path: &Path| -> _ {
+            let read = |rel_path: &Utf8Path| -> _ {
                 crate::fs::read_to_string(config_path.with_file_name("").join(rel_path))
             };
 
@@ -183,10 +189,7 @@ impl CargoCompeteConfig {
                 }),
             })
         } else {
-            bail!(
-                "`template` or `new.template` is required: {}",
-                config_path.display(),
-            );
+            bail!("`template` or `new.template` is required: {}", config_path);
         }
     }
 }
@@ -206,7 +209,7 @@ pub(crate) struct CargoCompeteConfigTemplateNew {
     #[serde(default, with = "serde_with::rust::display_fromstr")]
     pub(crate) dependencies: toml_edit::Document,
     #[serde(default)]
-    pub(crate) copy_files: BTreeMap<PathBuf, PathBuf>,
+    pub(crate) copy_files: BTreeMap<Utf8PathBuf, Utf8PathBuf>,
 }
 
 #[derive(Derivative)]
@@ -374,7 +377,7 @@ impl Default for CargoCompeteConfigNew {
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigNewTemplate {
     toolchain: Option<String>,
-    lockfile: Option<PathBuf>,
+    lockfile: Option<Utf8PathBuf>,
     #[serde(default, deserialize_with = "deserialize_option_from_str")]
     profile: Option<toml_edit::Document>,
     dependencies: CargoCompeteConfigNewTemplateDependencies,
@@ -396,14 +399,14 @@ where
 #[serde(tag = "kind", rename_all = "kebab-case")]
 enum CargoCompeteConfigNewTemplateDependencies {
     Inline { content: String },
-    ManifestFile { path: PathBuf },
+    ManifestFile { path: Utf8PathBuf },
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 enum CargoCompeteConfigNewTemplateSrc {
     Inline { content: String },
-    File { path: PathBuf },
+    File { path: Utf8PathBuf },
 }
 
 pub(crate) struct CargoCompeteConfigAdd {

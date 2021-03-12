@@ -5,7 +5,7 @@ use crate::{
     shell::ColorChoice,
 };
 use anyhow::{anyhow, bail, ensure, Context as _};
-use krates::cm;
+use cargo_metadata as cm;
 use liquid::object;
 use maplit::{btreeset, hashmap};
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
@@ -259,7 +259,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         &abs_bin_src_paths,
         crate::web::retrieve_testcases::save_test_cases(
             &metadata.workspace_root,
-            member.manifest_dir_utf8(),
+            member.manifest_dir(),
             &cargo_compete_config.test_suite,
             problems,
             |url, _| vec![bin_names_by_url[url].clone()],

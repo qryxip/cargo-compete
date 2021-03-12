@@ -1,8 +1,9 @@
 use crate::{project::PackageExt as _, shell::Shell};
 use anyhow::ensure;
 use az::SaturatingAs as _;
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata as cm;
 use human_size::{Byte, Size};
-use krates::cm;
 use liquid::object;
 use maplit::btreemap;
 use snowchains_core::{
@@ -13,7 +14,7 @@ use snowchains_core::{
 use std::{
     collections::{BTreeMap, HashSet},
     env,
-    path::{Path, PathBuf},
+    path::Path,
     sync::Arc,
 };
 use url::Url;
@@ -49,7 +50,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_suite_path = test_suite_path(
         &metadata.workspace_root,
-        member.manifest_dir_utf8(),
+        member.manifest_dir(),
         cargo_compete_config_test_suite,
         &bin.name,
         bin_alias,
@@ -61,7 +62,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 
     let test_cases = match test_suite {
         TestSuite::Batch(test_suite) => test_suite.load_test_cases(
-            test_suite_path.parent().unwrap(),
+            test_suite_path.parent().unwrap().as_ref(),
             test_case_names,
             |override_problem_url| {
                 fn read(path: &Path) -> anyhow::Result<Arc<str>> {
@@ -149,7 +150,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     ensure!(
         artifact.exists(),
         "`cargo build` succeeded but `{}` was not produced. probably this is a bug",
-        artifact.display(),
+        artifact,
     );
 
     let outcome = snowchains_core::judge::judge(
@@ -158,7 +159,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         &CommandExpression {
             program: artifact.into(),
             args: vec![],
-            cwd: metadata.workspace_root.clone(),
+            cwd: metadata.workspace_root.clone().into(),
             env: btreemap!(),
         },
         &test_cases,
@@ -172,14 +173,14 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
 }
 
 pub(crate) fn test_suite_path(
-    workspace_root: &Path,
-    pkg_manifest_dir: &str,
+    workspace_root: &Utf8Path,
+    pkg_manifest_dir: &Utf8Path,
     cargo_compete_config_test_suite: &liquid::Template,
     bin_name: &str,
     bin_alias: &str,
     problem_url: &Url,
     shell: &mut Shell,
-) -> anyhow::Result<PathBuf> {
+) -> anyhow::Result<Utf8PathBuf> {
     let contest = match PlatformKind::from_url(problem_url) {
         Ok(PlatformKind::Atcoder) => Some(snowchains_core::web::atcoder_contest_id(problem_url)?),
         Ok(PlatformKind::Codeforces) => {
@@ -211,7 +212,7 @@ pub(crate) fn test_suite_path(
                 .render(&vars_including_deprecated)
                 .map(|r| (r, true))
         })?;
-    let test_suite_path = Path::new(&test_suite_path);
+    let test_suite_path = Utf8Path::new(&test_suite_path);
     let test_suite_path = test_suite_path
         .strip_prefix(".")
         .unwrap_or(&test_suite_path);
