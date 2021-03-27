@@ -15,15 +15,15 @@ default = []
 __test_with_credentials = []
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.40"
 atty = "0.2.14"
-az = "1.1.0"
+az = "1.1.1"
 base64 = "0.13.0"
-camino = { version = "1.0.3", features = ["serde1"] }
+camino = { version = "1.0.4", features = ["serde1"] }
 cargo_metadata = "0.13.1"
 derivative = "2.2.0"
 dirs-next = "2.0.0"
-easy-ext = "0.2.6"
+easy-ext = "0.2.7"
 fwdansi = "1.1.0"
 git2 = "0.13.17"
 heck = "0.3.2"
@@ -44,10 +44,10 @@ prettytable-rs = "0.8.0"
 reqwest = { version = "0.11.2", default-features = false, features = ["blocking"] }
 rpassword = "5.0.1"
 rprompt = "1.0.5"
-serde = { version = "1.0.124", features = ["derive"] }
+serde = { version = "1.0.125", features = ["derive"] }
 serde_ignored = "0.1.2"
 serde_json = "1.0.64"
-serde_with = "1.6.4"
+serde_with = "1.7.0"
 serde_yaml = "0.8.17"
 shell-escape = "0.1.5"
 snowchains_core = "0.13.0"
@@ -55,7 +55,7 @@ structopt = "0.3.21"
 strum = { version = "0.20.0", features = ["derive"] }
 tempfile = "3.2.0"
 termcolor = "1.1.2"
-tokio = { version = "1.3.0", features = ["signal"] }
+tokio = { version = "1.4.0", features = ["signal"] }
 toml = "0.5.8"
 toml_edit = "0.2.0"
 url = { version = "2.2.1", features = ["serde"] }
@@ -68,4 +68,4 @@ term_size = "=1.0.0-beta.2"
 insta = { version = "1.7.0", features = ["redactions"] }
 once_cell = "1.7.2"
 pretty_assertions = "0.7.1"
-regex = "1.4.4"
+regex = "1.4.5"

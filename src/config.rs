@@ -185,6 +185,7 @@ impl CargoCompeteConfig {
                 new: Some(CargoCompeteConfigTemplateNew {
                     profile,
                     dependencies,
+                    dev_dependencies: toml_edit::Document::new(),
                     copy_files,
                 }),
             })
@@ -208,6 +209,8 @@ pub(crate) struct CargoCompeteConfigTemplateNew {
     pub(crate) profile: toml_edit::Document,
     #[serde(default, with = "serde_with::rust::display_fromstr")]
     pub(crate) dependencies: toml_edit::Document,
+    #[serde(default, with = "serde_with::rust::display_fromstr")]
+    pub(crate) dev_dependencies: toml_edit::Document,
     #[serde(default)]
     pub(crate) copy_files: BTreeMap<Utf8PathBuf, Utf8PathBuf>,
 }
@@ -590,16 +593,9 @@ mod tests {
             submit_via_bianry: bool,
         ) -> anyhow::Result<()> {
             let generated = super::generate(
-                if template_new_dependencies_content {
-                    Some(include_str!("../resources/atcoder-deps.toml"))
-                } else {
-                    None
-                },
-                if template_new_lockfile {
-                    Some("./cargo-lock-template.toml")
-                } else {
-                    None
-                },
+                template_new_dependencies_content
+                    .then(|| include_str!("../resources/atcoder-deps.toml")),
+                template_new_lockfile.then(|| "./cargo-lock-template.toml"),
                 PlatformKind::Atcoder,
                 submit_via_bianry,
             )?;
