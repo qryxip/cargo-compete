@@ -461,6 +461,8 @@ fn create_new_package(
 [bin]
 
 [dependencies]
+
+[dev-dependencies]
 ",
         );
     }
@@ -484,6 +486,7 @@ fn create_new_package(
 
     manifest["bin"] = bin;
     manifest["dependencies"] = template_new.dependencies.root.clone();
+    manifest["dev-dependencies"] = template_new.dev_dependencies.root.clone();
 
     if let Ok(new_manifest) = manifest
         .to_string()

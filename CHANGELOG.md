@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `template.new.dev-dependencies`.
+
+    ```toml
+    profile = '''
+    [dev]
+    opt-level = 3
+    '''
+    [template.new]
+    dependencies = '''
+    proconio = "0.3.7"
+    '''
+    dev-dependencies = '''
+    atcoder-202004-lock = { git = "https://github.com/qryxip/atcoder-202004-lock" }
+    '''
+    ```
+
 ## [0.8.8] - 2021-03-10Z
 
 ### Added
