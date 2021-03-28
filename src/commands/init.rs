@@ -7,8 +7,8 @@ use strum::VariantNames as _;
 static TEMPLATE_CARGO_LOCK: &str = "./template-cargo-lock.toml";
 
 static ATCODER_RUST_VERSION: &str = "1.42.0";
-static CODEFORCES_RUST_VERSION: &str = "1.42.0";
-static YUKICODER_RUST_VERSION: &str = "1.44.1";
+static CODEFORCES_RUST_VERSION: &str = "1.49.0";
+static YUKICODER_RUST_VERSION: &str = "1.50.0";
 
 #[derive(StructOpt, Debug)]
 pub struct OptCompeteInit {
