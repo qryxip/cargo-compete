@@ -187,7 +187,7 @@ AtCoderの場合、[テストケースはDropboxにアップロードされて�
 }
 ```
 
-![Record](https://user-images.githubusercontent.com/14125495/91647905-c722d280-ea9b-11ea-88e8-e8c81b3ce555.gif)
+[![asciicast](https://asciinema.org/a/403727.svg)](https://asciinema.org/a/403727?autoplay=1)
 
 ### `cargo compete retrieve submission-summaries`
 
@@ -196,7 +196,7 @@ AtCoderの場合、[テストケースはDropboxにアップロードされて�
 **パッケージを対象に取ります。**
 パッケージに`cd`して実行してください。
 
-![Record](https://user-images.githubusercontent.com/14125495/91647691-765daa80-ea98-11ea-8378-b8631f8f3752.gif)
+[![asciicast](https://asciinema.org/a/403724.svg)](https://asciinema.org/a/403724?autoplay=1)
 
 例えばAtCoderであれば(AtCoderしか実装してませんが)`| jq -r '.summaries[0].detail`とすることで「最新の提出の詳細ページのURL」が得られます。
 
@@ -228,7 +228,7 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 **パッケージを対象に取ります。**
 パッケージに`cd`して実行してください。
 
-![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
+[![asciicast](https://asciinema.org/a/403449.svg)](https://asciinema.org/a/403449?autoplay=1)
 
 [`compete.toml`](#設定)の`submit.transpile`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)や[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)等のコード変換ツールを使って提出するコードを変換できます。
 
