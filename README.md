@@ -181,7 +181,7 @@ and save a JSON file in the following format to <code>[{local data directory}](h
 }
 ```
 
-![Record](https://user-images.githubusercontent.com/14125495/91647905-c722d280-ea9b-11ea-88e8-e8c81b3ce555.gif)
+[![asciicast](https://asciinema.org/a/403727.svg)](https://asciinema.org/a/403727?autoplay=1)
 
 ### `cargo compete retrieve submission-summaries`
 
@@ -190,7 +190,7 @@ Retrieves your submissions, and outputs as JSON.
 **This is a command for a package.**
 `cd` to the package generated with [`cargo compete new`](#cargo-compete-new).
 
-![Record](https://user-images.githubusercontent.com/14125495/91647691-765daa80-ea98-11ea-8378-b8631f8f3752.gif)
+[![asciicast](https://asciinema.org/a/403724.svg)](https://asciinema.org/a/403724?autoplay=1)
 
 For example, you can get "the URL for the latest submission" by adding `| jq -r '.summaries[0].detail`.
 
@@ -222,7 +222,7 @@ Submits your code.
 **This is a command for a package.**
 `cd` to the package generated with [`cargo compete new`](#cargo-compete-new).
 
-![Record](https://user-images.githubusercontent.com/14125495/91647583-511c6c80-ea97-11ea-941c-884070a3182a.gif)
+[![asciicast](https://asciinema.org/a/403449.svg)](https://asciinema.org/a/403449?autoplay=1)
 
 You can convert code with a tool such as [cargo-equip](https://github.com/qryxip/cargo-equip) and [cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload) by setting `submit.transpile` in the [`compete.toml`](#configuration).
 
