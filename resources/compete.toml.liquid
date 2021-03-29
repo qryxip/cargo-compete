@@ -107,6 +107,6 @@ args = ["cargo", "executable-payload", "--bin", {% raw %}"{{ bin_name }}"{% endr
 {%- else -%}
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
+#{% raw %}args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]{% endraw %}
 ##language_id = ""
 {%- endif -%}
