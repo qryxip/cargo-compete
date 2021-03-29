@@ -20,6 +20,18 @@
     '''
     ```
 
+### Changed
+
+- Modified the template for the `init` command.
+
+    ```diff
+     #[submit.transpile]
+     #kind = "command"
+    -#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+    +#args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+     ##language_id = ""
+    ```
+
 ## [0.8.8] - 2021-03-10Z
 
 ### Added

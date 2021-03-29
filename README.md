@@ -229,7 +229,7 @@ You can convert code with a tool such as [cargo-equip](https://github.com/qryxip
 ```toml
 [submit.transpile]
 kind = "command"
-args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
 #language_id = ""
 ```
 
@@ -323,6 +323,9 @@ whiteread = "=0.5.0"
 rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
 '''
+dev-dependencies = '''
+#atcoder-202004-lock = { git = "https://github.com/qryxip/atcoder-202004-lock" }
+'''
 
 [template.new.copy-files]
 "./template-cargo-lock.toml" = "Cargo.lock"
@@ -372,7 +375,7 @@ path = "./{{ contest }}"
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+#args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
 ##language_id = ""
 ```
 
