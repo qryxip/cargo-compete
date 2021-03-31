@@ -41,6 +41,20 @@
      ##language_id = ""
     ```
 
+- Now `download` command requires `--overwrite` flag to overwrite existing test files.
+
+    ```console
+    ❯ cargo compete d
+    error: `/home/ryo/src/local/competitive/atcoder/arc115/testcases/a.yml` already exists. run with `--overwrite` to overwrite
+    ❯ cargo compete d --overwrite
+           Saved 2 test cases to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{a.yml, a/}
+           Saved 2 test cases to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{b.yml, b/}
+           Saved 1 test case to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{c.yml, c/}
+           Saved 2 test cases to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{d.yml, d/}
+           Saved 2 test cases to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{e.yml, e/}
+           Saved 5 test cases to /home/ryo/src/local/competitive/atcoder/arc115/testcases/{f.yml, f/}
+    ```
+
 ## [0.8.8] - 2021-03-10Z
 
 ### Added

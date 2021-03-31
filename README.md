@@ -163,7 +163,7 @@ Retrieves test cases for an existing package.
 **This is a command for a package.**
 `cd` to the package generated with [`cargo compete new`](#cargo-compete-new).
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/91647644-06e7bb00-ea98-11ea-8bc6-cd57714e4c84.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/113158161-82039080-9276-11eb-89df-58613b276ba4.png)
 
 With `--open` option, you can download system test cases instead of sample ones.
 

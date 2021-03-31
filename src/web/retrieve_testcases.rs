@@ -4,7 +4,7 @@ use crate::{
     shell::Shell,
     web::credentials,
 };
-use anyhow::Context;
+use anyhow::{ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata as cm;
 use indexmap::{indexmap, IndexMap};
@@ -111,6 +111,7 @@ pub(crate) fn dl_for_existing_package(
     bin_name_aliases: Option<&HashSet<String>>,
     example_name_aliases: Option<&HashSet<String>>,
     full: bool,
+    overwrite: bool,
     workspace_root: &Utf8Path,
     test_suite_path: &liquid::Template,
     cookies_path: &Path,
@@ -186,6 +187,7 @@ pub(crate) fn dl_for_existing_package(
         workspace_root,
         package.manifest_dir(),
         test_suite_path,
+        overwrite,
         outcome,
         |url, _| {
             snowchains_targets
@@ -319,10 +321,12 @@ pub(crate) fn system_test_cases_dir(problem_url: &Url) -> anyhow::Result<PathBuf
         .fold(system_test_cases_dir, |d, p| d.join(p)))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn save_test_cases<I>(
     workspace_root: &Utf8Path,
     pkg_manifest_dir: &Utf8Path,
     path: &liquid::Template,
+    overwrite: bool,
     problems: Vec<Problem<I>>,
     bin_names: impl Fn(&Url, &I) -> Vec<String>,
     bin_aliases: impl Fn(&Url, &I) -> Vec<String>,
@@ -384,6 +388,12 @@ pub(crate) fn save_test_cases<I>(
                 &url,
                 shell,
             )?;
+
+            ensure!(
+                overwrite || !path.exists(),
+                "`{}` already exists. run with `--overwrite` to overwrite",
+                path,
+            );
 
             acc.push(path.clone());
 

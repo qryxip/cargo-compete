@@ -168,7 +168,7 @@ bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
 **パッケージを対象に取ります。**
 パッケージに`cd`して実行してください。
 
-![Screenshot](https://user-images.githubusercontent.com/14125495/91647644-06e7bb00-ea98-11ea-8bc6-cd57714e4c84.png)
+![Screenshot](https://user-images.githubusercontent.com/14125495/113158161-82039080-9276-11eb-89df-58613b276ba4.png)
 
 プラットフォームが使っているテストケースを公開している場合、`--full`を指定することでそちらをダウンロードすることができます。
 
