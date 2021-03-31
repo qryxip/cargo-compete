@@ -18,8 +18,8 @@ pub struct OptCompeteTest {
     #[structopt(
         long,
         value_name("PATH"),
-        required_unless("bin-name-or-alias"),
-        conflicts_with("bin-name-or-alias")
+        required_unless("name-or-alias"),
+        conflicts_with("name-or-alias")
     )]
     pub src: Option<PathBuf>,
 
@@ -57,8 +57,8 @@ pub struct OptCompeteTest {
     pub color: ColorChoice,
 
     #[structopt(required_unless("src"))]
-    /// Name or alias for a `bin`
-    pub bin_name_or_alias: Option<String>,
+    /// Name or alias for a `bin`/`example`
+    pub name_or_alias: Option<String>,
 }
 
 pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Result<()> {
@@ -71,7 +71,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         release,
         manifest_path,
         color,
-        bin_name_or_alias,
+        name_or_alias,
     } = opt;
 
     let crate::Context {
@@ -90,16 +90,16 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     let package_metadata = member.read_package_metadata(shell)?;
     let (cargo_compete_config, _) = crate::config::load_for_package(&member, shell)?;
 
-    let (bin, pkg_md_bin) = if let Some(src) = src {
+    let (bin, pkg_md_bin_example) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
         let bin = member.bin_target_by_src_path(src)?;
-        let (_, pkg_md_bin) = package_metadata.bin_by_bin_name_or_alias(&bin.name)?;
+        let (_, pkg_md_bin) = package_metadata.bin_like_by_name_or_alias(&bin.name)?;
         (bin, pkg_md_bin)
-    } else if let Some(bin_name_or_alias) = &bin_name_or_alias {
-        let (bin_name, pkg_md_bin) =
-            package_metadata.bin_by_bin_name_or_alias(bin_name_or_alias)?;
-        let bin = member.bin_target_by_name(bin_name)?;
-        (bin, pkg_md_bin)
+    } else if let Some(name_or_alias) = &name_or_alias {
+        let (bin_name, pkg_md_bin_example) =
+            package_metadata.bin_like_by_name_or_alias(name_or_alias)?;
+        let bin = member.bin_like_target_by_name(bin_name)?;
+        (bin, pkg_md_bin_example)
     } else {
         unreachable!()
     };
@@ -108,9 +108,9 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         metadata: &metadata,
         member,
         bin,
-        bin_alias: &pkg_md_bin.alias,
+        bin_alias: &pkg_md_bin_example.alias,
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
-        problem_url: &pkg_md_bin.problem,
+        problem_url: &pkg_md_bin_example.problem,
         release: if debug {
             false
         } else if release {

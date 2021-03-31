@@ -127,6 +127,7 @@ To use this function, configure `add` in the [`compete.toml`](#configuration) li
 [add]
 url = '{% case args[0] %}{% when "contest" %}https://yukicoder.me/contests/{{ args[1] }}{% when "problem" %}https://yukicoder.me/problems/no/{{ args[1] }}{% endcase %}'
 is-contest = ["bash", "-c", '[[ $(cut -d / -f 4) == "contests" ]]'] # optional
+#target-kind = "bin" # ["bin", "example"]. default to "bin"
 bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
 #bin-alias = '{% assign segments = url | split: "/" %}{{ segments[5] }}' # optional
 #bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
@@ -355,6 +356,7 @@ path = "./{{ contest }}"
 #[add]
 #url = "https://judge.yosupo.jp/problem/{{ args[0] }}"
 ##is-contest = ["false"] # optional
+##target-kind = "bin" # ["bin", "example"]. default to "bin"
 #bin-name = '{{ args[0] }}'
 ##bin-alias = '{{ args[0] }}' # optional
 ##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
@@ -363,6 +365,7 @@ path = "./{{ contest }}"
 #[add]
 #url = '{% case args[0] %}{% when "contest" %}https://yukicoder.me/contests/{{ args[1] }}{% when "problem" %}https://yukicoder.me/problems/no/{{ args[1] }}{% endcase %}'
 #is-contest = ["bash", "-c", '[[ $(cut -d / -f 4) == "contests" ]]'] # optional
+##target-kind = "bin" # ["bin", "example"]. default to "bin"
 #bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
 ##bin-alias = '{% assign segments = url | split: "/" %}{{ segments[5] }}' # optional
 ##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional

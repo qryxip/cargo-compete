@@ -134,7 +134,13 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     };
 
     crate::process::process(crate::process::cargo_exe()?)
-        .args(&["build", "--bin", &bin.name])
+        .arg("build")
+        .arg(if bin.kind == ["example".to_owned()] {
+            "--example"
+        } else {
+            "--bin"
+        })
+        .arg(&bin.name)
         .args(if release { &["--release"] } else { &[] })
         .arg("--manifest-path")
         .arg(&member.manifest_path)
@@ -144,6 +150,11 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let artifact = metadata
         .target_directory
         .join(if release { "release" } else { "debug" })
+        .join(if bin.kind == ["example".to_owned()] {
+            "examples"
+        } else {
+            ""
+        })
         .join(&bin.name)
         .with_extension(env::consts::EXE_EXTENSION);
 

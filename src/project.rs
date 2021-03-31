@@ -9,6 +9,7 @@ use serde::{
     de::{Deserializer, Error as _, IntoDeserializer},
     Deserialize,
 };
+use serde_json::json;
 use std::{
     path::{Path, PathBuf},
     str,
@@ -19,13 +20,15 @@ use url::Url;
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct PackageMetadataCargoCompete {
     pub(crate) config: Option<Utf8PathBuf>,
-    #[serde(deserialize_with = "deserialize_bin")]
-    pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBin>,
+    #[serde(default, deserialize_with = "deserialize_bin_example")]
+    pub(crate) bin: IndexMap<String, PackageMetadataCargoCompeteBinExample>,
+    #[serde(default, deserialize_with = "deserialize_bin_example")]
+    pub(crate) example: IndexMap<String, PackageMetadataCargoCompeteBinExample>,
 }
 
-fn deserialize_bin<'de, D>(
+fn deserialize_bin_example<'de, D>(
     deserializer: D,
-) -> Result<IndexMap<String, PackageMetadataCargoCompeteBin>, D::Error>
+) -> Result<IndexMap<String, PackageMetadataCargoCompeteBinExample>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -48,7 +51,10 @@ where
                 } else {
                     (key.clone(), key)
                 };
-                (name, PackageMetadataCargoCompeteBin { alias, problem })
+                (
+                    name,
+                    PackageMetadataCargoCompeteBinExample { alias, problem },
+                )
             },
         )
         .collect());
@@ -81,18 +87,18 @@ where
 }
 
 impl PackageMetadataCargoCompete {
-    pub(crate) fn bin_by_bin_name_or_alias(
+    pub(crate) fn bin_like_by_name_or_alias(
         &self,
-        bin_name_or_alias: impl AsRef<str>,
-    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBin)> {
-        let bin_name_or_alias = bin_name_or_alias.as_ref();
+        name_or_alias: impl AsRef<str>,
+    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBinExample)> {
+        let bin_name_or_alias = name_or_alias.as_ref();
 
-        match *self
-            .bin
-            .iter()
-            .filter(|(name, PackageMetadataCargoCompeteBin { alias, .. })| {
-                [&**name, &**alias].contains(&bin_name_or_alias)
-            })
+        match *itertools::chain(&self.bin, &self.example)
+            .filter(
+                |(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
+                    [&**name, &**alias].contains(&bin_name_or_alias)
+                },
+            )
             .collect::<Vec<_>>()
         {
             [(k, v)] => Ok((k, v)),
@@ -103,7 +109,7 @@ impl PackageMetadataCargoCompete {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct PackageMetadataCargoCompeteBin {
+pub(crate) struct PackageMetadataCargoCompeteBinExample {
     pub(crate) alias: String,
     pub(crate) problem: Url,
 }
@@ -180,8 +186,8 @@ impl cm::Package {
         let deserializer = self
             .metadata
             .get("cargo-compete")
-            .with_context(|| "missing `package.metadata.cargo-compete`")?
-            .clone()
+            .cloned()
+            .unwrap_or_else(|| json!({}))
             .into_deserializer();
 
         let ret = serde_ignored::deserialize(deserializer, |path| {
@@ -199,13 +205,18 @@ impl cm::Package {
         Ok(ret)
     }
 
-    pub(crate) fn bin_target_by_name(&self, name: impl AsRef<str>) -> anyhow::Result<&cm::Target> {
+    pub(crate) fn bin_like_target_by_name(
+        &self,
+        name: impl AsRef<str>,
+    ) -> anyhow::Result<&cm::Target> {
         let name = name.as_ref();
 
         self.targets
             .iter()
-            .find(|t| t.name == name && t.kind == ["bin".to_owned()])
-            .with_context(|| format!("no bin target named `{}` in `{}`", name, self.name))
+            .find(|t| {
+                t.name == name && t.kind == ["bin".to_owned()] || t.kind == ["example".to_owned()]
+            })
+            .with_context(|| format!("no bin/example target named `{}` in `{}`", name, self.name))
     }
 
     pub(crate) fn bin_target_by_src_path(
@@ -315,7 +326,7 @@ pub(crate) fn set_cargo_config_build_target_dir(
 
 #[cfg(test)]
 mod tests {
-    use crate::project::{PackageMetadataCargoCompete, PackageMetadataCargoCompeteBin};
+    use crate::project::{PackageMetadataCargoCompete, PackageMetadataCargoCompeteBinExample};
     use indexmap::indexmap;
     use pretty_assertions::assert_eq;
     use toml::toml;
@@ -325,19 +336,20 @@ mod tests {
         let expected = PackageMetadataCargoCompete {
             config: None,
             bin: indexmap!(
-                "practice-a".to_owned() => PackageMetadataCargoCompeteBin {
+                "practice-a".to_owned() => PackageMetadataCargoCompeteBinExample {
                     alias: "a".to_owned(),
                     problem: "https://atcoder.jp/contests/practice/tasks/practice_1"
                         .parse()
                         .unwrap(),
                 },
-                "practice-b".to_owned() => PackageMetadataCargoCompeteBin {
+                "practice-b".to_owned() => PackageMetadataCargoCompeteBinExample {
                     alias: "b".to_owned(),
                     problem: "https://atcoder.jp/contests/practice/tasks/practice_2"
                         .parse()
                         .unwrap(),
                 },
             ),
+            example: indexmap!(),
         };
 
         assert_eq!(
@@ -350,20 +362,31 @@ mod tests {
             .try_into::<PackageMetadataCargoCompete>()?,
         );
 
+        let expected = PackageMetadataCargoCompete {
+            config: None,
+            bin: indexmap!(
+                "aplusb".to_owned() => PackageMetadataCargoCompeteBinExample {
+                    alias: "aplusb".to_owned(),
+                    problem: "https://judge.yosupo.jp/problem/aplusb".parse().unwrap(),
+                },
+            ),
+            example: indexmap!(),
+        };
+
         assert_eq!(
             expected,
             toml! {
                 [bin]
-                a = { name = "practice-a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
-                b = { name = "practice-b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+                aplusb = { problem = "https://judge.yosupo.jp/problem/aplusb" }
             }
             .try_into::<PackageMetadataCargoCompete>()?,
         );
 
         let expected = PackageMetadataCargoCompete {
             config: None,
-            bin: indexmap!(
-                "aplusb".to_owned() => PackageMetadataCargoCompeteBin {
+            bin: indexmap!(),
+            example: indexmap!(
+                "aplusb".to_owned() => PackageMetadataCargoCompeteBinExample {
                     alias: "aplusb".to_owned(),
                     problem: "https://judge.yosupo.jp/problem/aplusb".parse().unwrap(),
                 },
@@ -373,7 +396,7 @@ mod tests {
         assert_eq!(
             expected,
             toml! {
-                [bin]
+                [example]
                 aplusb = { problem = "https://judge.yosupo.jp/problem/aplusb" }
             }
             .try_into::<PackageMetadataCargoCompete>()?,

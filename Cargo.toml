@@ -38,6 +38,7 @@ liquid = "0.22.0"
 liquid-core = "0.22.0"
 liquid-derive = "0.22.0"
 maplit = "1.0.2"
+once_cell = "1.7.2"
 opener = "0.4.1"
 percent-encoding = "2.1.0"
 prettytable-rs = "0.8.0"
@@ -47,7 +48,7 @@ rprompt = "1.0.5"
 serde = { version = "1.0.125", features = ["derive"] }
 serde_ignored = "0.1.2"
 serde_json = "1.0.64"
-serde_with = "1.7.0"
+serde_with = "1.8.0"
 serde_yaml = "0.8.17"
 shell-escape = "0.1.5"
 snowchains_core = "0.13.0"
@@ -59,13 +60,13 @@ tokio = { version = "1.4.0", features = ["signal"] }
 toml = "0.5.8"
 toml_edit = "0.2.0"
 url = { version = "2.2.1", features = ["serde"] }
-which = "4.0.2"
+which = "4.1.0"
 
 [target.'cfg(windows)'.dependencies]
 term_size = "=1.0.0-beta.2"
 
 [dev-dependencies]
-insta = { version = "1.7.0", features = ["redactions"] }
+insta = { version = "1.7.1", features = ["redactions"] }
 once_cell = "1.7.2"
 pretty_assertions = "0.7.1"
 regex = "1.4.5"

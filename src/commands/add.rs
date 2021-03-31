@@ -1,5 +1,5 @@
 use crate::{
-    config::CargoCompeteConfigAdd,
+    config::{BinLikeTargetKind, CargoCompeteConfigAdd},
     oj_api,
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
@@ -8,6 +8,7 @@ use anyhow::{anyhow, bail, ensure, Context as _};
 use cargo_metadata as cm;
 use liquid::object;
 use maplit::{btreeset, hashmap};
+use once_cell::sync::Lazy;
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -177,6 +178,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
 
     for problem in &problems {
         let CargoCompeteConfigAdd {
+            target_kind,
             bin_name,
             bin_alias,
             bin_src_path,
@@ -192,12 +194,33 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
             "url": &problem.url,
             "bin_name": bin_name,
         }))?;
-        let bin_src_path = &*bin_src_path.render(&object!({
-            "args": &args,
-            "url": &problem.url,
-            "bin_name": bin_name,
-            "bin_alias": bin_alias,
-        }))?;
+        let bin_src_path = &*bin_src_path
+            .as_ref()
+            .unwrap_or_else(|| {
+                return match *target_kind {
+                    BinLikeTargetKind::Bin => &DEFAULT_BIN_PATH,
+                    BinLikeTargetKind::ExampleBin => &DEFAULT_EXAMPLE_PATH,
+                };
+
+                static DEFAULT_BIN_PATH: Lazy<liquid::Template> =
+                    Lazy::new(|| parse("src/bin/{{ bin_alias }}.rs"));
+                static DEFAULT_EXAMPLE_PATH: Lazy<liquid::Template> =
+                    Lazy::new(|| parse("examples/{{ bin_alias }}.rs"));
+
+                fn parse(template: &'static str) -> liquid::Template {
+                    liquid::ParserBuilder::with_stdlib()
+                        .build()
+                        .unwrap()
+                        .parse(template)
+                        .unwrap()
+                }
+            })
+            .render(&object!({
+                "args": &args,
+                "url": &problem.url,
+                "bin_name": bin_name,
+                "bin_alias": bin_alias,
+            }))?;
 
         if member
             .all_bin_targets_sorted()
@@ -215,11 +238,16 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         bin_names_by_url.insert(problem.url.clone(), bin_name.to_owned());
         bin_aliases_by_url.insert(problem.url.clone(), bin_alias.to_owned());
 
-        let package_metadata_bin = &mut manifest["package"]["metadata"]["cargo-compete"]["bin"];
+        let target_kind = match cargo_compete_config_add.target_kind {
+            BinLikeTargetKind::Bin => "bin",
+            BinLikeTargetKind::ExampleBin => "example",
+        };
+
+        let entry = &mut manifest["package"]["metadata"]["cargo-compete"][target_kind];
         if bin_name != bin_alias {
-            package_metadata_bin[bin_name]["alias"] = toml_edit::value(bin_alias);
+            entry[bin_name]["alias"] = toml_edit::value(bin_alias);
         }
-        package_metadata_bin[bin_name]["problem"] = toml_edit::value(problem.url.as_str());
+        entry[bin_name]["problem"] = toml_edit::value(problem.url.as_str());
 
         let default_src_path = Path::new("src")
             .join("bin")
@@ -231,14 +259,14 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
             .unwrap_or_else(|_| bin_src_path.as_ref())
             != default_src_path
         {
-            if let Some(bin) = manifest["bin"].as_array_mut() {
+            if let Some(bin) = manifest[target_kind].as_array_mut() {
                 let mut tbl = toml_edit::InlineTable::default();
                 tbl.get_or_insert("name", bin_name);
                 tbl.get_or_insert("path", bin_src_path);
                 bin.push(tbl)
                     .map_err(|_| anyhow!("could not add an element to `bin`"))?;
             } else {
-                let bin = manifest["bin"].or_insert(toml_edit::Item::ArrayOfTables(
+                let bin = manifest[target_kind].or_insert(toml_edit::Item::ArrayOfTables(
                     toml_edit::ArrayOfTables::new(),
                 ));
                 if let Some(bin) = bin.as_array_of_tables_mut() {
@@ -250,7 +278,10 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
             }
         }
 
-        shell.status("Added", format!("`{}` (bin) for {}", bin_name, problem.url))?;
+        shell.status(
+            "Added",
+            format!("`{}` ({}) for {}", bin_name, target_kind, problem.url),
+        )?;
     }
 
     crate::fs::write(&member.manifest_path, manifest.to_string())?;

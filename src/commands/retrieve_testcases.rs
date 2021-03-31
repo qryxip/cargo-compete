@@ -12,9 +12,13 @@ pub struct OptCompeteRetrieveTestcases {
     #[structopt(long)]
     pub full: bool,
 
-    /// Retrieve only the problems for the binaries
+    /// Retrieve only the problems for the binary target
     #[structopt(long, value_name("NAME_OR_ALIAS"))]
     pub bin: Option<Vec<String>>,
+
+    /// Retrieve only the problems for the example target
+    #[structopt(long, value_name("NAME_OR_ALIAS"))]
+    pub example: Option<Vec<String>>,
 
     /// Package (see `cargo help pkgid`)
     #[structopt(short, long, value_name("SPEC"))]
@@ -38,6 +42,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     let OptCompeteRetrieveTestcases {
         full,
         bin,
+        example,
         package,
         manifest_path,
         color,
@@ -51,8 +56,10 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
 
     shell.set_color_choice(color);
 
-    let bin = bin.map(|bin| bin.into_iter().collect::<HashSet<_>>());
+    let bin = bin.map(|s| s.into_iter().collect::<HashSet<_>>());
     let bin = bin.as_ref();
+    let example = example.map(|s| s.into_iter().collect::<HashSet<_>>());
+    let example = example.as_ref();
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
@@ -65,7 +72,9 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
     crate::web::retrieve_testcases::dl_for_existing_package(
         &member,
         &package_metadata.bin,
+        &package_metadata.example,
         bin,
+        example,
         full,
         &metadata.workspace_root,
         &cargo_compete_config.test_suite,
