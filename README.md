@@ -182,7 +182,7 @@ and save a JSON file in the following format to <code>[{local data directory}](h
 }
 ```
 
-[![asciicast](https://asciinema.org/a/403727.svg)](https://asciinema.org/a/403727?autoplay=1)
+[![asciicast](https://asciinema.org/a/404203.svg)](https://asciinema.org/a/404203?autoplay=1)
 
 ### `cargo compete retrieve submission-summaries`
 
@@ -394,6 +394,8 @@ edition = "2018"
 [package.metadata.cargo-compete.bin]
 practice-a = { alias = "a", problem = "https://atcoder.jp/contests/practice/tasks/practice_1" }
 practice-b = { alias = "b", problem = "https://atcoder.jp/contests/practice/tasks/practice_2" }
+
+#[package.metadata.cargo-compete.example]
 
 [[bin]]
 name = "practice-a"

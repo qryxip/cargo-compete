@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.9.0] - 2021-03-31Z
 
 ### Added
 
-- Added `template.new.dev-dependencies`.
+- Added `template.new.dev-dependencies`. ([#152](https://github.com/qryxip/cargo-compete/pull/152))
 
     ```toml
     profile = '''
@@ -20,18 +20,18 @@
     '''
     ```
 
-- Enabled running for `example` targets.
+- Enabled running for `example` targets. ([#157](https://github.com/qryxip/cargo-compete/pull/157))
 
     ```toml
     [package.metadata.cargo-compete.example]
     atcoder-abc188-a = { problem = "https://atcoder.jp/contests/abc188/tasks/abc188_a" }
     ```
 
-- Added `add.target-kind` configuration.
+- Added `add.target-kind` configuration. ([#157](https://github.com/qryxip/cargo-compete/pull/157))
 
 ### Changed
 
-- Modified the template for the `init` command.
+- Modified the template for the `init` command. ([#156](https://github.com/qryxip/cargo-compete/pull/156))
 
     ```diff
      #[submit.transpile]
@@ -41,7 +41,9 @@
      ##language_id = ""
     ```
 
-- Now `download` command requires `--overwrite` flag to overwrite existing test files.
+- Updated `rust-toolchain`s for Codeforces and yukicoder. ([#153](https://github.com/qryxip/cargo-compete/pull/153))
+
+- Now `download` command requires `--overwrite` flag to overwrite existing test files. ([#158](https://github.com/qryxip/cargo-compete/pull/158))
 
     ```console
     ❯ cargo compete d
