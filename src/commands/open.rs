@@ -122,6 +122,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
             Some(missing_bins),
             Some(missing_examples),
             full,
+            true,
             &metadata.workspace_root,
             &cargo_compete_config.test_suite,
             &cookies_path,

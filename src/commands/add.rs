@@ -292,6 +292,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
             &metadata.workspace_root,
             member.manifest_dir(),
             &cargo_compete_config.test_suite,
+            true,
             problems,
             |url, _| vec![bin_names_by_url[url].clone()],
             |url, _| vec![bin_aliases_by_url[url].clone()],

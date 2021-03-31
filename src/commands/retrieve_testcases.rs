@@ -12,6 +12,10 @@ pub struct OptCompeteRetrieveTestcases {
     #[structopt(long)]
     pub full: bool,
 
+    /// Overwrites the existing test files
+    #[structopt(long)]
+    pub overwrite: bool,
+
     /// Retrieve only the problems for the binary target
     #[structopt(long, value_name("NAME_OR_ALIAS"))]
     pub bin: Option<Vec<String>>,
@@ -41,6 +45,7 @@ pub struct OptCompeteRetrieveTestcases {
 pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> anyhow::Result<()> {
     let OptCompeteRetrieveTestcases {
         full,
+        overwrite,
         bin,
         example,
         package,
@@ -76,6 +81,7 @@ pub(crate) fn run(opt: OptCompeteRetrieveTestcases, ctx: crate::Context<'_>) -> 
         bin,
         example,
         full,
+        overwrite,
         &metadata.workspace_root,
         &cargo_compete_config.test_suite,
         &cookies_path,
