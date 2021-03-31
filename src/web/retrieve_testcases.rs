@@ -1,6 +1,6 @@
 use crate::{
     oj_api,
-    project::{PackageExt as _, PackageMetadataCargoCompeteBin},
+    project::{PackageExt as _, PackageMetadataCargoCompeteBinExample},
     shell::Shell,
     web::credentials,
 };
@@ -106,8 +106,10 @@ pub(crate) fn dl_only_system_test_cases(
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn dl_for_existing_package(
     package: &cm::Package,
-    package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBin>,
+    package_metadata_bin: &IndexMap<String, PackageMetadataCargoCompeteBinExample>,
+    package_metadata_example: &IndexMap<String, PackageMetadataCargoCompeteBinExample>,
     bin_name_aliases: Option<&HashSet<String>>,
+    example_name_aliases: Option<&HashSet<String>>,
     full: bool,
     workspace_root: &Utf8Path,
     test_suite_path: &liquid::Template,
@@ -117,22 +119,33 @@ pub(crate) fn dl_for_existing_package(
     let mut snowchains_targets: BTreeMap<_, BTreeMap<_, BTreeSet<_>>> = btreemap!();
     let mut oj_targets: BTreeMap<_, BTreeSet<_>> = btreemap!();
     let mut bin_name_aliases = bin_name_aliases.cloned();
+    let mut example_name_aliases = example_name_aliases.cloned();
 
-    for (name, PackageMetadataCargoCompeteBin { alias, problem }) in package_metadata_bin {
-        let matched = bin_name_aliases.as_mut().map_or(true, |bin_name_aliases| {
-            bin_name_aliases.remove(name) || bin_name_aliases.remove(alias)
-        });
-        if matched {
-            if let Ok(platform) = PlatformKind::from_url(problem) {
-                snowchains_targets
-                    .entry(platform)
-                    .or_default()
-                    .entry(problem)
-                    .or_default()
-                    .insert((name, alias));
-            } else {
-                oj_targets.entry(problem).or_default().insert((name, alias));
-            }
+    for (name, PackageMetadataCargoCompeteBinExample { alias, problem }) in itertools::chain(
+        package_metadata_bin.iter().filter(
+            |&(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
+                bin_name_aliases
+                    .as_mut()
+                    .map_or(true, |ss| ss.remove(name) || ss.remove(alias))
+            },
+        ),
+        package_metadata_example.iter().filter(
+            |&(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
+                example_name_aliases
+                    .as_mut()
+                    .map_or(true, |ss| ss.remove(name) || ss.remove(alias))
+            },
+        ),
+    ) {
+        if let Ok(platform) = PlatformKind::from_url(problem) {
+            snowchains_targets
+                .entry(platform)
+                .or_default()
+                .entry(problem)
+                .or_default()
+                .insert((name, alias));
+        } else {
+            oj_targets.entry(problem).or_default().insert((name, alias));
         }
     }
 
@@ -433,6 +446,7 @@ pub(crate) fn save_test_cases<I>(
     Ok(acc)
 }
 
+#[derive(Debug)]
 pub(crate) struct Problem<I> {
     pub(crate) index: I,
     pub(crate) url: Url,

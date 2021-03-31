@@ -1,5 +1,5 @@
 use crate::{
-    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
+    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBinExample},
     shell::ColorChoice,
 };
 use maplit::hashset;
@@ -13,9 +13,13 @@ pub struct OptCompeteOpen {
     #[structopt(long)]
     pub full: bool,
 
-    /// Open for only binaries
+    /// Open for only binary targets
     #[structopt(long, value_name("NAME_OR_ALIAS"))]
     pub bin: Option<Vec<String>>,
+
+    /// Open for only example targets
+    #[structopt(long, value_name("NAME_OR_ALIAS"))]
+    pub example: Option<Vec<String>>,
 
     /// Package (see `cargo help pkgid`)
     #[structopt(short, long, value_name("SPEC"))]
@@ -39,6 +43,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     let OptCompeteOpen {
         full,
         bin,
+        example,
         package,
         manifest_path,
         color,
@@ -53,6 +58,9 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     shell.set_color_choice(color);
 
     let bin = bin.map(|bin| bin.into_iter().collect::<HashSet<_>>());
+    let bin = bin.as_ref();
+    let example = example.map(|example| example.into_iter().collect::<HashSet<_>>());
+    let example = example.as_ref();
 
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
@@ -64,40 +72,55 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
 
     let mut urls = vec![];
     let mut file_paths = vec![];
-    let mut missing = hashset!();
+    let mut missing = [hashset!(), hashset!()];
 
-    for (name, PackageMetadataCargoCompeteBin { alias, problem }) in &package_metadata.bin {
-        if bin
-            .as_ref()
-            .map_or(true, |bin| bin.contains(name) || bin.contains(alias))
-        {
-            urls.push(problem.clone());
+    for (i, (name, PackageMetadataCargoCompeteBinExample { alias, problem })) in itertools::chain(
+        package_metadata.bin.iter().filter(
+            |&(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
+                bin.map_or(true, |s| s.contains(name) || s.contains(alias))
+            },
+        ),
+        package_metadata.example.iter().filter(
+            |&(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
+                example.map_or(true, |s| s.contains(name) || s.contains(alias))
+            },
+        ),
+    )
+    .enumerate()
+    {
+        urls.push(problem.clone());
 
-            let test_suite_path = crate::testing::test_suite_path(
-                &metadata.workspace_root,
-                member.manifest_dir(),
-                &cargo_compete_config.test_suite,
-                name,
-                alias,
-                &problem,
-                shell,
-            )?;
+        let test_suite_path = crate::testing::test_suite_path(
+            &metadata.workspace_root,
+            member.manifest_dir(),
+            &cargo_compete_config.test_suite,
+            name,
+            alias,
+            &problem,
+            shell,
+        )?;
 
-            if !test_suite_path.exists() {
-                missing.insert(name.clone());
-            }
-
-            file_paths.push((&member.bin_target_by_name(name)?.src_path, test_suite_path));
+        if !test_suite_path.exists() {
+            missing[i].insert(name.clone());
         }
+
+        file_paths.push((
+            &member.bin_like_target_by_name(name)?.src_path,
+            test_suite_path,
+        ));
     }
 
-    if !missing.is_empty() {
+    let [missing_bins, missing_examples] = &missing;
+
+    if !(missing_bins.is_empty() && missing_examples.is_empty()) {
         shell.status("Retrieving", "missing test cases")?;
 
         crate::web::retrieve_testcases::dl_for_existing_package(
             &member,
             &package_metadata.bin,
-            Some(&missing),
+            &package_metadata.example,
+            Some(missing_bins),
+            Some(missing_examples),
             full,
             &metadata.workspace_root,
             &cargo_compete_config.test_suite,

@@ -1,5 +1,5 @@
 use crate::{
-    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBin},
+    project::{MetadataExt as _, PackageExt as _, PackageMetadataCargoCompeteBinExample},
     shell::ColorChoice,
     web::credentials,
 };
@@ -68,7 +68,7 @@ pub(crate) fn run(
 
     for (
         bin_name,
-        PackageMetadataCargoCompeteBin {
+        PackageMetadataCargoCompeteBinExample {
             alias: bin_alias,
             problem: url,
             ..

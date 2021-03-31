@@ -415,9 +415,10 @@ enum CargoCompeteConfigNewTemplateSrc {
 pub(crate) struct CargoCompeteConfigAdd {
     pub(crate) url: liquid::Template,
     pub(crate) is_contest: Option<Vec<String>>,
+    pub(crate) target_kind: BinLikeTargetKind,
     pub(crate) bin_name: liquid::Template,
     pub(crate) bin_alias: liquid::Template,
-    pub(crate) bin_src_path: liquid::Template,
+    pub(crate) bin_src_path: Option<liquid::Template>,
 }
 
 impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
@@ -428,6 +429,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
         let Repr {
             url,
             is_contest,
+            target_kind,
             bin_name,
             bin_alias,
             bin_src_path,
@@ -435,9 +437,7 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
 
         let bin_name = &bin_name;
         let bin_alias = bin_alias.as_deref().unwrap_or(bin_name);
-        let bin_src_path = bin_src_path
-            .as_deref()
-            .unwrap_or("src/bin/{{ bin_alias }}.rs");
+        let bin_src_path = bin_src_path.as_deref();
 
         let parser = liquid::ParserBuilder::with_stdlib()
             .build()
@@ -447,11 +447,12 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
         let url = parse(&url)?;
         let bin_name = parse(bin_name)?;
         let bin_alias = parse(bin_alias)?;
-        let bin_src_path = parse(bin_src_path)?;
+        let bin_src_path = bin_src_path.map(parse).transpose()?;
 
         return Ok(Self {
             url,
             is_contest,
+            target_kind,
             bin_name,
             bin_alias,
             bin_src_path,
@@ -462,6 +463,8 @@ impl<'de> Deserialize<'de> for CargoCompeteConfigAdd {
         struct Repr {
             url: String,
             is_contest: Option<Vec<String>>,
+            #[serde(default)]
+            target_kind: BinLikeTargetKind,
             bin_name: String,
             bin_alias: Option<String>,
             bin_src_path: Option<String>,
@@ -478,6 +481,20 @@ impl fmt::Debug for CargoCompeteConfigAdd {
             .field("bin_alias", &format_args!("_"))
             .field("bin_src_path", &format_args!("_"))
             .finish()
+    }
+}
+
+#[derive(Deserialize, Copy, Clone, Debug)]
+pub(crate) enum BinLikeTargetKind {
+    #[serde(rename = "bin")]
+    Bin,
+    #[serde(rename = "example")]
+    ExampleBin,
+}
+
+impl Default for BinLikeTargetKind {
+    fn default() -> Self {
+        Self::Bin
     }
 }
 

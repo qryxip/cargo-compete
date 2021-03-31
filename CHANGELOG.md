@@ -20,6 +20,15 @@
     '''
     ```
 
+- Enabled running for `example` targets.
+
+    ```toml
+    [package.metadata.cargo-compete.example]
+    atcoder-abc188-a = { problem = "https://atcoder.jp/contests/abc188/tasks/abc188_a" }
+    ```
+
+- Added `add.target-kind` configuration.
+
 ### Changed
 
 - Modified the template for the `init` command.
