@@ -182,7 +182,7 @@ and save a JSON file in the following format to <code>[{local data directory}](h
 }
 ```
 
-[![asciicast](https://asciinema.org/a/404203.svg)](https://asciinema.org/a/404203?autoplay=1)
+[![asciicast](https://asciinema.org/a/409353.svg)](https://asciinema.org/a/409353?autoplay=1)
 
 ### `cargo compete retrieve submission-summaries`
 
