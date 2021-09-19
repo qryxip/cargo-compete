@@ -224,9 +224,7 @@ pub(crate) fn test_suite_path(
                 .map(|r| (r, true))
         })?;
     let test_suite_path = Utf8Path::new(&test_suite_path);
-    let test_suite_path = test_suite_path
-        .strip_prefix(".")
-        .unwrap_or(&test_suite_path);
+    let test_suite_path = test_suite_path.strip_prefix(".").unwrap_or(test_suite_path);
 
     if uses_deprecated_vars {
         shell.warn("deprecated variables used for `.test-suite` in compete.toml")?;
