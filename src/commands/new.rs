@@ -271,13 +271,16 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
             let outcome = oj_api::get_contest(contest_url, &cargo_compete_dir, shell)?
                 .into_iter()
-                .map(|(problem_url, _alphabet)| {
+                .map(|(problem_url, alphabet)| {
                     let problem =
                         oj_api::get_problem(&problem_url, full, &cargo_compete_dir, shell)?;
-                    let problem =
+                    let mut problem =
                         crate::web::retrieve_testcases::Problem::from_oj_api_with_alphabet(
                             problem, full,
                         )?;
+                    if let Some(index) = alphabet {
+                        problem.index = index;
+                    }
                     Ok((problem_url, problem))
                 })
                 .collect::<anyhow::Result<BTreeMap<_, _>>>()?;

@@ -158,12 +158,14 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         } else {
             vec![(url, None)]
         }
-        .iter()
-        .map(|(problem_url, _alphabet)| {
-            let problem = oj_api::get_problem(problem_url, full, &metadata.workspace_root, shell)?;
-            Ok(crate::web::retrieve_testcases::Problem::from_oj_api(
-                problem, full,
-            ))
+        .into_iter()
+        .map(|(problem_url, alphabet)| {
+            let problem = oj_api::get_problem(&problem_url, full, &metadata.workspace_root, shell)?;
+            let mut problem = crate::web::retrieve_testcases::Problem::from_oj_api(problem, full);
+            if let Some(problem_index) = alphabet {
+                problem.index = Some(problem_index);
+            }
+            Ok(problem)
         })
         .collect::<anyhow::Result<_>>()?,
     };
