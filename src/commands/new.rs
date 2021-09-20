@@ -271,7 +271,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
             let outcome = oj_api::get_contest(contest_url, &cargo_compete_dir, shell)?
                 .into_iter()
-                .map(|problem_url| {
+                .map(|(problem_url, _alphabet)| {
                     let problem =
                         oj_api::get_problem(&problem_url, full, &cargo_compete_dir, shell)?;
                     let problem =

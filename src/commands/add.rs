@@ -156,11 +156,11 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
         Err(_) => if is_contest {
             oj_api::get_contest(&url, &metadata.workspace_root, shell)?
         } else {
-            vec![url]
+            vec![(url, None)]
         }
         .iter()
-        .map(|url| {
-            let problem = oj_api::get_problem(url, full, &metadata.workspace_root, shell)?;
+        .map(|(problem_url, _alphabet)| {
+            let problem = oj_api::get_problem(problem_url, full, &metadata.workspace_root, shell)?;
             Ok(crate::web::retrieve_testcases::Problem::from_oj_api(
                 problem, full,
             ))
