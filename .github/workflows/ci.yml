@@ -128,10 +128,11 @@ jobs:
           key: cargo-udeps-build-${{ steps.install-nightly.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
       - name: Install cargo-udeps v${{ steps.resolve-versions.outputs.cargo-udeps }}
-        uses: actions-rs/install@v0.1
+        uses: actions-rs/cargo@v1
         with:
-          crate: cargo-udeps
-          version: ${{ steps.resolve-versions.outputs.cargo-udeps }}
+          command: install
+          args: cargo-udeps --version '=${{ steps.resolve-versions.outputs.cargo-udeps }}' --locked
+          toolchain: stable
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
