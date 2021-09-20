@@ -68,7 +68,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
     let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata(shell)?;
-    let (cargo_compete_config, _) = crate::config::load_for_package(&member, shell)?;
+    let (cargo_compete_config, _) = crate::config::load_for_package(member, shell)?;
 
     let mut urls = vec![];
     let mut file_paths = vec![];
@@ -96,7 +96,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
             &cargo_compete_config.test_suite,
             name,
             alias,
-            &problem,
+            problem,
             shell,
         )?;
 
@@ -116,7 +116,7 @@ pub(crate) fn run(opt: OptCompeteOpen, ctx: crate::Context<'_>) -> anyhow::Resul
         shell.status("Retrieving", "missing test cases")?;
 
         crate::web::retrieve_testcases::dl_for_existing_package(
-            &member,
+            member,
             &package_metadata.bin,
             &package_metadata.example,
             Some(missing_bins),

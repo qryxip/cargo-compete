@@ -88,7 +88,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     let metadata = crate::project::cargo_metadata(&manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata(shell)?;
-    let (cargo_compete_config, _) = crate::config::load_for_package(&member, shell)?;
+    let (cargo_compete_config, _) = crate::config::load_for_package(member, shell)?;
 
     let (bin, pkg_md_bin_example) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));

@@ -12,6 +12,49 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+**'
   pull_request:
 
+env:
+  RESOLVE_VERSIONS_PY: |
+    from argparse import ArgumentParser
+    import json
+    import urllib.request
+    import re
+
+    CRATE_SPEC = re.compile(r'\A([a-zA-Z0-9_-]+)@\^([0-9]+)\.([0-9]+)\Z')
+
+
+    def main() -> None:
+        parser = ArgumentParser()
+        parser.add_argument('specs', metavar='PSEUDO_SPECS', type=CrateSpec, nargs='+')
+        print('\n'.join(map(resolve, parser.parse_args().specs)))
+
+
+    class CrateSpec:
+        def __init__(self, s: str):
+            if not (m := CRATE_SPEC.match(s)):
+                raise RuntimeError(f'the version must be `{CRATE_SPEC.pattern}`')
+            self.package_name = m.group(1)
+            self.version_req_major = int(m.group(2))
+            self.version_req_minor = int(m.group(3))
+
+
+    def resolve(spec: CrateSpec) -> str:
+        with urllib.request.urlopen(f'https://crates.io/api/v1/crates/{spec.package_name}') as res:
+            versions = json.load(res)['versions']
+        matched = set()
+        for version in versions:
+            major, minor, patch_pre_build = version['num'].split('.')
+            major, minor = (int(major), int(minor))
+            if ((major, spec.version_req_major) == (0, 0) and minor == spec.version_req_minor or major == spec.version_req_major and minor >= spec.version_req_minor) and patch_pre_build.isdecimal():
+                matched.add((minor, int(patch_pre_build)))
+        if not matched:
+            raise RuntimeError(f'No such package: `{spec.package_name} ^{spec.version_req_major}.{spec.version_req_minor}`')
+        minor, patch = max(matched)
+        return f'::set-output name={spec.package_name}::{spec.version_req_major}.{minor}.{patch}'
+
+
+    if __name__ == '__main__':
+        main()
+
 jobs:
   rustfmt:
     name: Rustfmt
@@ -38,6 +81,8 @@ jobs:
   cargo-udeps:
     name: cargo-udeps
     runs-on: ubuntu-20.04
+    env:
+      NIGHTLY_CHANNEL: nightly-2021-09-19
 
     steps:
       - name: Checkout
@@ -49,40 +94,20 @@ jobs:
           toolchain: stable-x86_64-unknown-linux-gnu
           default: true
 
-      - name: Set up `nightly-2021-01-31-x86_64-unknown-linux-gnu`
+      - name: Set up `${{ env.NIGHTLY_CHANNEL }}-x86_64-unknown-linux-gnu`
         id: install-nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-01-31-x86_64-unknown-linux-gnu
+          toolchain: ${{ env.NIGHTLY_CHANNEL }}-x86_64-unknown-linux-gnu
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.9'
 
       - name: Resolve `cargo-udeps ^0.1`
-        id: resolve-version-of-cargo-udeps
-        run: |
-          import json
-          import urllib.request
-
-          PACKAGE_NAME = 'cargo-udeps'
-          VERSION_REQ_MAJOR = 0
-          VERSION_REQ_MINOR = 1
-
-          with urllib.request.urlopen(f'https://crates.io/api/v1/crates/{PACKAGE_NAME}') as res:
-              versions = json.load(res)['versions']
-          matched = set()
-          for version in versions:
-              major, minor, patch_pre_build = version['num'].split('.')
-              major, minor = (int(major), int(minor))
-              if ((major, VERSION_REQ_MAJOR) == (0, 0) and minor == VERSION_REQ_MINOR or major == VERSION_REQ_MAJOR and minor >= VERSION_REQ_MINOR) and patch_pre_build.isdecimal():
-                  matched.add((minor, int(patch_pre_build)))
-          if not matched:
-              raise RuntimeError(f'No such package: `{PACKAGE_NAME} ^{VERSION_REQ_MAJOR}.{VERSION_REQ_MINOR}`')
-          minor, patch = max(matched)
-          print(f'::set-output name=version::{VERSION_REQ_MAJOR}.{minor}.{patch}')
-        shell: python
+        id: resolve-versions
+        run: python -c "$RESOLVE_VERSIONS_PY" cargo-udeps@^0.1
 
       - name: Cache for cargo-udeps
         uses: actions/cache@v2
@@ -91,7 +116,7 @@ jobs:
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
             ~/.cargo/bin/cargo-udeps
-          key: cargo-udeps-installed-crates-${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+          key: cargo-udeps-installed-crates-${{ steps.resolve-versions.outputs.cargo-udeps }}
 
       - name: Cache for build cache
         uses: actions/cache@v2
@@ -102,56 +127,85 @@ jobs:
             ./target
           key: cargo-udeps-build-${{ steps.install-nightly.outputs.rustc_hash }}-${{ hashFiles('./Cargo.*') }}
 
-      - name: Install cargo-udeps v${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
-        uses: actions-rs/install@v0.1
+      - name: Install cargo-udeps v${{ steps.resolve-versions.outputs.cargo-udeps }}
+        uses: actions-rs/cargo@v1
         with:
-          crate: cargo-udeps
-          version: ${{ steps.resolve-version-of-cargo-udeps.outputs.version }}
+          command: install
+          args: cargo-udeps --version '=${{ steps.resolve-versions.outputs.cargo-udeps }}' --locked
+          toolchain: stable
 
       - name: cargo-udeps
         uses: actions-rs/cargo@v1
         with:
           command: udeps
           args: --all-targets
-          toolchain: nightly-2021-01-31-x86_64-unknown-linux-gnu
+          toolchain: ${{ env.NIGHTLY_CHANNEL }}-x86_64-unknown-linux-gnu
 
   grcov:
     name: grcov
     runs-on: ubuntu-20.04
-    if: "github.repository_owner == 'qryxip' && github.ref == 'refs/heads/master'"
+    if: ${{ github.repository_owner == 'qryxip' && github.ref == 'refs/heads/master' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Set up `stable-x86_64-unknown-linux-gnu`
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
       - name: Set up `nightly-x86_64-unknown-linux-gnu`
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Resolve `grcov ^0.8`
+        id: resolve-versions
+        run: python -c "$RESOLVE_VERSIONS_PY" grcov@^0.8
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/bin/grcov
+          key: grcov-${{ steps.resolve-versions.outputs.grcov }}
+
+      - name: Install grcov v${{ steps.resolve-versions.outputs.grcov }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: grcov --version '=${{ steps.resolve-versions.outputs.grcov }}'
+          toolchain: stable
 
       - name: cargo-test
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --no-fail-fast --features __test_with_credentials
+          toolchain: nightly
         env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off'
+          RUSTFLAGS: '-Zinstrument-coverage'
           RUST_BACKTRACE: full
+          LLVM_PROFILE_FILE: '%p-%m.profraw'
           ATCODER_USERNAME: ${{ secrets.ATCODER_USERNAME }}
           ATCODER_PASSWORD: ${{ secrets.ATCODER_PASSWORD }}
 
       - name: grcov
-        id: grcov
-        uses: actions-rs/grcov@v0.1
+        run: rustup run "$NIGHTLY_CHANNEL" grcov . -b ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
 
       - name: Codecov
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ${{ steps.grcov.outputs.report }}
+          file: lcov.info
 
   build:
     strategy:
@@ -172,7 +226,7 @@ jobs:
     steps:
       - name: Disable `core.autocrlf`
         run: git config --global core.autocrlf false
-        if: matrix.os == 'windows-2019'
+        if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -181,8 +235,8 @@ jobs:
       - name: Install GNU tar
         run: |
           brew install gnu-tar
-          echo "PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >> $GITHUB_ENV
-        if: matrix.os == 'macos-10.15'
+          echo "PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH" >>"$GITHUB_ENV"
+        if: ${{ matrix.os == 'macos-10.15' }}
 
       - name: 'Set up `${{ matrix.channel }}-${{ matrix.host-triple }}` (target: `${{ matrix.target-triple }}`)'
         id: install-toolchain
@@ -250,7 +304,7 @@ jobs:
 
     name: Upload (${{ matrix.target-triple }})
     runs-on: ${{ matrix.os }}
-    if: startsWith(github.ref, 'refs/tags/')
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     steps:
       - name: Checkout
@@ -307,7 +361,7 @@ jobs:
   upload-release-notes:
     name: Upload the release notes
     runs-on: ubuntu-20.04
-    if: startsWith(github.ref, 'refs/tags/')
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     steps:
       - name: Checkout
