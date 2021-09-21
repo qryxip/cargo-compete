@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1] - 2021-09-21Z
+
+### Fixed
+
+- When using `oj-api`, prioritize `alphabet`s from `get-contest` over ones from `get-problem`. ([#166](https://github.com/qryxip/cargo-compete/pull/166) by [@bouzuya](https://github.com/bouzuya))
+
+    Now you can use cargo-compete for [AtCoder Problems](https://kenkoooo.com/atcoder/#/contest/recent).
+
 ## [0.9.0] - 2021-03-31Z
 
 ### Added
