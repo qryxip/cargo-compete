@@ -26,11 +26,11 @@ pub(crate) fn get_contest(
     url: &Url,
     cwd: &Utf8Path,
     shell: &mut Shell,
-) -> anyhow::Result<Vec<Url>> {
+) -> anyhow::Result<Vec<(Url, Option<String>)>> {
     let Contest { problems } = call(&["get-contest", url.as_ref()], cwd, shell)?;
     return Ok(problems
         .into_iter()
-        .map(|ContestProblem { url }| url)
+        .map(|ContestProblem { url, context }| (url, context.alphabet))
         .collect());
 
     #[derive(Deserialize)]
@@ -41,6 +41,12 @@ pub(crate) fn get_contest(
     #[derive(Deserialize)]
     struct ContestProblem {
         url: Url,
+        context: ContestProblemContext,
+    }
+
+    #[derive(Deserialize)]
+    struct ContestProblemContext {
+        alphabet: Option<String>,
     }
 }
 
