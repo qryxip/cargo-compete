@@ -83,7 +83,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       NIGHTLY_CHANNEL: nightly-2021-09-19
-    if: "false" # https://github.com/rust-lang/cargo/issues/9919
 
     steps:
       - name: Checkout
@@ -400,11 +399,7 @@ jobs:
   release:
     name: GitHub Release
     runs-on: ubuntu-20.04
-    needs:
-      - rustfmt
-      #- cargo-udeps
-      - upload-archives
-      - upload-release-notes
+    needs: [rustfmt, cargo-udeps, upload-archives, upload-release-notes]
 
     steps:
       - name: Download the assets
