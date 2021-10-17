@@ -501,6 +501,7 @@ impl Default for BinLikeTargetKind {
 #[derive(Deserialize, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTest {
+    pub(crate) toolchain: Option<String>,
     #[serde(default)]
     pub(crate) profile: CargoCompeteConfigTestProfile,
 }

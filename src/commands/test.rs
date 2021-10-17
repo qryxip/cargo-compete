@@ -111,6 +111,7 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         bin_alias: &pkg_md_bin_example.alias,
         cargo_compete_config_test_suite: &cargo_compete_config.test_suite,
         problem_url: &pkg_md_bin_example.problem,
+        toolchain: cargo_compete_config.test.toolchain.as_deref(),
         release: if debug {
             false
         } else if release {

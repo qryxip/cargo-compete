@@ -26,6 +26,7 @@ pub(crate) struct Args<'a> {
     pub(crate) bin_alias: &'a str,
     pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
     pub(crate) problem_url: &'a Url,
+    pub(crate) toolchain: Option<&'a str>,
     pub(crate) release: bool,
     pub(crate) test_case_names: Option<HashSet<String>>,
     pub(crate) display_limit: Size,
@@ -41,6 +42,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         bin_alias,
         cargo_compete_config_test_suite,
         problem_url,
+        toolchain,
         release,
         test_case_names,
         display_limit,
@@ -133,19 +135,23 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         }
     };
 
-    crate::process::process(crate::process::cargo_exe()?)
-        .arg("build")
-        .arg(if bin.kind == ["example".to_owned()] {
-            "--example"
-        } else {
-            "--bin"
-        })
-        .arg(&bin.name)
-        .args(if release { &["--release"] } else { &[] })
-        .arg("--manifest-path")
-        .arg(&member.manifest_path)
-        .cwd(&metadata.workspace_root)
-        .exec_with_shell_status(shell)?;
+    if let Some(toolchain) = toolchain {
+        crate::process::process("rustup").args(&["run", toolchain, "cargo"])
+    } else {
+        crate::process::process(crate::process::cargo_exe()?)
+    }
+    .arg("build")
+    .arg(if bin.kind == ["example".to_owned()] {
+        "--example"
+    } else {
+        "--bin"
+    })
+    .arg(&bin.name)
+    .args(if release { &["--release"] } else { &[] })
+    .arg("--manifest-path")
+    .arg(&member.manifest_path)
+    .cwd(&metadata.workspace_root)
+    .exec_with_shell_status(shell)?;
 
     let artifact = metadata
         .target_directory
