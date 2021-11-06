@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.0] - 2021-11-06Z
 
 ### Added
 
-- Added `template.new.edition` field.
+- Added `template.new.edition` field. ([#175](https://github.com/qryxip/cargo-compete/issues/175))
 
     ```toml
     # `edition` for `Cargo.toml`.
@@ -24,9 +24,9 @@
 
 ### Fixed
 
-- Updated the Rust versions for `cargo compete init`.
+- Updated the Rust versions for `cargo compete init`. ([#175](https://github.com/qryxip/cargo-compete/issues/175))
 
-- Inserts a newline between `bin` and `dependencies`.
+- Inserts a newline between `bin` and `dependencies`. ([#175](https://github.com/qryxip/cargo-compete/issues/175))
 
     ```diff
      [[bin]]
