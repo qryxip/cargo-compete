@@ -276,6 +276,8 @@ fn main() {
 '''
 
 [template.new]
+# `edition` for `Cargo.toml`.
+edition = "2018"
 # `profile` for `Cargo.toml`.
 #
 # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
@@ -404,6 +406,7 @@ path = "src/bin/a.rs"
 [[bin]]
 name = "practice-b"
 path = "src/bin/b.rs"
+
 [dependencies]
 num = "=0.2.1"
 num-bigint = "=0.2.6"
@@ -444,6 +447,8 @@ text_io = "=0.1.8"
 whiteread = "=0.5.0"
 rustc-hash = "=1.1.0"
 smallvec = "=1.2.0"
+
+[dev-dependencies]
 ```
 
 ## テストファイルのYAML

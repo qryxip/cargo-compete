@@ -4,6 +4,13 @@
 
 ### Added
 
+- Added `template.new.edition` field.
+
+    ```toml
+    # `edition` for `Cargo.toml`.
+    edition = "2018"
+    ```
+
 - Added `test.toolchain` field. ([#173](https://github.com/qryxip/cargo-compete/issues/173))
 
     ```toml
@@ -14,6 +21,20 @@
 ### Changed
 
 - `cargo compete init` no longer generate `rust-toolchain`s. ([#173](https://github.com/qryxip/cargo-compete/issues/173))
+
+### Fixed
+
+- Updated the Rust versions for `cargo compete init`.
+
+- Inserts a newline between `bin` and `dependencies`.
+
+    ```diff
+     [[bin]]
+     name = "practice-b"
+     path = "src/bin/b.rs"
+    +
+     [dependencies]
+    ```
 
 ## [0.9.1] - 2021-09-21Z
 
