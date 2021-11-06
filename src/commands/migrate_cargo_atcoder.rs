@@ -113,7 +113,7 @@ pub(crate) fn run(
 
         let bins = package.all_bin_targets_sorted();
 
-        if manifest["package"]["metadata"]["cargo-compete"].is_none() {
+        if { &mut manifest["package"]["metadata"]["cargo-compete"] }.is_none() {
             manifest["package"]["metadata"] = implicit_table();
             manifest["package"]["metadata"]["cargo-compete"] = implicit_table();
             manifest["package"]["metadata"]["cargo-compete"]["config"] = toml_edit::value({
@@ -145,14 +145,14 @@ pub(crate) fn run(
             });
         }
 
-        if manifest["bin"].is_none() {
+        if { &mut manifest["bin"] }.is_none() {
             manifest["bin"] = toml_edit::Item::ArrayOfTables({
                 let mut arr = toml_edit::ArrayOfTables::new();
                 for bin in bins {
                     let mut tbl = toml_edit::Table::new();
                     tbl["name"] = toml_edit::value(format!("{}-{}", package.name, bin.name));
                     tbl["path"] = toml_edit::value(format!("./src/bin/{}.rs", bin.name));
-                    arr.append(tbl);
+                    arr.push(tbl);
                 }
                 arr
             });
@@ -187,12 +187,9 @@ target-dir = ""
             cargo_config_path.display(),
         )
     })?;
-    if cargo_config["build"]["target-dir"].is_none() {
+    if { &mut cargo_config["build"]["target-dir"] }.is_none() {
         cargo_config["build"]["target-dir"] = toml_edit::value("../target");
-        crate::fs::write(
-            &cargo_config_path,
-            cargo_config.to_string_in_original_order(),
-        )?;
+        crate::fs::write(&cargo_config_path, cargo_config.to_string())?;
         shell.status("Wrote", cargo_config_path.display())?;
     }
 

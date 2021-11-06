@@ -167,11 +167,14 @@ impl CargoCompeteConfig {
                 }
                 CargoCompeteConfigNewTemplateDependencies::ManifestFile { path } => {
                     let mut dependencies = toml_edit::Document::new();
-                    let root = read(path)?.parse::<toml_edit::Document>()?["dependencies"].clone();
-                    if root.is_table() {
-                        dependencies.root = root;
-                    } else if !root.is_none() {
-                        bail!("`dependencies` is not a `Table`");
+                    if let Some(root) = read(path)?
+                        .parse::<toml_edit::Document>()?
+                        .get("dependencies")
+                    {
+                        *dependencies.as_table_mut() = root
+                            .as_table()
+                            .with_context(|| "`dependencies` is not a `Table`")?
+                            .clone();
                     }
                     dependencies
                 }

@@ -449,7 +449,7 @@ fn create_new_package(
                 problem_index.to_kebab_case(),
             ));
             tbl["path"] = toml_edit::value(format!("src/bin/{}.rs", problem_index.to_kebab_case()));
-            arr.append(tbl);
+            arr.push(tbl);
         }
         arr
     });
@@ -476,10 +476,10 @@ fn create_new_package(
     let mut manifest = manifest.parse::<toml_edit::Document>()?;
 
     if !template_new.profile.as_table().is_empty() {
-        let mut profile = template_new.profile.clone();
-        profile.as_table_mut().set_implicit(true);
+        let mut profile = (*template_new.profile).clone();
+        profile.set_implicit(true);
         let mut head = toml_edit::Document::new();
-        head["profile"] = profile.root;
+        head["profile"] = toml_edit::Item::Table(profile);
         manifest = format!("{}\n{}", head, manifest).parse()?;
     }
 
@@ -492,8 +492,8 @@ fn create_new_package(
     }
 
     manifest["bin"] = bin;
-    manifest["dependencies"] = template_new.dependencies.root.clone();
-    manifest["dev-dependencies"] = template_new.dev_dependencies.root.clone();
+    manifest["dependencies"] = toml_edit::Item::Table((*template_new.dependencies).clone());
+    manifest["dev-dependencies"] = toml_edit::Item::Table((*template_new.dev_dependencies).clone());
 
     if let Ok(new_manifest) = manifest
         .to_string()
@@ -503,7 +503,7 @@ fn create_new_package(
         manifest = new_manifest;
     }
 
-    crate::fs::write(&manifest_path, manifest.to_string_in_original_order())?;
+    crate::fs::write(&manifest_path, manifest.to_string())?;
 
     let src_bin_dir = manifest_dir.join("src").join("bin");
 
