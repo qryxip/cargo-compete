@@ -28,6 +28,8 @@ fn main() {
 '''
 
 [template.new]
+# `edition` for `Cargo.toml`.
+edition = "{{ template_new_edition }}"
 # `profile` for `Cargo.toml`.
 #
 # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.

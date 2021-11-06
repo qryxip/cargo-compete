@@ -446,7 +446,7 @@ fn create_new_package(
     static MANIFEST_TEMPLATE: &str = r#"[package]
 name = ""
 version = "0.1.0"
-edition = "2021"
+edition = ""
 
 [bin]
 
@@ -467,6 +467,17 @@ edition = "2021"
     .parse::<toml_edit::Document>()?;
 
     manifest["package"]["name"] = toml_edit::value(group.package_name());
+    manifest["package"]["edition"] = toml_edit::value({
+        if let Some(edition) = template_new.edition {
+            edition.to_string()
+        } else {
+            shell.warn(format!(
+                "missing `template.new.edition` in `{}`. setting `\"2018\"`",
+                cargo_compete_config_path,
+            ))?;
+            "2018".to_owned()
+        }
+    });
 
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);

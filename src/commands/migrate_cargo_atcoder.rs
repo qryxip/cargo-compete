@@ -227,6 +227,7 @@ target-dir = ""
 
     let compete_toml_path = path.join("compete.toml");
     let compete_toml = crate::config::generate(
+        "2018",
         cargo_atcoder_config
             .as_ref()
             .and_then(|c| c["dependencies"].as_table())
