@@ -443,8 +443,7 @@ fn create_new_package(
         arr
     });
 
-    static MANIFEST_TEMPLATE: &str = r#"
-[package]
+    static MANIFEST_TEMPLATE: &str = r#"[package]
 name = ""
 version = "0.1.0"
 edition = "2021"
@@ -478,8 +477,14 @@ edition = "2021"
     }
 
     manifest["bin"] = bin;
-    manifest["dependencies"] = toml_edit::Item::Table((*template_new.dependencies).clone());
-    manifest["dev-dependencies"] = toml_edit::Item::Table((*template_new.dev_dependencies).clone());
+    for (key, val) in [
+        ("dependencies", &template_new.dependencies),
+        ("dev-dependencies", &template_new.dev_dependencies),
+    ] {
+        if !val.is_empty() {
+            manifest[key] = toml_edit::Item::Table((**val).clone());
+        }
+    }
 
     if let Ok(new_manifest) = manifest
         .to_string()
