@@ -237,6 +237,7 @@ target-dir = ""
             .as_deref(),
         None,
         PlatformKind::Atcoder,
+        "1.42.0",
         submit_via_binary,
     )?;
 

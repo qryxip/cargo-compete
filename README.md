@@ -63,11 +63,6 @@ It generates the following files.
 
     Required for other commands.
 
-- [`rust-toolchain`](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
-
-    A plain text file or a TOML file for the [toolchain](https://rust-lang.github.io/rustup/concepts/toolchains.html) version.
-    For example, if you write `1.42.0`, `cargo v1.42.0` and `rustc v1.42.0` is called for `~/.cargo/bin/cargo(.exe)` under the directory.
-
 - [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html)
 
     Sets `build/target-dir` to share the [`target` directory](https://doc.rust-lang.org/cargo/guide/build-cache.html).
@@ -371,6 +366,8 @@ path = "./{{ contest }}"
 ##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
 
 [test]
+# Toolchain for the test. (optional)
+toolchain = "1.42.0"
 # Profile for `cargo build`. ("dev" | "release")
 #
 # Defaults to `"dev"`.
@@ -378,7 +375,7 @@ path = "./{{ contest }}"
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+#args = ["cargo", "equip", "--exclude-atcoder-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
 ##language_id = ""
 ```
 

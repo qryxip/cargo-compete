@@ -8,7 +8,7 @@ expression: tree
     "config.toml": "[cargo-new]\nname = \"\"\nemail = \"\"\n"
   },
   "abc007": {
-    "Cargo.toml": "[package]\nname = \"abc007\"\nversion = \"0.1.0\"\nedition = \"2018\"\n\n[package.metadata.cargo-compete.bin]\nabc007-a = { alias = \"a\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_1\" }\nabc007-b = { alias = \"b\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_2\" }\nabc007-c = { alias = \"c\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_3\" }\nabc007-d = { alias = \"d\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_4\" }\n\n[[bin]]\nname = \"abc007-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"abc007-b\"\npath = \"src/bin/b.rs\"\n\n[[bin]]\nname = \"abc007-c\"\npath = \"src/bin/c.rs\"\n\n[[bin]]\nname = \"abc007-d\"\npath = \"src/bin/d.rs\"\n[dependencies]\nproconio = \"=0.3.6\"\n[dev-dependencies]\n",
+    "Cargo.toml": "[package]\nname = \"abc007\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[package.metadata.cargo-compete.bin]\nabc007-a = { alias = \"a\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_1\" }\nabc007-b = { alias = \"b\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_2\" }\nabc007-c = { alias = \"c\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_3\" }\nabc007-d = { alias = \"d\", problem = \"https://atcoder.jp/contests/abc007/tasks/abc007_4\" }\n\n[[bin]]\nname = \"abc007-a\"\npath = \"src/bin/a.rs\"\n\n[[bin]]\nname = \"abc007-b\"\npath = \"src/bin/b.rs\"\n\n[[bin]]\nname = \"abc007-c\"\npath = \"src/bin/c.rs\"\n\n[[bin]]\nname = \"abc007-d\"\npath = \"src/bin/d.rs\"\n[dependencies]\nproconio = \"=0.3.6\"\n[dev-dependencies]\n",
     "src": {
       "bin": {
         "a.rs": "fn main() {\n    todo!();\n}\n",

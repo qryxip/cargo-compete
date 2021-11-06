@@ -20,6 +20,7 @@ pub(crate) fn generate(
     template_new_dependencies_content: Option<&str>,
     template_new_lockfile: Option<&str>,
     new_platform: PlatformKind,
+    test_toolchain: &str,
     submit_via_bianry: bool,
 ) -> anyhow::Result<String> {
     let generated = liquid::ParserBuilder::with_stdlib()
@@ -30,6 +31,7 @@ pub(crate) fn generate(
             "new_platform": new_platform.to_kebab_case_str(),
             "template_new_dependencies_content": template_new_dependencies_content,
             "template_new_lockfile": template_new_lockfile,
+            "test_toolchain": test_toolchain,
             "submit_via_binary": submit_via_bianry,
         }))
         .unwrap();
@@ -501,6 +503,7 @@ impl Default for BinLikeTargetKind {
 #[derive(Deserialize, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTest {
+    pub(crate) toolchain: Option<String>,
     #[serde(default)]
     pub(crate) profile: CargoCompeteConfigTestProfile,
 }
@@ -614,6 +617,7 @@ mod tests {
                     .then(|| include_str!("../resources/atcoder-deps.toml")),
                 template_new_lockfile.then(|| "./cargo-lock-template.toml"),
                 PlatformKind::Atcoder,
+                "1.42.0",
                 submit_via_bianry,
             )?;
 

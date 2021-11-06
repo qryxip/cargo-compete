@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added `test.toolchain` field. ([#173](https://github.com/qryxip/cargo-compete/issues/173))
+
+    ```toml
+    # Toolchain for the test. (optional)
+    toolchain = "1.42.0"
+    ```
+
+### Changed
+
+- `cargo compete init` no longer generate `rust-toolchain`s. ([#173](https://github.com/qryxip/cargo-compete/issues/173))
+
 ## [0.9.1] - 2021-09-21Z
 
 ### Fixed
