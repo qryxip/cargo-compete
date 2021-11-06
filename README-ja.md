@@ -63,11 +63,6 @@ $ cargo install --git https://github.com/qryxip/cargo-compete
 
     他のコマンドに必要です。cargo-atcoderのように自動で生成しません。
 
-- [`rust-toolchain`](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
-
-    [ツールチェイン](https://rust-lang.github.io/rustup/concepts/toolchains.html)のバージョンを指定するテキストファイルまたはTOMLファイルです。
-    例えば`1.42.0`と書けば、`rust-toolchain`を置いたディレクトリ下で`~/.cargo/bin/cargo(.exe)`を起動したときに1.42.0の`cargo`と`rustc`が呼ばれるようになります。
-
 - [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html)
 
     `build/target-dir`を設定し、[`target`ディレクトリ](https://doc.rust-lang.org/cargo/guide/build-cache.html)を共有するようにします。
@@ -374,6 +369,8 @@ path = "./{{ contest }}"
 ##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
 
 [test]
+# Toolchain for the test. (optional)
+toolchain = "1.42.0"
 # Profile for `cargo build`. ("dev" | "release")
 #
 # Defaults to `"dev"`.
@@ -381,7 +378,7 @@ path = "./{{ contest }}"
 
 #[submit.transpile]
 #kind = "command"
-#args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+#args = ["cargo", "equip", "--exclude-atcoder-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
 ##language_id = ""
 ```
 
