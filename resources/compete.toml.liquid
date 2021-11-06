@@ -96,6 +96,8 @@ path = {% raw %}"./{{ contest }}"{% endraw %}
 {%- endraw %}
 
 [test]
+# Toolchain for the test. (optional)
+toolchain = "{{ test_toolchain }}"
 # Profile for `cargo build`. ("dev" | "release")
 #
 # Defaults to `"dev"`.

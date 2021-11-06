@@ -81,6 +81,11 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
                 .then(|| include_str!("../../resources/atcoder-deps.toml")),
             (atcoder_crates == AtcoderCrates::UseNormally).then(|| TEMPLATE_CARGO_LOCK),
             platform,
+            match platform {
+                PlatformKind::Atcoder => ATCODER_RUST_VERSION,
+                PlatformKind::Codeforces => CODEFORCES_RUST_VERSION,
+                PlatformKind::Yukicoder => YUKICODER_RUST_VERSION,
+            },
             atcoder_crates == AtcoderCrates::UseViaBinary,
         )?,
     )?;
@@ -91,15 +96,6 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
             include_str!("../../resources/atcoder-cargo-lock.toml"),
         )?;
     }
-
-    write_with_status(
-        "rust-toolchain",
-        match platform {
-            PlatformKind::Atcoder => ATCODER_RUST_VERSION,
-            PlatformKind::Codeforces => CODEFORCES_RUST_VERSION,
-            PlatformKind::Yukicoder => YUKICODER_RUST_VERSION,
-        },
-    )?;
 
     crate::project::set_cargo_config_build_target_dir(&path, shell)?;
     Ok(())
