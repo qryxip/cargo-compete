@@ -305,20 +305,14 @@ pub(crate) fn set_cargo_config_build_target_dir(
         )
     })?;
 
-    if cargo_config["build"]["target-dir"].is_none() {
-        if cargo_config["build"].is_none() {
-            let mut tbl = toml_edit::Table::new();
-            tbl.set_implicit(true);
-            cargo_config["build"] = toml_edit::Item::Table(tbl);
-        }
-
+    if cargo_config.get("build").is_none() {
+        let mut tbl = toml_edit::Table::new();
+        tbl.set_implicit(true);
+        cargo_config["build"] = toml_edit::Item::Table(tbl);
+    }
+    if { &mut cargo_config["build"]["target-dir"] }.is_none() {
         cargo_config["build"]["target-dir"] = toml_edit::value("target");
-
-        crate::fs::write(
-            &cargo_config_path,
-            cargo_config.to_string_in_original_order(),
-        )?;
-
+        crate::fs::write(&cargo_config_path, cargo_config.to_string())?;
         shell.status("Wrote", cargo_config_path.display())?;
     }
     Ok(())

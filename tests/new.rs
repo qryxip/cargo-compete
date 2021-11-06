@@ -79,6 +79,7 @@ fn main() {{
 '''
 
 [template.new]
+edition = "2021"
 dependencies = '''
 proconio = "=0.3.6"
 '''

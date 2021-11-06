@@ -4,7 +4,7 @@ use crate::{
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
-use anyhow::{anyhow, bail, ensure, Context as _};
+use anyhow::{bail, ensure, Context as _};
 use cargo_metadata as cm;
 use liquid::object;
 use maplit::{btreeset, hashmap};
@@ -265,8 +265,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
                 let mut tbl = toml_edit::InlineTable::default();
                 tbl.get_or_insert("name", bin_name);
                 tbl.get_or_insert("path", bin_src_path);
-                bin.push(tbl)
-                    .map_err(|_| anyhow!("could not add an element to `bin`"))?;
+                bin.push(tbl);
             } else {
                 let bin = manifest[target_kind].or_insert(toml_edit::Item::ArrayOfTables(
                     toml_edit::ArrayOfTables::new(),
@@ -275,7 +274,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
                     let mut tbl = toml_edit::Table::new();
                     tbl["name"] = toml_edit::value(bin_name);
                     tbl["path"] = toml_edit::value(bin_src_path);
-                    bin.append(tbl);
+                    bin.push(tbl);
                 }
             }
         }

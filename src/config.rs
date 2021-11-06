@@ -11,12 +11,14 @@ use serde::{de::Error as _, Deserialize, Deserializer};
 use snowchains_core::web::PlatformKind;
 use std::{
     collections::BTreeMap,
-    fmt,
+    fmt::{self, Display},
     path::Path,
     str::{self, FromStr},
 };
+use strum::{Display, EnumString};
 
 pub(crate) fn generate(
+    template_new_edition: &str,
     template_new_dependencies_content: Option<&str>,
     template_new_lockfile: Option<&str>,
     new_platform: PlatformKind,
@@ -29,6 +31,7 @@ pub(crate) fn generate(
         .unwrap()
         .render(&object!({
             "new_platform": new_platform.to_kebab_case_str(),
+            "template_new_edition": template_new_edition,
             "template_new_dependencies_content": template_new_dependencies_content,
             "template_new_lockfile": template_new_lockfile,
             "test_toolchain": test_toolchain,
@@ -167,11 +170,14 @@ impl CargoCompeteConfig {
                 }
                 CargoCompeteConfigNewTemplateDependencies::ManifestFile { path } => {
                     let mut dependencies = toml_edit::Document::new();
-                    let root = read(path)?.parse::<toml_edit::Document>()?["dependencies"].clone();
-                    if root.is_table() {
-                        dependencies.root = root;
-                    } else if !root.is_none() {
-                        bail!("`dependencies` is not a `Table`");
+                    if let Some(root) = read(path)?
+                        .parse::<toml_edit::Document>()?
+                        .get("dependencies")
+                    {
+                        *dependencies.as_table_mut() = root
+                            .as_table()
+                            .with_context(|| "`dependencies` is not a `Table`")?
+                            .clone();
                     }
                     dependencies
                 }
@@ -185,6 +191,7 @@ impl CargoCompeteConfig {
             Ok(CargoCompeteConfigTemplate {
                 src,
                 new: Some(CargoCompeteConfigTemplateNew {
+                    edition: None,
                     profile,
                     dependencies,
                     dev_dependencies: toml_edit::Document::new(),
@@ -207,6 +214,8 @@ pub(crate) struct CargoCompeteConfigTemplate {
 #[derive(Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigTemplateNew {
+    #[serde(default, deserialize_with = "deser_option_fromstr")]
+    pub(crate) edition: Option<Edition>,
     #[serde(default, with = "serde_with::rust::display_fromstr")]
     pub(crate) profile: toml_edit::Document,
     #[serde(default, with = "serde_with::rust::display_fromstr")]
@@ -215,6 +224,27 @@ pub(crate) struct CargoCompeteConfigTemplateNew {
     pub(crate) dev_dependencies: toml_edit::Document,
     #[serde(default)]
     pub(crate) copy_files: BTreeMap<Utf8PathBuf, Utf8PathBuf>,
+}
+
+#[derive(Clone, Copy, Debug, EnumString, Display)]
+pub(crate) enum Edition {
+    #[strum(serialize = "2015")]
+    Edition2015,
+    #[strum(serialize = "2018")]
+    Edition2018,
+    #[strum(serialize = "2021")]
+    Edition2021,
+}
+
+fn deser_option_fromstr<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: FromStr,
+    T::Err: Display,
+{
+    Option::<String>::deserialize(deserializer)?
+        .map(|s| s.parse().map_err(D::Error::custom))
+        .transpose()
 }
 
 #[derive(Derivative)]
@@ -613,6 +643,7 @@ mod tests {
             submit_via_bianry: bool,
         ) -> anyhow::Result<()> {
             let generated = super::generate(
+                "2018",
                 template_new_dependencies_content
                     .then(|| include_str!("../resources/atcoder-deps.toml")),
                 template_new_lockfile.then(|| "./cargo-lock-template.toml"),

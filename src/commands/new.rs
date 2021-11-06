@@ -404,17 +404,6 @@ fn create_new_package(
         );
     }
 
-    crate::process::process(crate::process::cargo_exe()?)
-        .arg("new")
-        .arg("-q")
-        .arg("--vcs")
-        .arg("none")
-        .arg("--name")
-        .arg(group.package_name())
-        .arg(&manifest_dir)
-        .cwd(cargo_compete_config_path.with_file_name(""))
-        .exec()?;
-
     let mut package_metadata_cargo_compete_bin = problems
         .keys()
         .map(|problem_index| {
@@ -449,39 +438,46 @@ fn create_new_package(
                 problem_index.to_kebab_case(),
             ));
             tbl["path"] = toml_edit::value(format!("src/bin/{}.rs", problem_index.to_kebab_case()));
-            arr.append(tbl);
+            arr.push(tbl);
         }
         arr
     });
 
-    static DEFAULT_MANIFEST_END: &str = r"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+    static MANIFEST_TEMPLATE: &str = r#"[package]
+name = ""
+version = "0.1.0"
+edition = ""
 
-[dependencies]
-";
-
-    let mut manifest = crate::fs::read_to_string(&manifest_path)?;
-    if manifest.ends_with(DEFAULT_MANIFEST_END) {
-        manifest = manifest.replace(
-            DEFAULT_MANIFEST_END,
-            r"
 [bin]
 
 [dependencies]
 
 [dev-dependencies]
-",
-        );
-    }
-    let mut manifest = manifest.parse::<toml_edit::Document>()?;
+"#;
 
-    if !template_new.profile.as_table().is_empty() {
-        let mut profile = template_new.profile.clone();
-        profile.as_table_mut().set_implicit(true);
+    let mut manifest = if template_new.profile.as_table().is_empty() {
+        MANIFEST_TEMPLATE.to_owned()
+    } else {
+        let mut profile = (*template_new.profile).clone();
+        profile.set_implicit(true);
         let mut head = toml_edit::Document::new();
-        head["profile"] = profile.root;
-        manifest = format!("{}\n{}", head, manifest).parse()?;
+        head["profile"] = toml_edit::Item::Table(profile);
+        format!("{}\n{}", head, MANIFEST_TEMPLATE)
     }
+    .parse::<toml_edit::Document>()?;
+
+    manifest["package"]["name"] = toml_edit::value(group.package_name());
+    manifest["package"]["edition"] = toml_edit::value({
+        if let Some(edition) = template_new.edition {
+            edition.to_string()
+        } else {
+            shell.warn(format!(
+                "missing `template.new.edition` in `{}`. setting `\"2018\"`",
+                cargo_compete_config_path,
+            ))?;
+            "2018".to_owned()
+        }
+    });
 
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);
@@ -492,8 +488,14 @@ fn create_new_package(
     }
 
     manifest["bin"] = bin;
-    manifest["dependencies"] = template_new.dependencies.root.clone();
-    manifest["dev-dependencies"] = template_new.dev_dependencies.root.clone();
+    for (key, val) in [
+        ("dependencies", &template_new.dependencies),
+        ("dev-dependencies", &template_new.dev_dependencies),
+    ] {
+        if !val.is_empty() {
+            manifest[key] = toml_edit::Item::Table((**val).clone());
+        }
+    }
 
     if let Ok(new_manifest) = manifest
         .to_string()
@@ -503,11 +505,10 @@ fn create_new_package(
         manifest = new_manifest;
     }
 
-    crate::fs::write(&manifest_path, manifest.to_string_in_original_order())?;
-
     let src_bin_dir = manifest_dir.join("src").join("bin");
 
     crate::fs::create_dir_all(&src_bin_dir)?;
+    crate::fs::write(&manifest_path, manifest.to_string())?;
 
     let src_paths = problems
         .keys()
@@ -521,7 +522,6 @@ fn create_new_package(
     for src_path in &src_paths {
         crate::fs::write(src_path, &template.src)?;
     }
-    crate::fs::remove_file(manifest_dir.join("src").join("main.rs"))?;
 
     for (from, to) in &template_new.copy_files {
         let from = cargo_compete_config_path.with_file_name("").join(from);
