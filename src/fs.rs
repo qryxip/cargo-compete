@@ -33,11 +33,6 @@ pub(crate) fn create_dir_all(path: impl AsRef<Path>) -> anyhow::Result<()> {
     std::fs::create_dir_all(path).with_context(|| format!("could not create `{}`", path.display()))
 }
 
-pub(crate) fn remove_file(path: impl AsRef<Path>) -> anyhow::Result<()> {
-    let path = path.as_ref();
-    std::fs::remove_file(path).with_context(|| format!("could not remove `{}`", path.display()))
-}
-
 pub(crate) fn copy(from: impl AsRef<Path>, to: impl AsRef<Path>) -> anyhow::Result<u64> {
     let (from, to) = (from.as_ref(), to.as_ref());
     std::fs::copy(from, to)

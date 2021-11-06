@@ -404,17 +404,6 @@ fn create_new_package(
         );
     }
 
-    crate::process::process(crate::process::cargo_exe()?)
-        .arg("new")
-        .arg("-q")
-        .arg("--vcs")
-        .arg("none")
-        .arg("--name")
-        .arg(group.package_name())
-        .arg(&manifest_dir)
-        .cwd(cargo_compete_config_path.with_file_name(""))
-        .exec()?;
-
     let mut package_metadata_cargo_compete_bin = problems
         .keys()
         .map(|problem_index| {
@@ -454,34 +443,31 @@ fn create_new_package(
         arr
     });
 
-    static DEFAULT_MANIFEST_END: &str = r"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+    static MANIFEST_TEMPLATE: &str = r#"
+[package]
+name = ""
+version = "0.1.0"
+edition = "2021"
 
-[dependencies]
-";
-
-    let mut manifest = crate::fs::read_to_string(&manifest_path)?;
-    if manifest.ends_with(DEFAULT_MANIFEST_END) {
-        manifest = manifest.replace(
-            DEFAULT_MANIFEST_END,
-            r"
 [bin]
 
 [dependencies]
 
 [dev-dependencies]
-",
-        );
-    }
-    let mut manifest = manifest.parse::<toml_edit::Document>()?;
+"#;
 
-    if !template_new.profile.as_table().is_empty() {
+    let mut manifest = if template_new.profile.as_table().is_empty() {
+        MANIFEST_TEMPLATE.to_owned()
+    } else {
         let mut profile = (*template_new.profile).clone();
         profile.set_implicit(true);
         let mut head = toml_edit::Document::new();
         head["profile"] = toml_edit::Item::Table(profile);
-        manifest = format!("{}\n{}", head, manifest).parse()?;
+        format!("{}\n{}", head, MANIFEST_TEMPLATE)
     }
+    .parse::<toml_edit::Document>()?;
+
+    manifest["package"]["name"] = toml_edit::value(group.package_name());
 
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]);
     set_implicit_table_if_none(&mut manifest["package"]["metadata"]["cargo-compete"]);
@@ -503,11 +489,10 @@ fn create_new_package(
         manifest = new_manifest;
     }
 
-    crate::fs::write(&manifest_path, manifest.to_string())?;
-
     let src_bin_dir = manifest_dir.join("src").join("bin");
 
     crate::fs::create_dir_all(&src_bin_dir)?;
+    crate::fs::write(&manifest_path, manifest.to_string())?;
 
     let src_paths = problems
         .keys()
@@ -521,7 +506,6 @@ fn create_new_package(
     for src_path in &src_paths {
         crate::fs::write(src_path, &template.src)?;
     }
-    crate::fs::remove_file(manifest_dir.join("src").join("main.rs"))?;
 
     for (from, to) in &template_new.copy_files {
         let from = cargo_compete_config_path.with_file_name("").join(from);
