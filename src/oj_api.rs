@@ -181,18 +181,17 @@ pub(crate) struct Problem {
     /// > ```
     pub(crate) url: Url,
 
-    /// > ```text
-    /// > "name": {
-    /// >   "type": "string",
-    /// >   "description": "the title of the problem without alphabets, i.e. \"Xor Sum\" is used instead of \"D - Xor Sum\"; because in many contest sites, the alphabets are attributes belonging to the relation between problems and contests, rather than only the problem",
-    /// >   "examples": [
-    /// >     "Xor Sum",
-    /// >     "K-th Beautiful String"
-    /// >   ]
-    /// > },
-    /// > ```
-    pub(crate) name: Option<String>,
-
+    ///// > ```text
+    ///// > "name": {
+    ///// >   "type": "string",
+    ///// >   "description": "the title of the problem without alphabets, i.e. \"Xor Sum\" is used instead of \"D - Xor Sum\"; because in many contest sites, the alphabets are attributes belonging to the relation between problems and contests, rather than only the problem",
+    ///// >   "examples": [
+    ///// >     "Xor Sum",
+    ///// >     "K-th Beautiful String"
+    ///// >   ]
+    ///// > },
+    ///// > ```
+    //pub(crate) name: Option<String>,
     /// > ```text
     /// > "context": {
     /// >   "type": "object",
@@ -272,7 +271,7 @@ pub(crate) struct ProblemContext {
 #[derive(Debug, Deserialize)]
 pub(crate) struct ProblemContextContest {
     pub(crate) url: Option<Url>,
-    pub(crate) name: Option<String>,
+    //pub(crate) name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
