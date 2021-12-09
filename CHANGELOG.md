@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1] - 2021-12-09Z
+
+### Fixed
+
+- Fixed a problem where [`timeLimit`](https://github.com/online-judge-tools/api-client#format) is not read when using `oj-api`. ([#178](https://github.com/qryxip/cargo-compete/pull/178) by [@SGThr7](https://github.com/SGThr7))
+
 ## [0.10.0] - 2021-11-06Z
 
 ### Added
