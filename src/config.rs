@@ -411,7 +411,6 @@ impl Default for CargoCompeteConfigNew {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct CargoCompeteConfigNewTemplate {
-    toolchain: Option<String>,
     lockfile: Option<Utf8PathBuf>,
     #[serde(default, deserialize_with = "deserialize_option_from_str")]
     profile: Option<toml_edit::Document>,
