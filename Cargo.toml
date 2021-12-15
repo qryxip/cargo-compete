@@ -1,6 +1,6 @@
 [package]
 name = "cargo-compete"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Ryo Yamashita <qryxip@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -38,18 +38,18 @@ liquid = "0.22.0"
 liquid-core = "0.22.0"
 liquid-derive = "0.22.0"
 maplit = "1.0.2"
-once_cell = "1.8.0"
+once_cell = "1.9.0"
 opener = "0.4.1"
 percent-encoding = "2.1.0"
 prettytable-rs = "0.8.0"
 reqwest = { version = "0.11.7", default-features = false, features = ["blocking"] }
 rpassword = "5.0.1"
 rprompt = "1.0.5"
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.131", features = ["derive"] }
 serde_ignored = "0.1.2"
-serde_json = "1.0.72"
+serde_json = "1.0.73"
 serde_with = "1.11.0"
-serde_yaml = "0.8.21"
+serde_yaml = "0.8.23"
 shell-escape = "0.1.5"
 snowchains_core = "0.13.0"
 structopt = "0.3.25"
@@ -67,6 +67,5 @@ term_size = "=1.0.0-beta.2"
 
 [dev-dependencies]
 insta = { version = "1.8.0", features = ["redactions"] }
-once_cell = "1.8.0"
 pretty_assertions = "0.7.2"
 regex = "1.5.4"

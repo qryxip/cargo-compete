@@ -22,7 +22,7 @@ expression: tree
         "in": {},
         "out": {}
       },
-      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      6\n    out: |\n      35000\n  - name: sample2\n    in: |\n      91\n    out: |\n      460000\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "a.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 1e-6\n    absolute_error: 1e-6\n\ncases:\n  - name: sample1\n    in: |\n      6\n    out: |\n      35000\n  - name: sample2\n    in: |\n      91\n    out: |\n      460000\n\nextend:\n  - type: Text\n    path: \"./a\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
       "b": {
         "in": {},
         "out": {}
@@ -32,7 +32,7 @@ expression: tree
         "in": {},
         "out": {}
       },
-      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 0.000001\n    absolute_error: 0.000001\n\ncases:\n  - name: sample1\n    in: |\n      2 2\n      1000 1500\n    out: |\n      1000.000000\n  - name: sample2\n    in: |\n      2 1\n      1000 1500\n    out: |\n      750\n  - name: sample3\n    in: |\n      10 5\n      2604 2281 3204 2264 2200 2650 2229 2461 2439 2211\n    out: |\n      2820.031250000\n\nextend:\n  - type: Text\n    path: \"./c\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
+      "c.yml": "---\ntype: Batch\ntimelimit: 2s\nmatch:\n  Float:\n    relative_error: 1e-6\n    absolute_error: 1e-6\n\ncases:\n  - name: sample1\n    in: |\n      2 2\n      1000 1500\n    out: |\n      1000.000000\n  - name: sample2\n    in: |\n      2 1\n      1000 1500\n    out: |\n      750\n  - name: sample3\n    in: |\n      10 5\n      2604 2281 3204 2264 2200 2650 2229 2461 2439 2211\n    out: |\n      2820.031250000\n\nextend:\n  - type: Text\n    path: \"./c\"\n    in: /in/*.txt\n    out: /out/*.txt\n",
       "d": {
         "in": {},
         "out": {}

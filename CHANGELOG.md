@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.10.2] - 2021-12-15Z
+
+### Changed
+
+- (also applied to the previous versions unless `--locked`) Updated `serde-yaml` crate to v0.8.23.
+
+    ```diff
+     match:
+       Float:
+    -    relative_error: 0.000001
+    -    absolute_error: 0.000001
+    +    relative_error: 1e-6
+    +    absolute_error: 1e-6
+    ```
+
+    [dtolnay/serde-yaml@`6b83603`](https://github.com/dtolnay/serde-yaml/commit/6b836037b58ebb359e7c485fc6002b1e8214bd6c)
+
+### Fixed
+
+- Updated Rust edition, Rust version, and the language ID for Codeforces. ([#181](https://github.com/qryxip/cargo-compete/issues/181) by [@nebocco](https://github.com/nebocco))
+
 ## [0.10.1] - 2021-12-09Z
 
 ### Fixed
