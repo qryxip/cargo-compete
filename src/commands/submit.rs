@@ -24,7 +24,7 @@ use structopt::StructOpt;
 use strum::VariantNames as _;
 
 static ATCODER_RUST_LANG_ID: &str = "4050";
-static CODEFORCES_RUST_LANG_ID: &str = "49";
+static CODEFORCES_RUST_LANG_ID: &str = "75";
 static YUKICODER_RUST_LANG_ID: &str = "rust";
 
 #[derive(StructOpt, Debug)]
