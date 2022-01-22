@@ -51,7 +51,7 @@ serde_json = "1.0.75"
 serde_with = "1.11.0"
 serde_yaml = "0.8.23"
 shell-escape = "0.1.5"
-snowchains_core = "0.13.1"
+snowchains_core = { git = "https://github.com/qryxip/snowchains", rev = "e98b4c9111654f0bbf8814ab404440588eb76239" }
 structopt = "0.3.26"
 strum = { version = "0.20.0", features = ["derive"] }
 tempfile = "3.3.0"
