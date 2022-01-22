@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.3] - 2022-01-29Z
+
+### Fixed
+
+- (also applied to the previous versions unless `--locked`) Accepts "Ex" problems of ABC. ([qryxip/snowchains#147](https://github.com/qryxip/snowchains/pull/147))
+- (also applied to the previous versions unless `--locked`) Allows `" \n"` as output text. ([qryxip/snowchains#149](https://github.com/qryxip/snowchains/pull/149) by [@nebocco](https://github.com/nebocco))
+
 ## [0.10.2] - 2021-12-15Z
 
 ### Changed
