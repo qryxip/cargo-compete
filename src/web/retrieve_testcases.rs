@@ -452,7 +452,7 @@ pub(crate) fn save_test_cases<I>(
             )?;
         }
     }
-
+    acc.sort();
     Ok(acc)
 }
 
