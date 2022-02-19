@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.4] - 2022-02-19Z
+
+### Fixed
+
+- Fixed the problem where test files are mixed up for recent ABC. ([#186](https://github.com/qryxip/cargo-compete/pull/187) by [@aoriso](https://github.com/aoriso))
+
 ## [0.10.3] - 2022-01-29Z
 
 ### Fixed
