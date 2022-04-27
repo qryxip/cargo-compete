@@ -119,15 +119,32 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let package_metadata = member.read_package_metadata(shell)?;
     let (cargo_compete_config, _) = crate::config::load_for_package(member, shell)?;
 
-    let (bin, package_metadata_bin) = if let Some(src) = src {
+    let (bin, package_metadata_bin, src_path) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
-        let bin = member.bin_target_by_src_path(src)?;
-        let (_, pkg_md_bin) = package_metadata.bin_like_by_name_or_alias(&bin.name)?;
-        (bin, pkg_md_bin)
+        let bin = member.bin_target_by_src_path(&src)?;
+        let file_name_wo_ext = src.as_path().file_stem().unwrap().to_str().unwrap();
+        let (_, pkg_md_bin, ..) = package_metadata
+            .bin_like_by_name_or_alias(file_name_wo_ext, manifest_path.to_str().unwrap())?;
+        (bin, pkg_md_bin, src.to_str().unwrap().to_string())
     } else if let Some(name_or_alias) = &name_or_alias {
-        let (bin_name, pkg_md_bin) = package_metadata.bin_like_by_name_or_alias(name_or_alias)?;
+        let (bin_name, pkg_md_bin, ..) = package_metadata
+            .bin_like_by_name_or_alias(name_or_alias, manifest_path.to_str().unwrap())?;
         let bin = member.bin_like_target_by_name(bin_name)?;
-        (bin, pkg_md_bin)
+        let src_path = ["src", "bin"]
+            .iter()
+            .collect::<PathBuf>()
+            .join(format!(
+                "{}.rs",
+                match name_or_alias.split('-').collect::<Vec<_>>()[..] {
+                    [_, name] => name,
+                    [name] => name,
+                    _ => bail!("unexpeted name or alias `{}`", name_or_alias),
+                }
+            ))
+            .into_os_string()
+            .into_string()
+            .unwrap();
+        (bin, pkg_md_bin, src_path)
     } else {
         unreachable!()
     };
@@ -135,7 +152,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     if !no_test {
         crate::process::process(env::current_exe()?)
             .args(&["compete", "t", "--src"])
-            .arg(&bin.src_path)
+            .arg(&src_path)
             .args(&if let Some(testcases) = testcases {
                 iter::once("--testcases".into()).chain(testcases).collect()
             } else {
@@ -163,7 +180,7 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
         _ => None,
     };
 
-    let mut code = crate::fs::read_to_string(&bin.src_path)?;
+    let mut code = crate::fs::read_to_string(&src_path)?;
 
     if let Some(CargoCompeteConfigSubmitTranspile::Command { args, .. }) =
         &cargo_compete_config.submit.transpile

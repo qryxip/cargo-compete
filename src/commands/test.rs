@@ -3,6 +3,7 @@ use crate::{
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
 };
+use anyhow::bail;
 use human_size::Size;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -90,16 +91,41 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
     let package_metadata = member.read_package_metadata(shell)?;
     let (cargo_compete_config, _) = crate::config::load_for_package(member, shell)?;
 
-    let (bin, pkg_md_bin_example) = if let Some(src) = src {
+    let (bin, pkg_md_bin_example, bind) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
-        let bin = member.bin_target_by_src_path(src)?;
-        let (_, pkg_md_bin) = package_metadata.bin_like_by_name_or_alias(&bin.name)?;
-        (bin, pkg_md_bin)
+        let bin = member.bin_target_by_src_path(&src)?;
+        let file_name_wo_ext = src.as_path().file_stem().unwrap().to_str().unwrap();
+        let (_, pkg_md_bin, should_use) = package_metadata
+            .bin_like_by_name_or_alias(file_name_wo_ext, manifest_path.to_str().unwrap())?;
+        (
+            bin,
+            pkg_md_bin,
+            crate::testing::Bind {
+                name: format!("{}-{}", member.name, file_name_wo_ext),
+                should_use,
+            },
+        )
     } else if let Some(name_or_alias) = &name_or_alias {
-        let (bin_name, pkg_md_bin_example) =
-            package_metadata.bin_like_by_name_or_alias(name_or_alias)?;
+        let (bin_name, pkg_md_bin_example, should_use) = package_metadata
+            .bin_like_by_name_or_alias(name_or_alias, manifest_path.to_str().unwrap())?;
         let bin = member.bin_like_target_by_name(bin_name)?;
-        (bin, pkg_md_bin_example)
+        let custom_bin_name = format!(
+            "{}-{}",
+            member.name,
+            match name_or_alias.split('-').collect::<Vec<_>>()[..] {
+                [_, name] => name,
+                [name] => name,
+                _ => bail!("unexpeted name or alias `{}`", name_or_alias),
+            }
+        );
+        (
+            bin,
+            pkg_md_bin_example,
+            crate::testing::Bind {
+                name: custom_bin_name,
+                should_use,
+            },
+        )
     } else {
         unreachable!()
     };
@@ -123,5 +149,6 @@ pub(crate) fn run(opt: OptCompeteTest, ctx: crate::Context<'_>) -> anyhow::Resul
         display_limit,
         cookies_path: &cookies_path,
         shell,
+        bind,
     })
 }

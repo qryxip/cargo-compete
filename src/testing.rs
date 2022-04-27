@@ -32,6 +32,12 @@ pub(crate) struct Args<'a> {
     pub(crate) display_limit: Size,
     pub(crate) cookies_path: &'a Path,
     pub(crate) shell: &'a mut Shell,
+    pub(crate) bind: Bind,
+}
+#[derive(Debug)]
+pub(crate) struct Bind {
+    pub(crate) name: String,
+    pub(crate) should_use: bool,
 }
 
 pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
@@ -48,6 +54,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         display_limit,
         cookies_path,
         shell,
+        bind,
     } = args;
 
     let test_suite_path = test_suite_path(
@@ -146,7 +153,11 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     } else {
         "--bin"
     })
-    .arg(&bin.name)
+    .arg(if bind.should_use {
+        &bind.name
+    } else {
+        &bin.name
+    })
     .args(if release { &["--release"] } else { &[] })
     .arg("--manifest-path")
     .arg(&member.manifest_path)
@@ -161,7 +172,11 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         } else {
             ""
         })
-        .join(&bin.name)
+        .join(if bind.should_use {
+            &bind.name
+        } else {
+            &bin.name
+        })
         .with_extension(env::consts::EXE_EXTENSION);
 
     ensure!(

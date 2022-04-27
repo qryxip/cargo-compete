@@ -90,18 +90,29 @@ impl PackageMetadataCargoCompete {
     pub(crate) fn bin_like_by_name_or_alias(
         &self,
         name_or_alias: impl AsRef<str>,
-    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBinExample)> {
+        manifest_path: impl AsRef<str>,
+    ) -> anyhow::Result<(&str, &PackageMetadataCargoCompeteBinExample, bool)> {
         let bin_name_or_alias = name_or_alias.as_ref();
 
         match *itertools::chain(&self.bin, &self.example)
-            .filter(
-                |(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
-                    [&**name, &**alias].contains(&bin_name_or_alias)
-                },
-            )
+            .filter_map(|(name, metadata)| {
+                let PackageMetadataCargoCompeteBinExample { alias, .. } = metadata;
+                let names = [&*name, &**alias];
+                let head = sanitize_target_name(bin_name_or_alias);
+                if names.contains(&bin_name_or_alias) {
+                    Some((name, metadata, false))
+                } else if names.contains(&head.unwrap().as_str()) {
+                    match add_new_bin(manifest_path.as_ref(), bin_name_or_alias) {
+                        Ok(_) => Some((name, metadata, true)),
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                }
+            })
             .collect::<Vec<_>>()
         {
-            [(k, v)] => Ok((k, v)),
+            [(k, v, w)] => Ok((k, v, w)),
             [] => bail!("no `problem` for: {}", bin_name_or_alias),
             [..] => bail!("multiple `problem`s for {}", bin_name_or_alias),
         }
@@ -210,11 +221,13 @@ impl cm::Package {
         name: impl AsRef<str>,
     ) -> anyhow::Result<&cm::Target> {
         let name = name.as_ref();
+        let sanitize_name = sanitize_target_name(name)?;
 
         self.targets
             .iter()
             .find(|t| {
-                t.name == name && t.kind == ["bin".to_owned()] || t.kind == ["example".to_owned()]
+                t.name == sanitize_name && t.kind == ["bin".to_owned()]
+                    || t.kind == ["example".to_owned()]
             })
             .with_context(|| format!("no bin/example target named `{}` in `{}`", name, self.name))
     }
@@ -224,10 +237,11 @@ impl cm::Package {
         src_path: impl AsRef<Path>,
     ) -> anyhow::Result<&cm::Target> {
         let src_path = src_path.as_ref();
+        let sanitize_src_path = sanitize_src(src_path)?;
 
         self.targets
             .iter()
-            .find(|t| t.src_path == src_path && t.kind == ["bin".to_owned()])
+            .find(|t| t.src_path == sanitize_src_path && t.kind == ["bin".to_owned()])
             .with_context(|| {
                 format!(
                     "no bin target which `src_path` is `{}` in `{}`",
@@ -318,6 +332,90 @@ pub(crate) fn set_cargo_config_build_target_dir(
     Ok(())
 }
 
+pub(crate) fn sanitize_target_name(target_name: impl AsRef<str>) -> anyhow::Result<String> {
+    let target_name = target_name.as_ref();
+    Ok(
+        match target_name.split('_').collect::<Vec<&str>>().first() {
+            Some(&s) => s,
+            None => target_name,
+        }
+        .to_string(),
+    )
+}
+
+pub(crate) fn sanitize_src(path: impl AsRef<Path>) -> anyhow::Result<String> {
+    let path = path.as_ref();
+    let (file_name_wo_ext, ext) = (
+        path.file_stem()
+            .ok_or(anyhow::anyhow!("failed to parse filename"))?
+            .to_str()
+            .unwrap(),
+        path.extension()
+            .ok_or(anyhow::anyhow!("failed to parse file extension"))?
+            .to_str()
+            .unwrap(),
+    );
+    let sanitized_file_name = sanitize_target_name(file_name_wo_ext)?;
+    let dir = path.to_path_buf();
+    let new_path = String::from(
+        dir.parent()
+            .ok_or(anyhow::anyhow!("failed to parse parent"))?
+            .to_owned()
+            .join(format!("{}.{}", sanitized_file_name, ext))
+            .to_str()
+            .unwrap(),
+    );
+    Ok(new_path)
+}
+
+pub(crate) fn add_new_bin(
+    manifest_path: impl AsRef<str>,
+    bin_name_or_alias: impl AsRef<str>,
+) -> anyhow::Result<String> {
+    let bin_name_or_alias = bin_name_or_alias.as_ref();
+    let alias = match bin_name_or_alias.split('-').collect::<Vec<_>>()[..] {
+        [_, name] => name,
+        [name] => name,
+        _ => bail!("unexpeted name or alias `{}`", bin_name_or_alias),
+    };
+    let mut manifest = crate::fs::read_to_string(manifest_path.as_ref())?
+        .parse::<toml_edit::Document>()
+        .unwrap();
+    let name = format!(
+        "{}-{}",
+        manifest["package"]["name"]
+            .as_str()
+            .ok_or(anyhow::anyhow!("failed to parse package name"))?,
+        alias
+    );
+
+    let bins = manifest["bin"].as_array_of_tables_mut().unwrap();
+    let tbl = bins.iter().find(|that_tbl| {
+        that_tbl
+            .get("name")
+            .map_or(false, |that_name| that_name.as_str().unwrap() == name)
+    });
+    match tbl {
+        None => {
+            let mut new_tbl = toml_edit::Table::new();
+            new_tbl["name"] = toml_edit::value(&name);
+            new_tbl["path"] = toml_edit::value(
+                ["src", "bin"]
+                    .iter()
+                    .collect::<PathBuf>()
+                    .join(format!("{}.rs", alias))
+                    .into_os_string()
+                    .into_string()
+                    .unwrap(),
+            );
+            bins.push(new_tbl);
+            crate::fs::write(manifest_path.as_ref(), manifest.to_string())?;
+            Ok(format!("bin for file={} is created", &name))
+        }
+        Some(_) => Ok(format!("file={} already exists", &name)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::project::{PackageMetadataCargoCompete, PackageMetadataCargoCompeteBinExample};
@@ -395,6 +493,22 @@ mod tests {
             }
             .try_into::<PackageMetadataCargoCompete>()?,
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn sanitize_str_test() -> anyhow::Result<()> {
+        use crate::project::sanitize_src;
+        use std::path::PathBuf;
+
+        let dir: PathBuf = ["src", "bin"].iter().collect();
+        let act1 = sanitize_src(dir.join("a_with_dfs.rc"))?;
+        let act2 = sanitize_src(dir.join("a_ac.rc"))?;
+        let expected = dir.join("a.rc").into_os_string().into_string().unwrap();
+
+        assert_eq!(expected, act1);
+        assert_eq!(expected, act2);
 
         Ok(())
     }

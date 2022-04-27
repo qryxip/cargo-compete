@@ -404,29 +404,23 @@ fn create_new_package(
         );
     }
 
-    let mut package_metadata_cargo_compete_bin = problems
-        .keys()
-        .map(|problem_index| {
+    let package_metadata_cargo_compete_bin = problems
+        .iter()
+        .map(|(problem_index, problem_url)| {
             format!(
-                r#"{} = {{ alias = "", problem = "" }}
+                r#"{} = {{ alias = "{}", problem = "{}" }}
 "#,
                 escape_key(&format!(
                     "{}-{}",
                     group.package_name(),
-                    problem_index.to_kebab_case(),
-                )),
+                    problem_index.to_kebab_case()
+                ),),
+                problem_index.to_kebab_case(),
+                problem_url.as_str()
             )
         })
         .join("")
         .parse::<toml_edit::Document>()?;
-
-    for (problem_index, problem_url) in problems {
-        let bin_name = &format!("{}-{}", group.package_name(), problem_index.to_kebab_case());
-        let bin_alias = problem_index.to_kebab_case();
-        let problem_url = problem_url.as_str();
-        package_metadata_cargo_compete_bin[bin_name]["alias"] = toml_edit::value(bin_alias);
-        package_metadata_cargo_compete_bin[bin_name]["problem"] = toml_edit::value(problem_url);
-    }
 
     let bin = toml_edit::Item::ArrayOfTables({
         let mut arr = toml_edit::ArrayOfTables::new();
