@@ -22,7 +22,7 @@ use url::Url;
 pub(crate) struct Args<'a> {
     pub(crate) metadata: &'a cm::Metadata,
     pub(crate) member: &'a cm::Package,
-    pub(crate) bin: &'a cm::Target,
+    pub(crate) bin_binder: &'a crate::project::BinBinder,
     pub(crate) bin_alias: &'a str,
     pub(crate) cargo_compete_config_test_suite: &'a liquid::Template,
     pub(crate) problem_url: &'a Url,
@@ -38,7 +38,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let Args {
         metadata,
         member,
-        bin,
+        bin_binder,
         bin_alias,
         cargo_compete_config_test_suite,
         problem_url,
@@ -54,7 +54,7 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         &metadata.workspace_root,
         member.manifest_dir(),
         cargo_compete_config_test_suite,
-        &bin.name,
+        bin_binder.bin_name_for_test(),
         bin_alias,
         problem_url,
         shell,
@@ -141,12 +141,12 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
         crate::process::process(crate::process::cargo_exe()?)
     }
     .arg("build")
-    .arg(if bin.kind == ["example".to_owned()] {
+    .arg(if *bin_binder.kind() == ["example".to_owned()] {
         "--example"
     } else {
         "--bin"
     })
-    .arg(&bin.name)
+    .arg(bin_binder.bin_name())
     .args(if release { &["--release"] } else { &[] })
     .arg("--manifest-path")
     .arg(&member.manifest_path)
@@ -156,12 +156,12 @@ pub(crate) fn test(args: Args<'_>) -> anyhow::Result<()> {
     let artifact = metadata
         .target_directory
         .join(if release { "release" } else { "debug" })
-        .join(if bin.kind == ["example".to_owned()] {
+        .join(if *bin_binder.kind() == ["example".to_owned()] {
             "examples"
         } else {
             ""
         })
-        .join(&bin.name)
+        .join(&bin_binder.bin_name())
         .with_extension(env::consts::EXE_EXTENSION);
 
     ensure!(

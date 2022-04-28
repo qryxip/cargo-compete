@@ -94,11 +94,13 @@ impl PackageMetadataCargoCompete {
         let bin_name_or_alias = name_or_alias.as_ref();
 
         match *itertools::chain(&self.bin, &self.example)
-            .filter(
-                |(name, PackageMetadataCargoCompeteBinExample { alias, .. })| {
-                    [&**name, &**alias].contains(&bin_name_or_alias)
-                },
-            )
+            .filter_map(|(name, metadata)| {
+                let PackageMetadataCargoCompeteBinExample { alias, .. } = metadata;
+                let names = [&*name, &**alias];
+                let head = sanitize_target_name(bin_name_or_alias);
+                (names.contains(&bin_name_or_alias) || names.contains(&head.unwrap().as_str()))
+                    .then(|| (name, metadata))
+            })
             .collect::<Vec<_>>()
         {
             [(k, v)] => Ok((k, v)),
@@ -108,7 +110,7 @@ impl PackageMetadataCargoCompete {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct PackageMetadataCargoCompeteBinExample {
     pub(crate) alias: String,
     pub(crate) problem: Url,
@@ -210,11 +212,13 @@ impl cm::Package {
         name: impl AsRef<str>,
     ) -> anyhow::Result<&cm::Target> {
         let name = name.as_ref();
+        let sanitize_name = sanitize_target_name(name)?;
 
         self.targets
             .iter()
             .find(|t| {
-                t.name == name && t.kind == ["bin".to_owned()] || t.kind == ["example".to_owned()]
+                t.name == sanitize_name && t.kind == ["bin".to_owned()]
+                    || t.kind == ["example".to_owned()]
             })
             .with_context(|| format!("no bin/example target named `{}` in `{}`", name, self.name))
     }
@@ -224,10 +228,11 @@ impl cm::Package {
         src_path: impl AsRef<Path>,
     ) -> anyhow::Result<&cm::Target> {
         let src_path = src_path.as_ref();
+        let sanitize_src_path = sanitize_src(src_path)?;
 
         self.targets
             .iter()
-            .find(|t| t.src_path == src_path && t.kind == ["bin".to_owned()])
+            .find(|t| t.src_path == sanitize_src_path && t.kind == ["bin".to_owned()])
             .with_context(|| {
                 format!(
                     "no bin target which `src_path` is `{}` in `{}`",
@@ -243,6 +248,74 @@ impl cm::Package {
             .filter(|cm::Target { kind, .. }| *kind == ["bin".to_owned()])
             .sorted_by(|t1, t2| t1.name.cmp(&t2.name))
             .collect()
+    }
+
+    /// * `src` - Absolute src path
+    pub(crate) fn bin_binder_from_src(
+        self,
+        src: impl AsRef<Path>,
+        shell: &mut Shell,
+    ) -> anyhow::Result<(BinBinder, PackageMetadataCargoCompeteBinExample)> {
+        let src = src.as_ref();
+        let package_metadata = self.read_package_metadata(shell)?;
+        let file_name_wo_ext = src.file_stem().unwrap().to_str().unwrap();
+        let (_, pkg_md_bin_example) =
+            package_metadata.bin_like_by_name_or_alias(file_name_wo_ext)?;
+        let (bin_name, src_path) =
+            add_new_bin_if_not_exists(&self.manifest_path, file_name_wo_ext)?;
+        let bin = self.bin_target_by_src_path(&src)?;
+        Ok((
+            BinBinder::new(bin.to_owned(), bin_name, src_path),
+            pkg_md_bin_example.to_owned(),
+        ))
+    }
+
+    pub(crate) fn bin_binder_from_name_or_alias(
+        &self,
+        name_or_alias: &str,
+        shell: &mut Shell,
+    ) -> anyhow::Result<(BinBinder, PackageMetadataCargoCompeteBinExample)> {
+        let package_metadata = self.read_package_metadata(shell)?;
+        let (bin_name_for_test, pkg_md_bin_example) =
+            package_metadata.bin_like_by_name_or_alias(name_or_alias)?;
+        let (bin_name, src_path) = add_new_bin_if_not_exists(&self.manifest_path, name_or_alias)?;
+        let bin = self.bin_like_target_by_name(bin_name_for_test)?;
+        Ok((
+            BinBinder::new(bin.to_owned(), bin_name, src_path),
+            pkg_md_bin_example.to_owned(),
+        ))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct BinBinder {
+    defined_bin: cm::Target,
+    bin_name: String,
+    src_path: String,
+}
+
+impl BinBinder {
+    fn new(defined_bin: cm::Target, bin_name: String, src_path: String) -> Self {
+        Self {
+            defined_bin,
+            bin_name,
+            src_path,
+        }
+    }
+    pub(crate) fn bin_name_for_test(&self) -> &str {
+        &self.defined_bin.name
+    }
+
+    pub(crate) fn kind(&self) -> &std::vec::Vec<std::string::String> {
+        &self.defined_bin.kind
+    }
+
+    pub(crate) fn bin_name(&self) -> &str {
+        &self.bin_name
+    }
+
+    pub(crate) fn src_path(&self) -> &str {
+        &self.src_path
     }
 }
 
@@ -316,6 +389,93 @@ pub(crate) fn set_cargo_config_build_target_dir(
         shell.status("Wrote", cargo_config_path.display())?;
     }
     Ok(())
+}
+
+pub(crate) fn sanitize_target_name(target_name: impl AsRef<str>) -> anyhow::Result<String> {
+    let target_name = target_name.as_ref();
+    Ok(
+        match target_name.split('_').collect::<Vec<&str>>().first() {
+            Some(&s) => s,
+            None => target_name,
+        }
+        .to_string(),
+    )
+}
+
+pub(crate) fn sanitize_src(path: impl AsRef<Path>) -> anyhow::Result<String> {
+    let path = path.as_ref();
+    let (file_name_wo_ext, ext) = (
+        path.file_stem()
+            .ok_or(anyhow::anyhow!("failed to parse filename"))?
+            .to_str()
+            .unwrap(),
+        path.extension()
+            .ok_or(anyhow::anyhow!("failed to parse file extension"))?
+            .to_str()
+            .unwrap(),
+    );
+    let sanitized_file_name = sanitize_target_name(file_name_wo_ext)?;
+    let dir = path.to_path_buf();
+    let new_path = String::from(
+        dir.parent()
+            .ok_or(anyhow::anyhow!("failed to parse parent"))?
+            .to_owned()
+            .join(format!("{}.{}", sanitized_file_name, ext))
+            .to_str()
+            .unwrap(),
+    );
+    Ok(new_path)
+}
+
+pub(crate) fn add_new_bin_if_not_exists(
+    manifest_path: impl AsRef<str>,
+    bin_name_or_alias: impl AsRef<str>,
+) -> anyhow::Result<(String, String)> {
+    let bin_name_or_alias = bin_name_or_alias.as_ref();
+    let alias = match bin_name_or_alias.split('-').collect::<Vec<_>>()[..] {
+        [_, name] => name,
+        [name] => name,
+        _ => bail!("unexpeted name or alias `{}`", bin_name_or_alias),
+    };
+    let mut manifest = crate::fs::read_to_string(manifest_path.as_ref())?
+        .parse::<toml_edit::Document>()
+        .unwrap();
+    let name = format!(
+        "{}-{}",
+        manifest["package"]["name"]
+            .as_str()
+            .ok_or(anyhow::anyhow!("failed to parse package name"))?,
+        alias
+    );
+
+    let bins = manifest["bin"].as_array_of_tables_mut().unwrap();
+    let tbl = bins.iter().find(|that_tbl| {
+        that_tbl
+            .get("name")
+            .map_or(false, |that_name| that_name.as_str().unwrap() == name)
+    });
+    let src_path = ["src", "bin"]
+        .iter()
+        .collect::<PathBuf>()
+        .join(format!("{}.rs", alias))
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    match tbl {
+        None => {
+            let mut new_tbl = toml_edit::Table::new();
+            new_tbl["name"] = toml_edit::value(&name);
+            new_tbl["path"] = toml_edit::value(&src_path);
+            bins.push(new_tbl);
+            crate::fs::write(manifest_path.as_ref(), manifest.to_string())?;
+            Ok((name, src_path))
+        }
+        Some(t) => Ok((
+            t["name"].as_str().unwrap().to_string(),
+            t["path"].as_str().unwrap().to_string(),
+        )),
+    }
 }
 
 #[cfg(test)]
@@ -395,6 +555,22 @@ mod tests {
             }
             .try_into::<PackageMetadataCargoCompete>()?,
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn sanitize_str_test() -> anyhow::Result<()> {
+        use crate::project::sanitize_src;
+        use std::path::PathBuf;
+
+        let dir: PathBuf = ["src", "bin"].iter().collect();
+        let act1 = sanitize_src(dir.join("a_with_dfs.rc"))?;
+        let act2 = sanitize_src(dir.join("a_ac.rc"))?;
+        let expected = dir.join("a.rc").into_os_string().into_string().unwrap();
+
+        assert_eq!(expected, act1);
+        assert_eq!(expected, act2);
 
         Ok(())
     }
