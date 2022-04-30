@@ -101,7 +101,7 @@ target-dir = "target"
                 cwd.join(contest).join("Cargo.toml"),
                 format!(
                     r#"[package]
-name = "problems"
+name = "{contest}"
 version = "0.1.0"
 edition = "2018"
 
