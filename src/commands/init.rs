@@ -44,7 +44,7 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
         color,
         platform,
         path,
-        crates
+        crates,
     } = opt;
 
     let crate::Context {
@@ -74,9 +74,7 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
                     }
                 }
             }
-            Some(v) => {
-                v
-            }
+            Some(v) => v,
         }
     } else {
         AtcoderCrates::None
