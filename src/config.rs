@@ -85,7 +85,7 @@ pub(crate) fn load(
     .with_context(|| format!("could not read a TOML file at `{}`", path.display()))?;
 
     for unused in &*unused {
-        shell.warn(format!("unused key in compete.toml: {}", unused))?;
+        shell.warn(format!("unused key in compete.toml: {unused}"))?;
     }
 
     Ok(config)
@@ -105,9 +105,8 @@ pub(crate) fn load_for_package(
             .find(|p| p.exists())
             .with_context(|| {
                 format!(
-                    "could not find `compete.toml` in `{}` or any parent directory. first, create \
+                    "could not find `compete.toml` in `{manifest_dir}` or any parent directory. first, create \
                      one  with `cargo compete init`",
-                    manifest_dir,
                 )
             })?
     };

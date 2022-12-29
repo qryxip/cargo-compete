@@ -360,8 +360,8 @@ impl Group {
 
     fn package_name(&self) -> String {
         let mut package_name = self.contest().unwrap_or("problems").to_owned();
-        if package_name.starts_with(|c| ('0'..='9').contains(&c)) {
-            package_name = format!("contest{}", package_name);
+        if package_name.starts_with(|c:char| c.is_ascii_digit()) {
+            package_name = format!("contest{package_name}");
         }
         package_name
     }
@@ -377,15 +377,14 @@ fn create_new_package(
     let template = cargo_compete_config.template(cargo_compete_config_path, shell)?;
     let template_new = template.new.as_ref().with_context(|| {
         format!(
-            "`template.new` is required for the command: {}",
-            cargo_compete_config_path,
+            "`template.new` is required for the command: {cargo_compete_config_path}",
         )
     })?;
 
     let manifest_dir = cargo_compete_config
         .new
         .path()
-        .with_context(|| format!("`new` is `none`: {}", cargo_compete_config_path))?
+        .with_context(|| format!("`new` is `none`: {cargo_compete_config_path}"))?
         .render(&object!({
             "contest": group.contest(),
             "package_name": group.package_name(),
@@ -462,7 +461,7 @@ edition = ""
         profile.set_implicit(true);
         let mut head = toml_edit::Document::new();
         head["profile"] = toml_edit::Item::Table(profile);
-        format!("{}\n{}", head, MANIFEST_TEMPLATE)
+        format!("{head}\n{MANIFEST_TEMPLATE}")
     }
     .parse::<toml_edit::Document>()?;
 
@@ -472,8 +471,7 @@ edition = ""
             edition.to_string()
         } else {
             shell.warn(format!(
-                "missing `template.new.edition` in `{}`. setting `\"2018\"`",
-                cargo_compete_config_path,
+                "missing `template.new.edition` in `{cargo_compete_config_path}`. setting `\"2018\"`",
             ))?;
             "2018".to_owned()
         }
