@@ -360,7 +360,7 @@ impl Group {
 
     fn package_name(&self) -> String {
         let mut package_name = self.contest().unwrap_or("problems").to_owned();
-        if package_name.starts_with(|c:char| c.is_ascii_digit()) {
+        if package_name.starts_with(|c: char| c.is_ascii_digit()) {
             package_name = format!("contest{package_name}");
         }
         package_name
@@ -376,9 +376,7 @@ fn create_new_package(
 ) -> anyhow::Result<(Utf8PathBuf, Vec<Utf8PathBuf>)> {
     let template = cargo_compete_config.template(cargo_compete_config_path, shell)?;
     let template_new = template.new.as_ref().with_context(|| {
-        format!(
-            "`template.new` is required for the command: {cargo_compete_config_path}",
-        )
+        format!("`template.new` is required for the command: {cargo_compete_config_path}",)
     })?;
 
     let manifest_dir = cargo_compete_config
