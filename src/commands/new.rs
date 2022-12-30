@@ -504,7 +504,7 @@ edition = ""
     let src_bin_dir = manifest_dir.join("src").join("bin");
 
     crate::fs::create_dir_all(&src_bin_dir)?;
-    crate::fs::write(&manifest_path, manifest.to_string())?;
+    crate::fs::write(manifest_path, manifest.to_string())?;
 
     let src_paths = problems
         .keys()

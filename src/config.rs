@@ -643,8 +643,8 @@ mod tests {
             let generated = super::generate(
                 "2018",
                 template_new_dependencies_content
-                    .then(|| include_str!("../resources/atcoder-deps.toml")),
-                template_new_lockfile.then(|| "./cargo-lock-template.toml"),
+                    .then_some(include_str!("../resources/atcoder-deps.toml")),
+                template_new_lockfile.then_some("./cargo-lock-template.toml"),
                 PlatformKind::Atcoder,
                 "1.42.0",
                 submit_via_bianry,
