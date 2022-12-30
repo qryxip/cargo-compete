@@ -594,6 +594,7 @@ where
         .map_err(D::Error::custom)
 }
 
+#[allow(clippy::box_default)]
 fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, String> {
     use liquid::ParserBuilder;
     use liquid_core::{Filter, Runtime, Value, ValueView};
