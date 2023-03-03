@@ -109,8 +109,7 @@ email = ""
         |workspace_root, output| {
             output
                 .replace(workspace_root.to_str().unwrap(), "{{ cwd }}")
-                .replace('/', "{{ slash_or_backslash }}")
-                .replace('\\', "{{ slash_or_backslash }}")
+                .replace(['/', '\\'], "{{ slash_or_backslash }}")
         },
         |_| Ok(Override::empty()),
     )

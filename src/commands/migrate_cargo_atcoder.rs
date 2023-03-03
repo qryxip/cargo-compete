@@ -166,7 +166,7 @@ pub(crate) fn run(
         let lock_path = &package.manifest_path.with_file_name("Cargo.lock");
         shell.status("Updating", lock_path)?;
         if let Err(err) = crate::project::cargo_metadata(&package.manifest_path, &cwd) {
-            shell.warn(format!("broke `{}`!!!!!: {}", lock_path, err))?;
+            shell.warn(format!("broke `{lock_path}`!!!!!: {err}"))?;
         }
     }
 

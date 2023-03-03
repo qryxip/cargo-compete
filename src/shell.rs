@@ -61,7 +61,7 @@ impl Shell {
         write!(stderr, "warning:")?;
         stderr.reset()?;
 
-        writeln!(stderr, " {}", message)?;
+        writeln!(stderr, " {message}")?;
 
         stderr.flush()
     }
@@ -118,7 +118,7 @@ impl Shell {
 
         let stderr = self.err();
 
-        write!(stderr, "{}", prompt)?;
+        write!(stderr, "{prompt}")?;
         stderr.flush()?;
         self.input.read_reply()
     }
@@ -130,7 +130,7 @@ impl Shell {
 
         let stderr = self.err();
 
-        write!(stderr, "{}", prompt)?;
+        write!(stderr, "{prompt}")?;
         stderr.flush()?;
         self.input.read_password()
     }
@@ -289,10 +289,10 @@ impl ShellOut {
         let stderr = self.stderr();
 
         stderr.set_color(color_spec!(Bold, Fg(color)))?;
-        write!(stderr, "{:>12}", status)?;
+        write!(stderr, "{status:>12}")?;
         stderr.reset()?;
 
-        writeln!(stderr, " {}", message)?;
+        writeln!(stderr, " {message}")?;
         stderr.flush()
     }
 }

@@ -87,8 +87,8 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
                 PlatformKind::Yukicoder => YUKICODER_RUST_EDITION,
             },
             (atcoder_crates == AtcoderCrates::UseNormally)
-                .then(|| include_str!("../../resources/atcoder-deps.toml")),
-            (atcoder_crates == AtcoderCrates::UseNormally).then(|| TEMPLATE_CARGO_LOCK),
+                .then_some(include_str!("../../resources/atcoder-deps.toml")),
+            (atcoder_crates == AtcoderCrates::UseNormally).then_some(TEMPLATE_CARGO_LOCK),
             platform,
             match platform {
                 PlatformKind::Atcoder => ATCODER_RUST_VERSION,
