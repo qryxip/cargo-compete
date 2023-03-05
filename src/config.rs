@@ -85,7 +85,7 @@ pub(crate) fn load(
     .with_context(|| format!("could not read a TOML file at `{}`", path.display()))?;
 
     for unused in &*unused {
-        shell.warn(format!("unused key in compete.toml: {}", unused))?;
+        shell.warn(format!("unused key in compete.toml: {unused}"))?;
     }
 
     Ok(config)
@@ -105,9 +105,8 @@ pub(crate) fn load_for_package(
             .find(|p| p.exists())
             .with_context(|| {
                 format!(
-                    "could not find `compete.toml` in `{}` or any parent directory. first, create \
+                    "could not find `compete.toml` in `{manifest_dir}` or any parent directory. first, create \
                      one  with `cargo compete init`",
-                    manifest_dir,
                 )
             })?
     };
@@ -595,6 +594,7 @@ where
         .map_err(D::Error::custom)
 }
 
+#[allow(clippy::box_default)]
 fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, String> {
     use liquid::ParserBuilder;
     use liquid_core::{Filter, Runtime, Value, ValueView};
@@ -644,8 +644,8 @@ mod tests {
             let generated = super::generate(
                 "2018",
                 template_new_dependencies_content
-                    .then(|| include_str!("../resources/atcoder-deps.toml")),
-                template_new_lockfile.then(|| "./cargo-lock-template.toml"),
+                    .then_some(include_str!("../resources/atcoder-deps.toml")),
+                template_new_lockfile.then_some("./cargo-lock-template.toml"),
                 PlatformKind::Atcoder,
                 "1.42.0",
                 submit_via_bianry,

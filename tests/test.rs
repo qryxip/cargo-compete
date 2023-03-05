@@ -115,9 +115,6 @@ path = "src/bin/{problem}.rs"
 [dependencies]
 proconio = "=0.3.6"
 "#,
-                    contest = contest,
-                    problem = problem,
-                    url = url,
                 ),
             )?;
 
@@ -148,7 +145,7 @@ proconio = "=0.3.6"
             "t",
             problem,
             "--manifest-path",
-            &format!("./{}/Cargo.toml", contest),
+            &format!("./{contest}/Cargo.toml"),
         ],
         |_, output| {
             macro_rules! lazy_regex(($regex:literal) => (Lazy::new(|| Regex::new($regex).unwrap())));

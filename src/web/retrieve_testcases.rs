@@ -90,7 +90,7 @@ pub(crate) fn dl_only_system_test_cases(
     }
 
     for (name, (input, output)) in text_files {
-        let file_name = &format!("{}.txt", name);
+        let file_name = &format!("{name}.txt");
         crate::fs::write(in_dir.join(file_name), input)?;
         if let Some(output) = output {
             crate::fs::write(out_dir.join(file_name), output)?;
@@ -151,7 +151,7 @@ pub(crate) fn dl_for_existing_package(
     }
 
     for bin_name_or_alias in bin_name_aliases.into_iter().flatten() {
-        shell.warn(format!("no such `bin`: {}", bin_name_or_alias))?;
+        shell.warn(format!("no such `bin`: {bin_name_or_alias}"))?;
     }
 
     let mut outcome = vec![];
@@ -407,7 +407,7 @@ pub(crate) fn save_test_cases<I>(
             if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
                 if text_files.is_empty() {
                     extend.push(Additional::Text {
-                        path: format!("./{}", bin_alias).into(),
+                        path: format!("./{bin_alias}").into(),
                         r#in: "/in/*.txt".to_owned(),
                         out: "/out/*.txt".to_owned(),
                         timelimit: None,
@@ -431,7 +431,7 @@ pub(crate) fn save_test_cases<I>(
                             match cases.len() + text_files.len() {
                                 0 => "no test cases".to_owned(),
                                 1 => "1 test case".to_owned(),
-                                n => format!("{} test cases", n),
+                                n => format!("{n} test cases"),
                             }
                         }
                         TestSuite::Interactive(_) =>
@@ -440,7 +440,7 @@ pub(crate) fn save_test_cases<I>(
                             "no test cases (unsubmittable problem)".to_owned(),
                     },
                     if empty {
-                        path.with_file_name(format!("{}.yml", bin_alias))
+                        path.with_file_name(format!("{bin_alias}.yml"))
                     } else {
                         path.with_file_name(format!(
                             "{{{0}.yml, {0}{1}}}",

@@ -120,13 +120,13 @@ fn call<T: DeserializeOwned, S: AsRef<OsStr>>(
 
     return if let Ok(result) = result {
         for message in messages {
-            shell.warn(format!("oj-api: {}", message))?;
+            shell.warn(format!("oj-api: {message}"))?;
         }
         Ok(result)
     } else {
         bail!(
             "`oj-api` returned error:\n{}",
-            messages.iter().map(|s| format!("- {}\n", s)).join(""),
+            messages.iter().map(|s| format!("- {s}\n")).join(""),
         );
     };
 
@@ -156,8 +156,7 @@ fn call<T: DeserializeOwned, S: AsRef<OsStr>>(
                     messages,
                 }),
                 status => Err(D::Error::custom(format!(
-                    "expected \"ok\" or \"error\", got {:?}",
-                    status,
+                    "expected \"ok\" or \"error\", got {status:?}",
                 ))),
             };
 

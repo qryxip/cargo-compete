@@ -48,14 +48,14 @@ fn exit_with_error(err: anyhow::Error, mut wtr: impl WriteColor) -> ! {
     let _ = wtr.set_color(&bold_red);
     let _ = write!(wtr, "error:");
     let _ = wtr.reset();
-    let _ = writeln!(wtr, " {}", err);
+    let _ = writeln!(wtr, " {err}");
 
     for cause in err.chain().skip(1) {
         let _ = writeln!(wtr);
         let _ = wtr.set_color(&bold_red);
         let _ = write!(wtr, "Caused by:");
         let _ = wtr.reset();
-        let _ = writeln!(wtr, "\n  {}", cause);
+        let _ = writeln!(wtr, "\n  {cause}");
     }
 
     let _ = wtr.flush();

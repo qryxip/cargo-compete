@@ -197,8 +197,7 @@ impl cm::Package {
 
         for unused in &*unused {
             shell.warn(format!(
-                "unused key in `package.metadata.cargo-compete`: {}",
-                unused,
+                "unused key in `package.metadata.cargo-compete`: {unused}",
             ))?;
         }
 

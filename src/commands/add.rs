@@ -67,7 +67,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
     let manifest_path = manifest_path
         .map(|p| Ok(cwd.join(p.strip_prefix(".").unwrap_or(&p))))
         .unwrap_or_else(|| crate::project::locate_project(&cwd))?;
-    let metadata = crate::project::cargo_metadata(&manifest_path, cwd)?;
+    let metadata = crate::project::cargo_metadata(manifest_path, cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let (cargo_compete_config, cargo_compete_config_path) =
         crate::config::load_for_package(member, shell)?;
@@ -85,7 +85,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
     ensure!(!url.is_empty(), "empty URL for {:?}", args);
     let url = url
         .parse::<Url>()
-        .with_context(|| format!("could not parse {:?} as a URL", url))?;
+        .with_context(|| format!("could not parse {url:?} as a URL"))?;
 
     let is_contest = if let Some(args) = &cargo_compete_config_add.is_contest {
         ensure!(!args.is_empty(), "`add.is-contest` is empty");
@@ -253,7 +253,7 @@ pub(crate) fn run(opt: OptCompeteAdd, ctx: crate::Context<'_>) -> anyhow::Result
 
         let default_src_path = Path::new("src")
             .join("bin")
-            .join(&bin_name)
+            .join(bin_name)
             .with_extension("rs");
 
         if Path::new(bin_src_path)
