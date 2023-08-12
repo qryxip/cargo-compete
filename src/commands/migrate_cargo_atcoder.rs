@@ -1,6 +1,7 @@
 use crate::{
     project::{MetadataExt as _, PackageExt as _},
     shell::ColorChoice,
+    web::ATCODER_RUST_LANG_ID,
 };
 use anyhow::{anyhow, Context as _};
 use if_chain::if_chain;
@@ -237,6 +238,7 @@ target-dir = ""
         PlatformKind::Atcoder,
         "1.42.0",
         submit_via_binary,
+        ATCODER_RUST_LANG_ID,
     )?;
 
     crate::fs::write(&compete_toml_path, compete_toml)?;

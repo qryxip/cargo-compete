@@ -24,6 +24,7 @@ pub(crate) fn generate(
     new_platform: PlatformKind,
     test_toolchain: &str,
     submit_via_bianry: bool,
+    rust_language_id: &str,
 ) -> anyhow::Result<String> {
     let generated = liquid::ParserBuilder::with_stdlib()
         .build()?
@@ -36,6 +37,7 @@ pub(crate) fn generate(
             "template_new_lockfile": template_new_lockfile,
             "test_toolchain": test_toolchain,
             "submit_via_binary": submit_via_bianry,
+            "rust_language_id": rust_language_id,
         }))
         .unwrap();
     Ok(generated)
@@ -549,22 +551,114 @@ impl Default for CargoCompeteConfigTestProfile {
     }
 }
 
-#[derive(Deserialize, Default, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) struct CargoCompeteConfigSubmit {
-    pub(crate) transpile: Option<CargoCompeteConfigSubmitTranspile>,
+#[derive(Debug)]
+pub(crate) enum CargoCompeteConfigSubmit {
+    File(CargoCompeteConfigSubmitFile),
+    Command(CargoCompeteConfigSubmitCommand),
+    DeprecatedTranspileCommand(CargoCompeteConfigSubmitCommand),
 }
 
-#[derive(Deserialize, Derivative)]
-#[serde(rename_all = "kebab-case", tag = "kind")]
+#[derive(Derivative)]
 #[derivative(Debug)]
-pub(crate) enum CargoCompeteConfigSubmitTranspile {
-    Command {
-        #[serde(deserialize_with = "deserialize_liquid_templates")]
-        #[derivative(Debug = "ignore")]
-        args: Vec<liquid::Template>,
-        language_id: Option<String>,
-    },
+pub(crate) struct CargoCompeteConfigSubmitFile {
+    #[derivative(Debug = "ignore")]
+    pub(crate) path: liquid::Template,
+    pub(crate) language_id: Option<String>,
+}
+
+#[derive(Derivative)]
+#[derivative(Debug)]
+pub(crate) struct CargoCompeteConfigSubmitCommand {
+    #[derivative(Debug = "ignore")]
+    pub(crate) args: Vec<liquid::Template>,
+    pub(crate) language_id: Option<String>,
+}
+
+impl Default for CargoCompeteConfigSubmit {
+    fn default() -> Self {
+        Self::File(CargoCompeteConfigSubmitFile {
+            path: liquid::ParserBuilder::with_stdlib()
+                .build()
+                .unwrap()
+                .parse("{{ src_path }}")
+                .unwrap(),
+            language_id: None,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for CargoCompeteConfigSubmit {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let repr = Repr::deserialize(deserializer)?;
+        return Ok(match repr {
+            Repr::CurrentForm(CurrentForm::File { path, language_id }) => {
+                Self::File(CargoCompeteConfigSubmitFile { path, language_id })
+            }
+            Repr::CurrentForm(CurrentForm::Command { args, language_id }) => {
+                Self::Command(CargoCompeteConfigSubmitCommand { args, language_id })
+            }
+            Repr::Deprecated(Deprecated {
+                transpile: DeprecatedSubmit::Command { args, language_id },
+            }) => Self::DeprecatedTranspileCommand(CargoCompeteConfigSubmitCommand {
+                args,
+                language_id,
+            }),
+        });
+
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr {
+            CurrentForm(CurrentForm),
+            Deprecated(Deprecated),
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case", tag = "kind")]
+        enum CurrentForm {
+            File {
+                #[serde(deserialize_with = "deserialize_liquid_template")]
+                path: liquid::Template,
+                language_id: Option<String>,
+            },
+            Command {
+                #[serde(deserialize_with = "deserialize_liquid_templates")]
+                args: Vec<liquid::Template>,
+                language_id: Option<String>,
+            },
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        pub(crate) struct Deprecated {
+            pub(crate) transpile: DeprecatedSubmit,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case", tag = "kind")]
+        pub(crate) enum DeprecatedSubmit {
+            Command {
+                #[serde(deserialize_with = "deserialize_liquid_templates")]
+                args: Vec<liquid::Template>,
+                language_id: Option<String>,
+            },
+        }
+    }
+}
+
+fn deserialize_liquid_template<'de, D>(deserializer: D) -> Result<liquid::Template, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use liquid::ParserBuilder;
+
+    ParserBuilder::with_stdlib()
+        .build()
+        .map_err(D::Error::custom)?
+        .parse(&String::deserialize(deserializer)?)
+        .map_err(D::Error::custom)
 }
 
 fn deserialize_liquid_templates<'de, D>(deserializer: D) -> Result<Vec<liquid::Template>, D::Error>
@@ -628,7 +722,7 @@ fn liquid_template_with_custom_filter(text: &str) -> Result<liquid::Template, St
 
 #[cfg(test)]
 mod tests {
-    use crate::config::CargoCompeteConfig;
+    use crate::{config::CargoCompeteConfig, web::ATCODER_RUST_LANG_ID};
     use itertools::iproduct;
     use liquid::object;
     use pretty_assertions::assert_eq;
@@ -649,6 +743,7 @@ mod tests {
                 PlatformKind::Atcoder,
                 "1.42.0",
                 submit_via_bianry,
+                ATCODER_RUST_LANG_ID,
             )?;
 
             toml::from_str::<CargoCompeteConfig>(&generated)?;

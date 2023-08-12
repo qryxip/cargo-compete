@@ -225,20 +225,20 @@ $ xdg-open "$(cargo compete r ss | jq -r '.summaries[0].detail')"
 
 [![asciicast](https://asciinema.org/a/403449.svg)](https://asciinema.org/a/403449?autoplay=1)
 
-[`compete.toml`](#設定)の`submit.transpile`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)や[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)等のコード変換ツールを使って提出するコードを変換できます。
+[`compete.toml`](#設定)の`submit`を設定することで、[cargo-equip](https://github.com/qryxip/cargo-equip)や[cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload)等のコード変換ツールを使って提出するコードを変換できます。
 
 ```toml
-[submit.transpile]
+[submit]
 kind = "command"
-args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
-#language_id = ""
+args = ["cargo", "+1.70.0", "equip", "--exclude-atcoder-202301-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
+language_id = "5054"
 ```
 
 ```toml
-[submit.transpile]
+[submit]
 kind = "command"
 args = ["cargo", "executable-payload", "--bin", "{{ bin_name }}"]
-#language_id = ""
+language_id = "5054"
 ```
 
 ## 設定
@@ -378,10 +378,14 @@ toolchain = "1.42.0"
 # Defaults to `"dev"`.
 #profile = "dev"
 
-#[submit.transpile]
+[submit]
+kind = "file"
+path = "{{ src_path }}"
+language_id = "5054"
+#[submit]
 #kind = "command"
-#args = ["cargo", "equip", "--exclude-atcoder-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
-##language_id = ""
+#args = ["cargo", "+1.70.0", "equip", "--exclude-atcoder-202301-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
+#language_id = "5054"
 ```
 
 各`bin` targetに紐付くサイト上の問題は、パッケージの`Cargo.toml`の`[package.metadata]`に記述されます。

@@ -1,9 +1,11 @@
 use crate::{
-    config::CargoCompeteConfigSubmitTranspile,
+    config::{
+        CargoCompeteConfigSubmit, CargoCompeteConfigSubmitCommand, CargoCompeteConfigSubmitFile,
+    },
     oj_api,
     project::{MetadataExt as _, PackageExt as _},
     shell::{ColorChoice, Shell},
-    web::credentials,
+    web::{credentials, ATCODER_RUST_LANG_ID, CODEFORCES_RUST_LANG_ID, YUKICODER_RUST_LANG_ID},
 };
 use anyhow::{bail, Context as _};
 use human_size::Size;
@@ -21,10 +23,7 @@ use snowchains_core::web::{
 use std::{borrow::BorrowMut as _, cell::RefCell, env, io, iter, path::PathBuf};
 use structopt::StructOpt;
 use strum::VariantNames as _;
-
-static ATCODER_RUST_LANG_ID: &str = "4050";
-static CODEFORCES_RUST_LANG_ID: &str = "75";
-static YUKICODER_RUST_LANG_ID: &str = "rust";
+use url::Url;
 
 #[derive(StructOpt, Debug)]
 #[structopt(usage(
@@ -116,7 +115,6 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     let metadata = crate::project::cargo_metadata(manifest_path, &cwd)?;
     let member = metadata.query_for_member(package.as_deref())?;
     let package_metadata = member.read_package_metadata(shell)?;
-    let (cargo_compete_config, _) = crate::config::load_for_package(member, shell)?;
 
     let (bin, package_metadata_bin) = if let Some(src) = src {
         let src = cwd.join(src.strip_prefix(".").unwrap_or(&src));
@@ -130,6 +128,47 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
     } else {
         unreachable!()
     };
+
+    let backend = Backend::new(&package_metadata_bin.problem);
+
+    let (cargo_compete_config, cargo_compete_config_path) =
+        crate::config::load_for_package(member, shell)?;
+
+    if matches!(
+        cargo_compete_config.submit,
+        CargoCompeteConfigSubmit::DeprecatedTranspileCommand(_)
+    ) {
+        shell.warn(format!(
+            "{cargo_compete_config_path}: `submit.transpile` is deprecated. Write as follows:",
+        ))?;
+        shell.warn("```")?;
+        shell.warn("[submit]")?;
+        shell.warn("kind = \"command\"")?;
+        shell.warn("args = […]")?;
+        shell.warn("language_id = \"…\"")?;
+        shell.warn("```")?;
+    }
+
+    let language_id = match &cargo_compete_config.submit {
+        CargoCompeteConfigSubmit::File(CargoCompeteConfigSubmitFile { language_id, .. })
+        | CargoCompeteConfigSubmit::Command(CargoCompeteConfigSubmitCommand {
+            language_id, ..
+        })
+        | CargoCompeteConfigSubmit::DeprecatedTranspileCommand(CargoCompeteConfigSubmitCommand {
+            language_id,
+            ..
+        }) => language_id.as_deref(),
+    };
+
+    if language_id.is_none() {
+        shell.warn(format!(
+            "{cargo_compete_config_path}: Missing `submit.language_id`. Using {}",
+            match backend {
+                Backend::Builtin(_) => "a hardcoded value",
+                Backend::Oj => "an inferred value",
+            },
+        ))?;
+    }
 
     if !no_test {
         crate::process::process(env::current_exe()?)
@@ -154,20 +193,34 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
             .exec_with_shell_status(shell)?;
     }
 
-    let language_id = match &cargo_compete_config.submit.transpile {
-        Some(CargoCompeteConfigSubmitTranspile::Command {
-            language_id: Some(language_id),
+    let code = match &cargo_compete_config.submit {
+        CargoCompeteConfigSubmit::File(CargoCompeteConfigSubmitFile { path, .. }) => {
+            let contest = match PlatformKind::from_url(&package_metadata_bin.problem) {
+                Ok(PlatformKind::Atcoder) => Some(crate::web::url::atcoder_contest(
+                    &package_metadata_bin.problem,
+                )?),
+                Ok(PlatformKind::Codeforces) => {
+                    crate::web::url::codeforces_contest(&package_metadata_bin.problem).ok()
+                }
+                Ok(PlatformKind::Yukicoder) => {
+                    crate::web::url::yukicoder_contest(&package_metadata_bin.problem).ok()
+                }
+                _ => todo!(),
+            };
+            let path = path.render(&object!({
+                "manifest_dir": member.manifest_dir(),
+                "contest": contest,
+                "bin_name": &bin.name,
+                "bin_alias": &package_metadata_bin.alias,
+                "src_path": &bin.src_path,
+            }))?;
+            crate::fs::read_to_string(path)?
+        }
+        CargoCompeteConfigSubmit::Command(CargoCompeteConfigSubmitCommand { args, .. })
+        | CargoCompeteConfigSubmit::DeprecatedTranspileCommand(CargoCompeteConfigSubmitCommand {
+            args,
             ..
-        }) => Some(&**language_id),
-        _ => None,
-    };
-
-    let mut code = crate::fs::read_to_string(&bin.src_path)?;
-
-    if let Some(CargoCompeteConfigSubmitTranspile::Command { args, .. }) =
-        &cargo_compete_config.submit.transpile
-    {
-        code = {
+        }) => {
             if args.is_empty() {
                 bail!("`submit.transpile.args` is empty");
             }
@@ -183,12 +236,12 @@ pub(crate) fn run(opt: OptCompeteSubmit, ctx: crate::Context<'_>) -> anyhow::Res
                 .args(&args[1..])
                 .read_with_shell_status(shell)
                 .with_context(|| "could not transpile the code")?
-        };
-    }
+        }
+    };
 
     let source_code_len = code.len();
 
-    if let Ok(platform) = PlatformKind::from_url(&package_metadata_bin.problem) {
+    if let Backend::Builtin(platform) = backend {
         let language_id = language_id.unwrap_or(match platform {
             PlatformKind::Atcoder => ATCODER_RUST_LANG_ID,
             PlatformKind::Codeforces => CODEFORCES_RUST_LANG_ID,
@@ -374,4 +427,18 @@ fn print_status(shell: &mut Shell, rows: &[Row]) -> io::Result<()> {
     write!(shell.err(), "{table}")?;
     shell.err().flush()?;
     shell.status("Successfully", "submitted the code")
+}
+
+enum Backend {
+    Builtin(PlatformKind),
+    Oj,
+}
+
+impl Backend {
+    fn new(url: &Url) -> Self {
+        match PlatformKind::from_url(url) {
+            Ok(platform) => Self::Builtin(platform),
+            Err(_) => Self::Oj,
+        }
+    }
 }

@@ -220,20 +220,20 @@ Submits your code.
 
 [![asciicast](https://asciinema.org/a/403449.svg)](https://asciinema.org/a/403449?autoplay=1)
 
-You can convert code with a tool such as [cargo-equip](https://github.com/qryxip/cargo-equip) and [cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload) by setting `submit.transpile` in the [`compete.toml`](#configuration).
+You can convert code with a tool such as [cargo-equip](https://github.com/qryxip/cargo-equip) and [cargo-executable-payload](https://github.com/qryxip/cargo-executable-payload) by setting `submit` in the [`compete.toml`](#configuration).
 
 ```toml
-[submit.transpile]
+[submit]
 kind = "command"
-args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
-#language_id = ""
+args = ["cargo", "+1.70.0", "equip", "--exclude-atcoder-202301-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
+language_id = "5054"
 ```
 
 ```toml
-[submit.transpile]
+[submit]
 kind = "command"
 args = ["cargo", "executable-payload", "--bin", "{{ bin_name }}"]
-#language_id = ""
+language_id = "5054"
 ```
 
 ## Configuration
@@ -375,10 +375,14 @@ toolchain = "1.42.0"
 # Defaults to `"dev"`.
 #profile = "dev"
 
-#[submit.transpile]
+[submit]
+kind = "file"
+path = "{{ src_path }}"
+language_id = "5054"
+#[submit]
 #kind = "command"
-#args = ["cargo", "equip", "--exclude-atcoder-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
-##language_id = ""
+#args = ["cargo", "+1.70.0", "equip", "--exclude-atcoder-202301-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
+#language_id = "5054"
 ```
 
 And here is an example for `package.metadata` in `Cargo.toml`.
