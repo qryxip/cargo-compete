@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.5] - 2023-08-12Z
+
+### Fixed
+
+- Fixed the problem where `submit` command segfaults ([#200](https://github.com/qryxip/cargo-compete/pull/200) by [@yosuke-oka](https://github.com/yosuke-oka))
+
 ## [0.10.4] - 2022-02-19Z
 
 ### Fixed
