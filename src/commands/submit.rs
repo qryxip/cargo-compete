@@ -9,7 +9,6 @@ use anyhow::{bail, Context as _};
 use human_size::Size;
 use liquid::object;
 use prettytable::{
-    cell,
     format::{FormatBuilder, LinePosition, LineSeparator},
     row, Row, Table,
 };

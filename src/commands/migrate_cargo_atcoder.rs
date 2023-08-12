@@ -123,7 +123,7 @@ pub(crate) fn run(
                         .iter()
                         .map(|_| "..")
                         .chain(iter::once("compete.toml"))
-                        .join(&std::path::MAIN_SEPARATOR.to_string())
+                        .join(std::path::MAIN_SEPARATOR_STR)
                 } else {
                     manifest_dir
                         .into_os_string()
