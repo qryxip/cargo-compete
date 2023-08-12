@@ -41,7 +41,7 @@ maplit = "1.0.2"
 once_cell = "1.9.0"
 opener = "0.4.1"
 percent-encoding = "2.1.0"
-prettytable-rs = "0.8.0"
+prettytable-rs = "0.10.0"
 reqwest = { version = "0.11.9", default-features = false, features = ["blocking"] }
 rpassword = "5.0.1"
 rprompt = "1.0.5"
