@@ -185,7 +185,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-compete"
-version = "0.10.6"
+version = "0.10.7-alpha.1"
 dependencies = [
  "anyhow",
  "atty",
