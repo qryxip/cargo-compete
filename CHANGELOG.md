@@ -1,10 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.10.6] - 2023-08-13Z
 
 ### Changed
 
-- Reworked the `submit` configuration.
+- Reworked the `submit` configuration. ([#205](https://github.com/qryxip/cargo-compete/pull/205))
 
     `submit.transpile` still works but is deprecated.
 
@@ -42,8 +42,7 @@
 
     before `cargo compete new`.
 
-    Refer to [rust-lang-ja/atcoder-proposal@`202301-update-2023-07-17-freeze`](https://github.com/rust-lang-ja/atcoder-proposal/tree/202301-update-2023-07-17-freeze).
-    This repository should be used in the real AtCoder judge system.
+    Refer to [rust-lang-ja/atcoder-proposal@`202301-update-2023-07-17-freeze`](https://github.com/rust-lang-ja/atcoder-proposal/tree/202301-update-2023-07-17-freeze). This repository should be used in the real AtCoder judge system.
 
 ## [0.10.5] - 2023-08-12Z
 
