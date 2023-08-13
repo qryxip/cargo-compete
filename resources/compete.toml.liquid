@@ -106,13 +106,17 @@ toolchain = "{{ test_toolchain }}"
 #profile = "dev"
 
 {% if submit_via_binary == true -%}
-[submit.transpile]
+[submit]
 kind = "command"
 args = ["cargo", "executable-payload", "--bin", {% raw %}"{{ bin_name }}"{% endraw %}]
-#language_id = ""
+language_id = "{{ rust_language_id }}"
 {%- else -%}
-#[submit.transpile]
+[submit]
+kind = "file"
+path = "{% raw %}{{ src_path }}{% endraw %}"
+language_id = "{{ rust_language_id }}"
+#[submit]
 #kind = "command"
 #{% raw %}args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]{% endraw %}
-##language_id = ""
+#language_id = "{{ rust_language_id }}"
 {%- endif -%}
