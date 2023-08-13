@@ -6,6 +6,7 @@ use snowchains_core::web::PlatformKind;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use strum::VariantNames as _;
+use strum::{EnumString, EnumVariantNames};
 
 static TEMPLATE_CARGO_LOCK: &str = "./template-cargo-lock.toml";
 
@@ -35,6 +36,10 @@ pub struct OptCompeteInit {
     /// Path to create files
     #[structopt(default_value("."))]
     path: PathBuf,
+
+    /// AtcoderCrates Option
+    #[structopt(short, long, possible_values(AtcoderCrates::VARIANTS))]
+    crates: Option<AtcoderCrates>,
 }
 
 pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Result<()> {
@@ -42,6 +47,7 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
         color,
         platform,
         path,
+        crates,
     } = opt;
 
     let crate::Context {
@@ -55,18 +61,23 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
     let path = cwd.join(path);
 
     let atcoder_crates = if platform == PlatformKind::Atcoder {
-        writeln!(shell.err(), "Do you use crates on AtCoder?")?;
-        writeln!(shell.err(), "1 No")?;
-        writeln!(shell.err(), "2 Yes")?;
-        writeln!(shell.err(), "3 Yes, but I submit base64-encoded programs")?;
+        match crates {
+            None => {
+                writeln!(shell.err(), "Do you use crates on AtCoder?")?;
+                writeln!(shell.err(), "1 No")?;
+                writeln!(shell.err(), "2 Yes")?;
+                writeln!(shell.err(), "3 Yes, but I submit base64-encoded programs")?;
 
-        loop {
-            match shell.read_reply("1..3: ")?.trim() {
-                "1" => break AtcoderCrates::None,
-                "2" => break AtcoderCrates::UseNormally,
-                "3" => break AtcoderCrates::UseViaBinary,
-                _ => writeln!(shell.err(), "Choose 1, 2, or 3.")?,
+                loop {
+                    match shell.read_reply("1..3: ")?.trim() {
+                        "1" => break AtcoderCrates::None,
+                        "2" => break AtcoderCrates::UseNormally,
+                        "3" => break AtcoderCrates::UseViaBinary,
+                        _ => writeln!(shell.err(), "Choose 1, 2, or 3.")?,
+                    }
+                }
             }
+            Some(v) => v,
         }
     } else {
         AtcoderCrates::None
@@ -118,7 +129,8 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
     Ok(())
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(EnumString, EnumVariantNames, Clone, Copy, PartialEq, Debug)]
+#[strum(serialize_all = "kebab_case")]
 enum AtcoderCrates {
     None,
     UseNormally,
