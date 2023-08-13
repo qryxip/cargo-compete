@@ -1,4 +1,7 @@
-use crate::shell::ColorChoice;
+use crate::{
+    shell::ColorChoice,
+    web::{ATCODER_RUST_LANG_ID, CODEFORCES_RUST_LANG_ID, YUKICODER_RUST_LANG_ID},
+};
 use snowchains_core::web::PlatformKind;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -107,6 +110,11 @@ pub(crate) fn run(opt: OptCompeteInit, ctx: crate::Context<'_>) -> anyhow::Resul
                 PlatformKind::Yukicoder => YUKICODER_RUST_VERSION,
             },
             atcoder_crates == AtcoderCrates::UseViaBinary,
+            match platform {
+                PlatformKind::Atcoder => ATCODER_RUST_LANG_ID,
+                PlatformKind::Codeforces => CODEFORCES_RUST_LANG_ID,
+                PlatformKind::Yukicoder => YUKICODER_RUST_LANG_ID,
+            },
         )?,
     )?;
 

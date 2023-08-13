@@ -1,5 +1,56 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Reworked the `submit` configuration.
+
+    `submit.transpile` still works but is deprecated.
+
+    ```toml
+    [submit]
+    kind = "file"
+    path = "{{ src_path }}"
+    language_id = "5054" # Atcoder 202301
+    ```
+
+    ```toml
+    [submit]
+    kind = "command"
+    args = ["cargo", "+1.70.0", "equip", "--exclude-atcoder-202301-crates", "--remove", "docs", "--minify", "libs", "--bin", "{{ bin_name }}"]
+    language_id = "5054" # Atcoder 202301
+    ```
+
+    Now the default of `submit` is:
+
+    ```toml
+    [submit]
+    kind = "file"
+    path = "{{ src_path }}"
+    language_id = "4050" # AtCoder 202004
+    ```
+
+    For today's [AGC064](https://atcoder.jp/contests/agc064), you have to:
+
+    - Update compete.toml:
+        - `template.new.edition`
+        - `template.new.dependencies`
+        - `test.toolchain`
+        - `submit` (as above. note that you also have to write `language_id = "5054"`)
+    - Update template-cargo-lock.toml
+
+    before `cargo compete new`.
+
+    Refer to [rust-lang-ja/atcoder-proposal@`202301-update-2023-07-17-freeze`](https://github.com/rust-lang-ja/atcoder-proposal/tree/202301-update-2023-07-17-freeze).
+    This repository should be used in the real AtCoder judge system.
+
+## [0.10.5] - 2023-08-12Z
+
+### Fixed
+
+- Fixed the problem where `submit` command segfaults ([#200](https://github.com/qryxip/cargo-compete/pull/200) by [@yosuke-oka](https://github.com/yosuke-oka))
+
 ## [0.10.4] - 2022-02-19Z
 
 ### Fixed
