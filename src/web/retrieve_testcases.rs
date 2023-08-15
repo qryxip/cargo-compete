@@ -399,9 +399,11 @@ pub(crate) fn save_test_cases<I>(
 
             if !empty {
                 crate::fs::create_dir_all(path.with_file_name(&bin_alias).join("in"))?;
+                crate::fs::write(path.with_file_name(&bin_alias).join("in").join(".gitkeep"), "")?;
             }
             if contains_any_out {
                 crate::fs::create_dir_all(path.with_file_name(&bin_alias).join("out"))?;
+                crate::fs::write(path.with_file_name(&bin_alias).join("out").join(".gitkeep"), "")?;
             }
 
             if let TestSuite::Batch(BatchTestSuite { cases, extend, .. }) = &mut test_suite {
