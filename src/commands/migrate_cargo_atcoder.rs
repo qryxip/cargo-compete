@@ -138,8 +138,8 @@ pub(crate) fn run(
                     tbl[&bin.name]["name"] =
                         toml_edit::value(format!("{}-{}", package.name, bin.name));
                     tbl[&bin.name]["problem"] = toml_edit::value(format!(
-                        "https://atcoder.jp/contests/{}/<FIXME: screen name of the problem>",
-                        package.name,
+                        "https://atcoder.jp/contests/{}/tasks/{}_{}",
+                        package.name, package.name, bin.name
                     ));
                 }
                 tbl
