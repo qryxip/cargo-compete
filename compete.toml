@@ -1,0 +1,165 @@
+# Path to the test file (Liquid template)
+#
+# Variables:
+#
+# - `manifest_dir`: Package directory
+# - `contest`:      Contest ID (e.g. "abc100")
+# - `bin_name`:     Name of a `bin` target (e.g. "abc100-a")
+# - `bin_alias`:    "Alias" for a `bin` target defined in `pacakge.metadata.cargo-compete` (e.g. "a")
+# - `problem`:      Alias for `bin_alias` (deprecated)
+#
+# Additional filters:
+#
+# - `kebabcase`: Convert to kebab case (by using the `heck` crate)
+test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
+
+# Open files with the command (`jq` command that outputs `string[] | string[][]`)
+#
+# VSCode:
+#open = '[["code", "-a", .manifest_dir], ["code"] + (.paths | map([.src, .test_suite]) | flatten)]'
+# Emacs:
+#open = '["emacsclient", "-n"] + (.paths | map([.src, .test_suite]) | flatten)'
+
+[template]
+src = '''
+fn main() {
+    todo!();
+}
+'''
+
+[template.new]
+# `edition` for `Cargo.toml`.
+edition = "2021"
+# `profile` for `Cargo.toml`.
+#
+# By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
+#profile = '''
+#[dev]
+#opt-level = 3
+#'''
+dependencies = '''
+ac-library-rs = "=0.1.1"
+once_cell = "=1.18.0"
+static_assertions = "=1.1.0"
+varisat = "=0.2.2"
+memoise = "=0.3.2"
+argio = "=0.2.0"
+bitvec = "=1.0.1"
+counter = "=0.5.7"
+hashbag = "=0.1.11"
+pathfinding = "=4.3.0"
+recur-fn = "=2.2.0"
+indexing = { version = "=0.4.1", features = ["experimental_pointer_ranges"] }
+amplify = { version = "=3.14.2", features = ["c_raw", "rand", "stringly_conversions"] }
+amplify_derive = "=2.11.3"
+amplify_num = { version = "=0.4.1", features = ["std"] }
+easy-ext = "=1.0.1"
+multimap = "=0.9.0"
+btreemultimap = "=0.1.1"
+bstr = "=1.6.0"
+az = "=1.2.1"
+glidesort = "=0.1.2"
+tap = "=1.0.1"
+omniswap = "=0.1.0"
+multiversion = "=0.7.2"
+num = "=0.4.1"
+num-bigint = "=0.4.3"
+num-complex = "=0.4.3"
+num-integer = "=0.1.45"
+num-iter = "=0.1.43"
+num-rational = "=0.4.1"
+num-traits = "=0.2.15"
+num-derive = "=0.4.0"
+ndarray = "=0.15.6"
+nalgebra = "=0.32.3"
+alga = "=0.9.3"
+libm = "=0.2.7"
+rand = { version = "=0.8.5", features = ["small_rng", "min_const_gen"] }
+getrandom = "=0.2.10"
+rand_chacha = "=0.3.1"
+rand_core = "=0.6.4"
+rand_hc = "=0.3.2"
+rand_pcg = "=0.3.1"
+rand_distr = "=0.4.3"
+petgraph = "=0.6.3"
+indexmap = "=2.0.0"
+regex = "=1.9.1"
+lazy_static = "=1.4.0"
+ordered-float = "=3.7.0"
+ascii = "=1.1.0"
+permutohedron = "=0.2.4"
+superslice = "=1.0.0"
+itertools = "=0.11.0"
+itertools-num = "=0.1.3"
+maplit = "=1.0.2"
+either = "=1.8.1"
+im-rc = "=15.1.0"
+fixedbitset = "=0.4.2"
+bitset-fixed = "=0.1.0"
+proconio = { version = "=0.4.5", features = ["derive"] }
+text_io = "=0.1.12"
+rustc-hash = "=1.1.0"
+smallvec = { version = "=1.11.0", features = ["const_generics", "const_new", "write", "union", "serde", "arbitrary"] }
+'''
+dev-dependencies = '''
+#atcoder-202004-lock = { git = "https://github.com/qryxip/atcoder-202004-lock" }
+'''
+
+[template.new.copy-files]
+"./template-cargo-lock.toml" = "Cargo.lock"
+
+[new]
+kind = "cargo-compete"
+# Platform
+#
+# - atcoder
+# - codeforces
+# - yukicoder
+platform = "atcoder"
+# Path (Liquid template)
+#
+# Variables:
+#
+# - `contest`:      Contest ID. **May be nil**
+# - `package_name`: Package name
+path = "./{{ contest }}"
+
+#[new]
+#kind = "oj-api"
+#url = "https://atcoder.jp/contests/{{ id }}"
+#path = "./{{ contest }}"
+
+# for Library-Checker
+#[add]
+#url = "https://judge.yosupo.jp/problem/{{ args[0] }}"
+##is-contest = ["false"] # optional
+##target-kind = "bin" # ["bin", "example"]. default to "bin"
+#bin-name = '{{ args[0] }}'
+##bin-alias = '{{ args[0] }}' # optional
+##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
+
+# for yukicoder
+#[add]
+#url = '{% case args[0] %}{% when "contest" %}https://yukicoder.me/contests/{{ args[1] }}{% when "problem" %}https://yukicoder.me/problems/no/{{ args[1] }}{% endcase %}'
+#is-contest = ["bash", "-c", '[[ $(cut -d / -f 4) == "contests" ]]'] # optional
+##target-kind = "bin" # ["bin", "example"]. default to "bin"
+#bin-name = '{% assign segments = url | split: "/" %}{{ segments[5] }}'
+##bin-alias = '{% assign segments = url | split: "/" %}{{ segments[5] }}' # optional
+##bin-src-path = './src/bin/{{ bin_alias }}.rs' # optional
+
+[test]
+# Toolchain for the test. (optional)
+# toolchain = "1.70.0"
+# Profile for `cargo build`. ("dev" | "release")
+#
+# Defaults to `"dev"`.
+#profile = "dev"
+
+[submit]
+kind = "file"
+path = "{{ src_path }}"
+language_id = "5054"
+#[submit]
+#kind = "command"
+#args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
+#language_id = "4050"
