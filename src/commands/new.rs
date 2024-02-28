@@ -285,7 +285,8 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
                 })
                 .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
 
-            let group = &Group::OjApi(contest_id);
+            // Using last file path as contest name
+            let group = &Group::OjApi(contest_id.split("/").last().unwrap().to_string());
 
             let (manifest_dir, src_paths) = create_new_package(
                 &cargo_compete_config_path,
