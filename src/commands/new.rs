@@ -8,6 +8,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use heck::KebabCase as _;
 use itertools::Itertools as _;
 use liquid::object;
+use regex::Regex;
 use snowchains_core::web::{PlatformKind, ProblemsInContest, YukicoderRetrieveTestCasesTargets};
 use std::collections::BTreeMap;
 use structopt::StructOpt;
@@ -52,7 +53,7 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
         problems,
         config,
         color,
-        contest,
+        mut contest,
     } = opt;
 
     let crate::Context {
@@ -65,7 +66,14 @@ pub fn run(opt: OptCompeteNew, ctx: crate::Context<'_>) -> anyhow::Result<()> {
 
     let cargo_compete_config_path = crate::config::locate(cwd, config)?;
     let cargo_compete_dir = cargo_compete_config_path.with_file_name("");
-    let cargo_compete_config = crate::config::load(&cargo_compete_config_path, shell)?;
+    let mut cargo_compete_config = crate::config::load(&cargo_compete_config_path, shell)?;
+    let pattern = Regex::new(r"^https://atcoder\.jp/contests/([^/]+)/").unwrap();
+    if let Some(contest_id) = pattern.captures(&contest.clone().unwrap()) {
+        if let CargoCompeteConfigNew::OjApi{path, template, ..} = cargo_compete_config.new {
+            cargo_compete_config.new = CargoCompeteConfigNew::CargoCompete { platform: PlatformKind::Atcoder, template, path};
+            contest = Some(contest_id.get(1).unwrap().as_str().to_string());
+        }
+    }
 
     match &cargo_compete_config.new {
         CargoCompeteConfigNew::None => {
